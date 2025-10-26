@@ -40,7 +40,7 @@ DormDash provides a complete, stress-free solution. Through an Uber-like app, st
    Movers can view details of jobs they have accepted including active and completed jobs. Movers can update the status of an active job based on their progress (when they have arrived at the student’s pickup location or at the storage warehouse, etc.). This will result in a live update for the student whose order is associated with the job. After completing an active job, movers receive credit for completing the order. Movers can view details of all completed jobs, and mock transferring their earnings to their personal account.
 
 6. **Add to Calendar**  
-   Movers can add accepted jobs (storage or return phase) timings to their calendar. Students can add accepted orders’ ( in their storage phase ) timings to their calendar.
+   Movers can add accepted jobs (storage or return phase) timings to their calendar. Students can add accepted orders’ ( in their storage or return phase ) timings to their calendar.
 
 
 ---
@@ -96,7 +96,7 @@ DormDash provides a complete, stress-free solution. Through an Uber-like app, st
      The mover requests to withdraw accumulated earnings. The system mocks initiating a transfer to the mover’s connected account. [Note: mock since we do not actually want to store any bank information on our app for this course].
 
 - **Use cases for feature 6: Add to Calendar**  
-  1. **Add to Calendar**: The student can add accepted pikcup orders’ dates to their calendar. The mover can add schedules date/time of any of their accepted jobs to their calendar.
+  1. **Add to Calendar**: The student can add accepted pickup or return dates of their order to their calendar once a mover accepts it. The mover can add schedules date/time of any of their accepted jobs to their calendar.
 
 ### **3.5. Formal Use Case Specifications (5 Most Major Use Cases)**
 

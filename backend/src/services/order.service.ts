@@ -189,6 +189,15 @@ export class OrderService {
                 || activeOrder.returnAddress 
                 || activeOrder.studentAddress;
 
+            const finalReturnTime = returnJobRequest?.actualReturnDate
+                ? new Date(returnJobRequest.actualReturnDate).toISOString()
+                : new Date(activeOrder.returnTime).toISOString();
+
+            await orderModel.update(activeOrder._id, {
+                returnAddress: finalReturnAddress,
+                returnTime: finalReturnTime
+            });
+
             const returnJobPrice = (activeOrder.price * PRICING.RETURN_JOB_SPLIT) + adjustmentFee; // 40% for return delivery + late fee (if any)
 
             const returnJobReq: CreateJobRequest = {
@@ -199,7 +208,7 @@ export class OrderService {
                 price: returnJobPrice,
                 pickupAddress: activeOrder.warehouseAddress, // Pick up FROM warehouse
                 dropoffAddress: finalReturnAddress, // Deliver TO return address
-                scheduledTime: activeOrder.returnTime, // Scheduled for return time
+                scheduledTime: finalReturnTime,
             };
 
             await jobService.createJob(returnJobReq);

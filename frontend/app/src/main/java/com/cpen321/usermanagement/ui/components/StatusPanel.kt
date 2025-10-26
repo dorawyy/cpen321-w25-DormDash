@@ -1,5 +1,7 @@
 package com.cpen321.usermanagement.ui.components
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Card
@@ -19,6 +22,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.cpen321.usermanagement.utils.TimeUtils
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import com.cpen321.usermanagement.data.local.models.Order
 import com.cpen321.usermanagement.data.local.models.OrderStatus
 import com.cpen321.usermanagement.data.local.models.displayText
@@ -35,6 +40,11 @@ import com.cpen321.usermanagement.data.local.models.JobType
 import com.cpen321.usermanagement.data.local.models.JobStatus
 import com.cpen321.usermanagement.data.repository.OrderRepository
 import com.cpen321.usermanagement.ui.viewmodels.AuthViewModel
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
 // java.time imports removed (unused)
 
@@ -65,6 +75,8 @@ private fun ActiveOrderStatusContent(
     onCreateReturnJob: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -82,6 +94,14 @@ private fun ActiveOrderStatusContent(
                     job.orderId == order.id &&
                     job.status != JobStatus.CANCELLED &&
                     job.status != JobStatus.COMPLETED
+        }
+
+        // Find the return job if it exists
+        val returnJob = studentJobs.find { job ->
+            job.jobType == JobType.RETURN &&
+            job.orderId == order.id &&
+            job.status != JobStatus.CANCELLED &&
+            job.status != JobStatus.COMPLETED
         }
 
         println("Active return job  : ${hasActiveReturnJob}")
@@ -173,9 +193,84 @@ private fun ActiveOrderStatusContent(
                 )
             }
 
-
-
             Spacer(modifier = Modifier.height(2.dp))
+
+            // Calendar Button Logic - Show when job is ACCEPTED
+            val showCalendarButton = (!hasActiveReturnJob && order.status == OrderStatus.ACCEPTED) ||
+                                    (hasActiveReturnJob && returnJob?.status == JobStatus.ACCEPTED)
+
+            if (showCalendarButton) {
+                val (eventTime, buttonText, eventTitle, locationAddress) = if (hasActiveReturnJob) {
+                    // Return job - use returnTime and return location
+                    listOf(
+                        order.returnTime,
+                        "Add Return to Calendar",
+                        "DormDash Storage Return",
+                        order.returnAddress?.formattedAddress
+                    )
+                } else {
+                    // Pickup job - use pickupTime and student address
+                    listOf(
+                        order.pickupTime,
+                        "Add Pickup to Calendar",
+                        "DormDash Storage Pickup",
+                        order.studentAddress.formattedAddress
+                    )
+                }
+
+                // Calculate calendar URL outside of composable context
+                val calendarEventUrl = try {
+                    val zoned: ZonedDateTime = try {
+                        ZonedDateTime.parse(eventTime as String)
+                    } catch (e1: Exception) {
+                        try {
+                            OffsetDateTime.parse(eventTime as String).toZonedDateTime()
+                        } catch (e2: Exception) {
+                            val ldt = LocalDateTime.parse(eventTime as String)
+                            ldt.atZone(ZoneId.systemDefault())
+                        }
+                    }
+
+                    val pacificStart = zoned.withZoneSameInstant(ZoneId.of("America/Los_Angeles"))
+                    val pacificEnd = pacificStart.plusMinutes(15)
+                    val dateFormatterLocal = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss")
+
+                    val title = Uri.encode(eventTitle as String)
+                    val details = Uri.encode("Make sure to meet your mover on time!")
+                    val location = Uri.encode(locationAddress as String)
+
+                    "https://www.google.com/calendar/render?action=TEMPLATE" +
+                        "&text=$title" +
+                        "&dates=${pacificStart.format(dateFormatterLocal)}/${pacificEnd.format(dateFormatterLocal)}" +
+                        "&details=$details" +
+                        "&location=$location" +
+                        "&ctz=America/Los_Angeles"
+                } catch (e: Exception) {
+                    println("Error parsing date for calendar: ${e.message}")
+                    null
+                }
+
+                // Only show button if URL was successfully generated
+                if (calendarEventUrl != null) {
+                    OutlinedButton(
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(calendarEventUrl))
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Event,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(buttonText as String)
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
 
             Card(
                 modifier = Modifier.fillMaxWidth(),

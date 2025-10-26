@@ -165,57 +165,6 @@ private fun ActiveOrderContent(
                 markerTitle = markerTitle,
                 modifier = Modifier.fillMaxWidth()
             )
-            
-        }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (activeOrder != null && activeOrder.status == OrderStatus.ACCEPTED) {
-            // parse pickup time
-            val zoned: ZonedDateTime = try {
-                ZonedDateTime.parse(activeOrder.pickupTime)
-            } catch (e1: Exception) {
-                try {
-                    OffsetDateTime.parse(activeOrder.pickupTime).toZonedDateTime()
-                } catch (e2: Exception) {
-                    val ldt = LocalDateTime.parse(activeOrder.pickupTime)
-                    ldt.atZone(ZoneId.systemDefault())
-                }
-            }
-
-            val pacificStart = zoned.withZoneSameInstant(ZoneId.of("America/Los_Angeles"))
-            val pacificEnd = pacificStart.plusMinutes(15)
-            // so Google shows Pacific time
-            val dateFormatterLocal = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss")
-
-            val title = Uri.encode("DormDash Storage Pickup")
-            val details = Uri.encode("Make sure to meet your mover on time!")
-            val location = Uri.encode(activeOrder.studentAddress.formattedAddress)
-
-            val calendarEventUrl = "https://www.google.com/calendar/render?action=TEMPLATE" +
-                "&text=$title" +
-                "&dates=${pacificStart.format(dateFormatterLocal)}/${pacificEnd.format(dateFormatterLocal)}" +
-                "&details=$details" +
-                "&location=$location" +
-                "&ctz=America/Los_Angeles"
-
-            OutlinedButton(
-                onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(calendarEventUrl))
-                    context.startActivity(intent)
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Event,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Add Pickup to Calendar")
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
