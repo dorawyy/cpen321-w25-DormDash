@@ -11,9 +11,8 @@ export class JobMapper {
   static toJobResponse(job: any): JobResponse {
     const id = job?._id?.toString?.() ?? (job).id ?? "";
 
-    const orderId = job.orderId && (job.orderId)._id
-      ? (job.orderId)._id.toString()
-      : job.orderId?.toString?.() ?? "";
+    const orderId = job.orderId?._id
+      ? (job.orderId)._id.toString() : "";
 
     return {
       id,

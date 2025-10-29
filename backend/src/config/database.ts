@@ -10,7 +10,8 @@ export const connectDB = async (): Promise<void> => {
   logger.info('✅ MongoDB connected successfully');
 
     mongoose.connection.on('error', error => {
-      logger.error('❌ MongoDB connection error:', error);
+      // Log a sanitized string to avoid passing raw error objects to logger sinks
+      logger.error('❌ MongoDB connection error: ' + String(error));
     });
 
     mongoose.connection.on('disconnected', () => {

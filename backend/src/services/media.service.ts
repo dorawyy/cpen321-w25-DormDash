@@ -23,17 +23,21 @@ export class MediaService {
       return resolvedNewPath.split(path.sep).join('/');
     } catch (error) {
       try {
-        // Attempt to remove the temp file if it exists (ensure safety)
-        const resolvedFilePath = path.resolve(filePath);
-        try {
-          await fs.promises.stat(resolvedFilePath);
-          // Only unlink if stat succeeded
-          await fs.promises.unlink(resolvedFilePath);
-        } catch (statErr: any) {
-          // ENOENT is expected if the file does not exist; ignore other errors
-          if (statErr.code && statErr.code !== 'ENOENT') {
-            logger.warn('Failed to unlink temp file after failed save:', String(statErr));
+        // Only attempt to unlink a file if it looks like an images filename (basename without path traversal)
+        const base = path.basename(filePath);
+        if (/^[a-zA-Z0-9._-]+$/.test(base)) {
+          const candidate = path.join(IMAGES_DIR, base);
+          try {
+            await fs.promises.unlink(candidate);
+          } catch (e: any) {
+            // Ignore if file doesn't exist; log unexpected errors
+            if (e && e.code && e.code !== 'ENOENT') {
+              logger.warn('Failed to unlink temp file after failed save:', String(e));
+            }
           }
+        } else {
+          // If basename contains suspicious characters, do not attempt unlink for safety
+          logger.warn(`Skipped unlink of suspicious filename after failed save: ${String(base)}`);
         }
       } catch (unlinkErr) {
         logger.warn('Failed to unlink temp file after failed save:', String(unlinkErr));
@@ -44,20 +48,17 @@ export class MediaService {
 
   static async deleteImage(url: string): Promise<void> {
     try {
-      // Accept either a filename or a full path; build a safe absolute path
-      const candidatePath = url.startsWith(path.sep) ? path.join(process.cwd(), url) : path.join(IMAGES_DIR, url);
-      const resolved = path.resolve(candidatePath);
-      const resolvedImagesDir = path.resolve(IMAGES_DIR);
-      if (!resolved.startsWith(resolvedImagesDir + path.sep) && resolved !== resolvedImagesDir) {
-        // don't delete files outside the images directory
-        logger.warn(`Attempted to delete image outside images directory: ${resolved}`);
+      // Accept either a filename or a full path; but always delete only by basename inside IMAGES_DIR
+      const base = path.basename(url);
+      if (!/^[a-zA-Z0-9._-]+$/.test(base)) {
+        logger.warn(`Refusing to delete file with suspicious name: ${String(base)}`);
         return;
       }
-
+      const resolved = path.join(IMAGES_DIR, base);
       try {
         await fs.promises.unlink(resolved);
       } catch (err: any) {
-        if (err.code !== 'ENOENT') {
+        if (err && err.code && err.code !== 'ENOENT') {
           logger.error('Failed to delete old profile picture:', String(err));
         }
       }
@@ -69,14 +70,7 @@ export class MediaService {
   static async deleteAllUserImages(userId: string): Promise<void> {
     try {
       try {
-        try {
-          await fs.promises.access(IMAGES_DIR);
-        } catch (accessErr) {
-          // Images dir doesn't exist or isn't accessible
-          return;
-        }
-
-        const files = await fs.promises.readdir(IMAGES_DIR);
+        const files = await fs.promises.readdir(IMAGES_DIR).catch(() => []);
         const userFiles = files.filter(file => file.startsWith(userId + '-'));
 
         await Promise.all(userFiles.map(file => this.deleteImage(file)));

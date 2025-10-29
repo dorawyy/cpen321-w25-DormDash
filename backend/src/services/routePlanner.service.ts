@@ -183,8 +183,14 @@ export class RoutePlannerService {
       return Array.isArray(val) ? val : [];
     }
 
-    const val = availability[dayOfWeek];
-    return Array.isArray(val) ? val : [];
+    // availability may be an object; only index it after verifying it has the key
+    if (typeof availability === 'object' && availability !== null && Object.prototype.hasOwnProperty.call(availability, dayOfWeek)) {
+      const obj = availability as Record<string, unknown>;
+      const val = obj[dayOfWeek];
+      return Array.isArray(val) ? val : [];
+    }
+
+    return [];
   }
 
   /**
