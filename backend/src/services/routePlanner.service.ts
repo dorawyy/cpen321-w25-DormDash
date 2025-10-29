@@ -362,15 +362,15 @@ export class RoutePlannerService {
         price: selectedJob.price,
         pickupAddress: pickupLoc,
         dropoffAddress: dropoffLoc,
-        scheduledTime: (selectedJob.scheduledTime as Date).toISOString(),
-        estimatedStartTime: (selectedJob.scheduledTime as Date).toISOString(),
+        scheduledTime: (selectedJob.scheduledTime).toISOString(),
+        estimatedStartTime: (selectedJob.scheduledTime).toISOString(),
         estimatedDuration: Math.round(jobDuration),
         distanceFromPrevious: Math.round((selectedJob.distance || 0) * 10) / 10,
         travelTimeFromPrevious: Math.round(travelTime || 0),
       });
 
       // Advance current time to end of job (start at scheduledTime)
-      currentTime = new Date((selectedJob.scheduledTime as Date).getTime() + jobDuration * 60000);
+      currentTime = new Date((selectedJob.scheduledTime).getTime() + jobDuration * 60000);
 
       // Increase total elapsed time by travel + waiting + job duration
       totalElapsedTime += (travelTime || 0) + (waitingTime || 0) + jobDuration;
