@@ -6,6 +6,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.middlew
 import router from './routes/routes';
 import path from 'path';
 import { initSocket } from './socket';
+import logger from './utils/logger.util';
 
 dotenv.config();
 
@@ -21,9 +22,9 @@ app.use(errorHandler);
 
 connectDB();
 const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  logger.info(`🚀 Server running on port ${PORT}`);
 });
 
 const io = initSocket(server);
 
-console.log(`Socket.io ${io ? 'initialized' : 'failed to initialize'}`);
+logger.info(`Socket.io ${io ? 'initialized' : 'failed to initialize'}`);

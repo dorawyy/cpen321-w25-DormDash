@@ -103,10 +103,11 @@ class NotificationService {
   async sendDebugNotification(studentId: mongoose.Types.ObjectId) {
     const token = await userModel.getFcmToken(studentId);
     if (!token) {
-      console.log(`No FCM token found for student ${studentId}`);
+      logger.warn(`No FCM token found for student ${String(studentId)}`);
       return;
-    }else {
-      console.log(`FCM token for student: ${token}`);
+    } else {
+      // Avoid logging raw FCM tokens (sensitive). Log presence only.
+      logger.info(`Found FCM token for student ${String(studentId)}`);
     }
     const notification: NotificationPayload = {
       fcmToken: token,

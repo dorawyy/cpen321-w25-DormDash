@@ -139,17 +139,13 @@ export class RoutePlannerService {
       const dayOfWeek = this.convertToDayOfWeek(scheduledTime.getDay());
       const jobTimeString = `${scheduledTime.getHours()}:${scheduledTime.getMinutes().toString().padStart(2, '0')}`;
 
-      // Check if this day has availability
-      // Handle both Map and plain object
-      const daySlots = availability instanceof Map 
-        ? availability.get(dayOfWeek)
-        : availability[dayOfWeek];
-      
+      // Safely obtain day slots for the given day
+      const daySlots = this.getDaySlotsForAvailability(availability, dayOfWeek);
+
       if (!daySlots || daySlots.length === 0) {
         return false;
       }
 
-      // Check if job time falls within any time slot
       const matches = daySlots.some((slot: TimeRange) => {
         const [startTime, endTime] = slot;
         const jobDuration = this.estimateJobDuration(job.volume);
@@ -172,6 +168,23 @@ export class RoutePlannerService {
     });
     
     return filtered;
+  }
+
+  /**
+   * Safely extract day slots from availability (handles Map and plain object)
+   * and ensures the lookup key is one of the expected day strings.
+   */
+  private getDaySlotsForAvailability(availability: any, dayOfWeek: string) {
+    const allowed = new Set(['SUN','MON','TUE','WED','THU','FRI','SAT']);
+    if (!allowed.has(dayOfWeek)) return [];
+
+    if (availability instanceof Map) {
+      const val = availability.get(dayOfWeek);
+      return Array.isArray(val) ? val : [];
+    }
+
+    const val = availability[dayOfWeek];
+    return Array.isArray(val) ? val : [];
   }
 
   /**
@@ -261,9 +274,9 @@ export class RoutePlannerService {
         const jobDuration = this.estimateJobDuration(job.volume);
         const jobEndTime = new Date(scheduledTime.getTime() + jobDuration * 60000);
 
-        // Check mover availability for this job time window
-        const dayOfWeek = this.convertToDayOfWeek(scheduledTime.getDay());
-        const daySlots = availability instanceof Map ? availability.get(dayOfWeek) : availability[dayOfWeek];
+  // Check mover availability for this job time window
+  const dayOfWeek = this.convertToDayOfWeek(scheduledTime.getDay());
+  const daySlots = this.getDaySlotsForAvailability(availability, dayOfWeek);
         let withinAvailability = false;
         if (daySlots && daySlots.length > 0) {
           withinAvailability = daySlots.some((slot: TimeRange) => {
@@ -433,6 +446,10 @@ export class RoutePlannerService {
    */
   private convertToDayOfWeek(day: number): string {
     const days = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+    if (typeof day !== 'number' || day < 0 || day > 6) {
+      // fallback to SUN for safety
+      return 'SUN';
+    }
     return days[day];
   }
 

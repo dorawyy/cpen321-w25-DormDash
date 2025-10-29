@@ -24,9 +24,6 @@ export class UserController {
     try {
       const user = req.user!;
 
-      // TODO: remove this
-      console.log("debug-fcmToken:", user);
-
       const updatedUser = await userModel.update(user._id, req.body);
 
       if (!updatedUser) {
