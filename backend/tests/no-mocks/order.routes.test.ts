@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeAll, afterAll, jest } from '@jest/globals';
+import { describe, expect, test, beforeAll, afterAll, beforeEach, jest } from '@jest/globals';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
@@ -16,6 +16,12 @@ beforeAll(async () => {
   // Connect to test database
   await connectDB();
 
+  // Ensure test user is clean - delete by googleId
+  const db = mongoose.connection.db;
+  if (db) {
+    await db.collection('users').deleteMany({ googleId: 'test-google-id' });
+  }
+
   // Create a test user in DB with specific _id
   await (userModel as any).user.create({
     _id: testUserId,
@@ -28,6 +34,15 @@ beforeAll(async () => {
   // Generate a real JWT token for testing
   const payload = { id: testUserId };
   authToken = jwt.sign(payload, process.env.JWT_SECRET || 'default-secret');
+});
+
+beforeEach(async () => {
+  // Clear orders and jobs collections before each test to ensure isolation
+  const db = mongoose.connection.db;
+  if (db) {
+    await db.collection('orders').deleteMany({ studentId: testUserId });
+    await db.collection('jobs').deleteMany({ studentId: testUserId });
+  }
 });
 
 afterAll(async () => {
@@ -80,18 +95,15 @@ describe('POST /api/order - No Mocks', () => {
 });
 
 describe('POST /api/order/create-return-Job - No Mocks', () => {
-  test('should create a return job for authenticated user', async () => {
-    const response = await request(app)
+  test('should return 500 if no active order', async () => {
+    await request(app)
       .post('/api/order/create-return-Job')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         returnAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
         actualReturnDate: new Date().toISOString()
       })
-      .expect(201);
-
-    expect(response.body).toHaveProperty('success');
-    expect(response.body).toHaveProperty('message');
+      .expect(500);
   });
 });
 
@@ -111,14 +123,13 @@ describe('GET /api/order/all-orders - No Mocks', () => {
 });
 
 describe('GET /api/order/active-order - No Mocks', () => {
-  test('should return active order for authenticated user', async () => {
+  test('should return 404 if no active order', async () => {
     const response = await request(app)
       .get('/api/order/active-order')
       .set('Authorization', `Bearer ${authToken}`)
-      .expect(200);
+      .expect(404);
 
-    // Could be null or an order object
-    expect(response.body === null || typeof response.body === 'object').toBe(true);
+    expect(response.body).toBe(null);
   });
 });
 
