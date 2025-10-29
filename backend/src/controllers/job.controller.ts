@@ -14,7 +14,7 @@ import logger from '../utils/logger.util';
 export class JobController {
     constructor(private jobService: JobService) {}
 
-    async createJob(req: Request<{}, {}, CreateJobRequest>, res: Response<CreateJobResponse>, next: NextFunction) {
+    async createJob(req: Request<unknown, unknown, CreateJobRequest>, res: Response<CreateJobResponse>, next: NextFunction) {
         try {
             const result = await this.jobService.createJob(req.body);
             res.status(201).json(result);

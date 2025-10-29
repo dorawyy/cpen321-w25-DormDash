@@ -3,7 +3,7 @@ import { PaymentIntent, PaymentIntentStatus, PaymentResult, PaymentStatus } from
 import logger from '../utils/logger.util';
 
 export class StripeService {
-    private stripe: Stripe | null = null;
+    private stripe ?: Stripe;
 
     private initializeStripe() {
         if (!this.stripe) {

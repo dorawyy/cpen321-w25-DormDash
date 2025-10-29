@@ -7,7 +7,7 @@ import { OrderMapper } from '../mappers/order.mapper';
 
 export class OrderController {
     constructor(private orderService: OrderService) {}
-    async getQuote(req: Request<{}, {}, QuoteRequest>, res: Response<GetQuoteResponse>, next: NextFunction) {
+    async getQuote(req: Request<unknown, unknown, QuoteRequest>, res: Response<GetQuoteResponse>, next: NextFunction) {
         try {
             const quote = await this.orderService.getQuote(req.body);
             res.status(200).json(quote);

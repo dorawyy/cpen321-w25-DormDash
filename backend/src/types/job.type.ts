@@ -80,9 +80,6 @@ export interface JobResponse{
     updatedAt: string;
 }
 
-// For listing jobs, we might not want to expose all details
-export interface JobListItem extends Pick<JobResponse, "id" | "orderId" | "jobType" | "volume" | "price" | "pickupAddress" | "dropoffAddress" | "scheduledTime" | "status"> {}
-
 export interface GetAllJobsResponse {
     message: string;
     data?: {

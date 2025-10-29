@@ -6,7 +6,7 @@ export class PaymentController {
     constructor(private paymentService: PaymentService) {}
 
     async createPaymentIntent(
-        req: Request<{}, {}, CreatePaymentIntentRequest>, 
+        req: Request<unknown, unknown, CreatePaymentIntentRequest>, 
         res: Response<PaymentIntent>, 
         next: NextFunction
     ) {
@@ -19,7 +19,7 @@ export class PaymentController {
     }
 
     async processPayment(
-        req: Request<{}, {}, ProcessPaymentRequest>, 
+        req: Request<unknown, unknown, ProcessPaymentRequest>, 
         res: Response<PaymentResult>, 
         next: NextFunction
     ) {

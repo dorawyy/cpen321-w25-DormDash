@@ -6,9 +6,8 @@ import {
   AuthenticateUserResponse,
 } from '../types/auth.types';
 import logger from '../utils/logger.util';
-import { UserRole } from '../types/user.types';
+import { UserRole, IUser } from '../types/user.types';
 import { userModel } from '../models/user.model';
-import { IUser } from '../types/user.types';
 
 export class AuthController {
   async signUp(

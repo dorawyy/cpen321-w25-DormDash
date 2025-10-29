@@ -4,6 +4,7 @@ import logger from "../utils/logger.util";
 import mongoose from 'mongoose';
 import { JobStatus, JobType } from '../types/job.type';
 import { jobModel } from "../models/job.model";import { userModel } from '../models/user.model';
+import { FirebaseMessagingError } from 'firebase-admin/messaging';
 ``
 
 class NotificationService {
@@ -20,11 +21,11 @@ class NotificationService {
     try {
       const response = await admin.messaging().send(message);
       logger.info(`Successfully sent notification: ${response}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`Error sending notification to ${payload.fcmToken}: ${error}`);
       if (
-        error.code === "messaging/registration-token-not-registered" ||
-        error.code === "messaging/invalid-argument"
+        (error as FirebaseMessagingError).code === "messaging/registration-token-not-registered" ||
+        (error as FirebaseMessagingError).code === "messaging/invalid-argument"
       ) {
         logger.warn(`Token ${payload.fcmToken} is invalid or expired, clearing from database`);
         // Clear invalid token from the database

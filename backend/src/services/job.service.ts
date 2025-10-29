@@ -32,7 +32,7 @@ export class JobService {
     }
     // Helper to add credits to mover when job is completed
     private async addCreditsToMover(job: Job | null) {
-        if (!job || !job.moverId) {
+        if (!job?.moverId) {
             logger.warn('No mover assigned to job, skipping credits');
             return;
         }
@@ -51,9 +51,9 @@ export class JobService {
                 const currentCredits = mover.credits || 0;
                 const newCredits = currentCredits + job.price;
                 await userModel.update(moverObjectId, { credits: newCredits });
-                logger.info(`Added ${job.price} credits to mover ${moverObjectId}. New balance: ${newCredits}`);
+                logger.info(`Added ${job.price} credits to mover ${moverObjectId.toString()}. New balance: ${newCredits}`);
             } else {
-                logger.warn(`Mover ${moverObjectId} not found or not a MOVER role`);
+                logger.warn(`Mover ${moverObjectId.toString()} not found or not a MOVER role`);
             }
         } catch (creditErr) {
             logger.error('Failed to add credits to mover:', creditErr);
@@ -266,13 +266,13 @@ export class JobService {
                     throw new Error("Invalid orderId in job");
                 }
                 
-                logger.info(`Attempting to update linked order status to ACCEPTED for orderId=${orderObjectId}`);
+                logger.info(`Attempting to update linked order status to ACCEPTED for orderId=${orderObjectId.toString()}`);
                 try {
                     // Use orderService instead of direct orderModel access
                     await this.orderService.updateOrderStatus(orderObjectId, OrderStatus.ACCEPTED, updateData.moverId ?? undefined);
-                    logger.info(`Order ${orderObjectId} updated to ACCEPTED via OrderService`);
+                    logger.info(`Order ${orderObjectId.toString()} updated to ACCEPTED via OrderService`);
                 } catch (err) {
-                    logger.error(`Failed to update order status to ACCEPTED for orderId=${orderObjectId}:`, err);
+                    logger.error(`Failed to update order status to ACCEPTED for orderId=${orderObjectId.toString()}:`, err);
                     throw err;
                 }
                 // Emit job.updated for the accepted job
@@ -319,13 +319,13 @@ export class JobService {
                     throw new Error("Invalid orderId in job");
                 }
                 
-                logger.info(`Attempting to update linked order status to PICKED_UP for orderId=${orderObjectId}`);
+                logger.info(`Attempting to update linked order status to PICKED_UP for orderId=${orderObjectId.toString()}`);
                 
                 try {
                     await this.orderService.updateOrderStatus(orderObjectId, OrderStatus.PICKED_UP, extractObjectIdString(updatedJob.moverId));
-                    logger.info(`Order ${orderObjectId} updated to PICKED_UP via OrderService`);
+                    logger.info(`Order ${orderObjectId.toString()} updated to PICKED_UP via OrderService`);
                 } catch (err) {
-                    logger.error(`Failed to update order status to PICKED_UP for orderId=${orderObjectId}:`, err);
+                    logger.error(`Failed to update order status to PICKED_UP for orderId=${orderObjectId.toString()}:`, err);
                 }
                 await notificationService.sendJobStatusNotification(new mongoose.Types.ObjectId(jobId), JobStatus.PICKED_UP);
 
@@ -366,7 +366,7 @@ export class JobService {
                     throw new Error("Invalid orderId in job");
                 }
                 
-                logger.info(`Attempting to update linked order status after job completion for orderId=${orderObjectId}`);
+                logger.info(`Attempting to update linked order status after job completion for orderId=${orderObjectId.toString()}`);
                 
                 // Add credits to mover when job is completed
                 await this.addCreditsToMover(updatedJob);
@@ -376,16 +376,16 @@ export class JobService {
                         await this.orderService.updateOrderStatus(orderObjectId, OrderStatus.IN_STORAGE, extractObjectIdString(updatedJob.moverId));
                         // notfication should not depend on socket emission success so its called after db update
                         await notificationService.sendJobStatusNotification(new mongoose.Types.ObjectId(jobId), JobStatus.COMPLETED);
-                        logger.info(`Order ${orderObjectId} updated to IN_STORAGE via OrderService`);
+                        logger.info(`Order ${orderObjectId.toString()} updated to IN_STORAGE via OrderService`);
                     } else if (job.jobType === JobType.RETURN) {
                         // For RETURN jobs, mark order as RETURNED (not COMPLETED yet)
                         // Student will need to confirm delivery before order is COMPLETED
                         await this.orderService.updateOrderStatus(orderObjectId, OrderStatus.RETURNED, extractObjectIdString(updatedJob.moverId));
                         await notificationService.sendJobStatusNotification(new mongoose.Types.ObjectId(jobId), JobStatus.COMPLETED);
-                        logger.info(`Order ${orderObjectId} updated to RETURNED via OrderService`);
+                        logger.info(`Order ${orderObjectId.toString()} updated to RETURNED via OrderService`);
                     }
                 } catch (err) {
-                    logger.error(`Failed to update order status after job completion for orderId=${orderObjectId}:`, err);
+                    logger.error(`Failed to update order status after job completion for orderId=${orderObjectId.toString()}:`, err);
                     throw err;
                 }
             }
@@ -496,7 +496,7 @@ export class JobService {
                 }
                 
                 await this.orderService.updateOrderStatus(orderObjectId, OrderStatus.PICKED_UP, studentId);
-                logger.info(`Order ${orderObjectId} updated to PICKED_UP via OrderService`);
+                logger.info(`Order ${orderObjectId.toString()} updated to PICKED_UP via OrderService`);
             } catch (err) {
                 logger.error('Failed to update order status during confirmPickup:', err);
                 throw err;
@@ -594,7 +594,7 @@ export class JobService {
                 }
                 
                 await this.orderService.updateOrderStatus(orderObjectId, OrderStatus.COMPLETED, studentId);
-                logger.info(`Order ${orderObjectId} updated to COMPLETED via OrderService`);
+                logger.info(`Order ${orderObjectId.toString()} updated to COMPLETED via OrderService`);
             } catch (err) {
                 logger.error('Failed to update order status during confirmDelivery:', err);
                 throw err;

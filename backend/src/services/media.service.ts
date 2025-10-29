@@ -29,9 +29,10 @@ export class MediaService {
           const candidate = path.join(IMAGES_DIR, base);
           try {
             await fs.promises.unlink(candidate);
-          } catch (e: any) {
+          } catch (e: unknown) {
             // Ignore if file doesn't exist; log unexpected errors
-            if (e && e.code && e.code !== 'ENOENT') {
+            const error = e as { code?: string };
+            if (error && error.code && error.code !== 'ENOENT') {
               logger.warn('Failed to unlink temp file after failed save:', String(e));
             }
           }
@@ -57,8 +58,9 @@ export class MediaService {
       const resolved = path.join(IMAGES_DIR, base);
       try {
         await fs.promises.unlink(resolved);
-      } catch (err: any) {
-        if (err && err.code && err.code !== 'ENOENT') {
+      } catch (err: unknown) {
+        const error = err as { code?: string };
+        if (error && error.code && error.code !== 'ENOENT') {
           logger.error('Failed to delete old profile picture:', String(err));
         }
       }
@@ -74,7 +76,7 @@ export class MediaService {
         const userFiles = files.filter(file => file.startsWith(userId + '-'));
 
         await Promise.all(userFiles.map(file => this.deleteImage(file)));
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error('Failed to delete user images:', String(err));
       }
     } catch (error) {

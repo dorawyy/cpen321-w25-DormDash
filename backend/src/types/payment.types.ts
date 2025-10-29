@@ -13,7 +13,7 @@ export const processPaymentSchema = z.object({
 });
 
 // Payment Types
-export interface CreatePaymentIntentRequest extends z.infer<typeof createPaymentIntentSchema> {}
+export type CreatePaymentIntentRequest = z.infer<typeof createPaymentIntentSchema>
 
 export interface ProcessPaymentRequest extends z.infer<typeof processPaymentSchema> {}
 

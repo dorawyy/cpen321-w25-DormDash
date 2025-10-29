@@ -262,7 +262,7 @@ export class RoutePlannerService {
         // Ensure we are dealing with plain objects (they were normalized earlier)
         const j = job;
         const location = j.pickupAddress;
-        if (!location || location.lat == null || location.lon == null) {
+        if (location?.lat == null || location?.lon == null) {
           const jobId = j.id ? j.id : 'unknown';
           logger.warn(`Job ${jobId} missing location data: ${JSON.stringify(j)}`);
           return null;
@@ -500,7 +500,7 @@ export class RoutePlannerService {
       return false;
     }
 
-    if (!dropoffAddress || !dropoffAddress.lat || !dropoffAddress.lon) {
+    if (!dropoffAddress?.lat || !dropoffAddress?.lon) {
       logger.warn(`Job ${job.id} has invalid or missing dropoffAddress: ${JSON.stringify(dropoffAddress)}`);
       return false;
     }

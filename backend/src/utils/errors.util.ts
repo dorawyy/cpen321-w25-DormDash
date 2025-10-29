@@ -9,7 +9,7 @@
 export class AppError extends Error {
   constructor(
     message: string,
-    public statusCode: number = 500,
+    public statusCode = 500,
     public code?: string
   ) {
     super(message);
@@ -119,7 +119,7 @@ export class DuplicateOrderError extends ConflictError {
  */
 export class PaymentError extends AppError {
   constructor(message: string, code?: string) {
-    super(message, 402, code || 'PAYMENT_ERROR');
+    super(message, 402, code ?? 'PAYMENT_ERROR');
   }
 }
 
@@ -156,6 +156,6 @@ export class InternalServerError extends AppError {
 /**
  * Helper to determine if error is an AppError
  */
-export function isAppError(error: any): error is AppError {
+export function isAppError(error: unknown): error is AppError {
   return error instanceof AppError;
 }

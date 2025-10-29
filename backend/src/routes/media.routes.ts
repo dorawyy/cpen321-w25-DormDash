@@ -11,7 +11,7 @@ router.post(
   '/upload',
   authenticateToken,
   upload.single('media'),
-  mediaController.uploadImage
+  async (req, res, next) => await mediaController.uploadImage(req, res, next)
 );
 
 export default router;

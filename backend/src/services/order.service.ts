@@ -338,7 +338,7 @@ export class OrderService {
             // Emit order.updated event
             EventEmitter.emitOrderUpdated(updatedOrder, { by: actorId ?? null, ts: new Date().toISOString() });
 
-            logger.info(`Order ${orderId} status updated to ${status} by ${actorId || 'system'}`);
+            logger.info(`Order ${orderId} status updated to ${status} by ${actorId ?? 'system'}`);
             
             return updatedOrder;
         } catch (error) {

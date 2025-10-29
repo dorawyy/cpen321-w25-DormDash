@@ -41,7 +41,7 @@ export function extractObjectId(field: any): mongoose.Types.ObjectId | null {
  * @param field - Field that might be an ObjectId or populated document
  * @returns ObjectId as string or empty string if invalid
  */
-export function extractObjectIdString(field: any): string {
+export function extractObjectIdString(field: unknown): string {
   const objectId = extractObjectId(field);
   return objectId ? objectId.toString() : '';
 }

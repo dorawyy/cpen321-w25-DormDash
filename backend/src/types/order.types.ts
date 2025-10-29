@@ -85,8 +85,8 @@ export const ACTIVE_ORDER_STATUSES = [
 
 export interface Order {
     _id: mongoose.Types.ObjectId;
-    studentId: String;
-    moverId?: String;
+    studentId: string;
+    moverId?: string;
     status: OrderStatus;
     volume: number;
     price: number;

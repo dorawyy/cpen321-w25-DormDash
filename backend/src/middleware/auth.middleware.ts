@@ -24,7 +24,7 @@ export const authenticateToken: RequestHandler = async (
       id: mongoose.Types.ObjectId;
     };
 
-    if (!decoded || !decoded.id) {
+    if (!decoded?.id) {
       res.status(401).json({
         error: 'Invalid token',
         message: 'Token verification failed',
@@ -79,10 +79,10 @@ export const verifyTokenString = async (token?: string) => {
     : token;
 
   try {
-    const decoded = jwt.verify(raw, process.env.JWT_SECRET!) as any;
+    const decoded = jwt.verify(raw, process.env.JWT_SECRET!) as { id: string };
     if (!decoded?.id) throw new Error('Invalid token payload');
 
-    const user = await userModel.findById(decoded.id);
+    const user = await userModel.findById(new mongoose.Types.ObjectId(decoded.id));
     if (!user) throw new Error('User not found');
 
     return user;
