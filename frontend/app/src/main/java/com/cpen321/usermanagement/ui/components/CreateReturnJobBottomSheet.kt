@@ -167,83 +167,85 @@ fun CreateReturnJobBottomSheet(
                         defaultAddress = activeOrder.returnAddress?.formattedAddress 
                             ?: activeOrder.studentAddress.formattedAddress,
                         useCustomAddress = useCustomAddress,
-                        onUseCustomAddressChange = { 
-                            useCustomAddress = it
-                            // Reset when switching
-                            if (it) {
-                                addressInput = ""
-                                selectedAddress = null
-                            }
-                        },
-                        streetAddress = addressInput,
-                        onStreetAddressChange = { 
-                            addressInput = it
-                            // Clear selected address when user starts typing again
-                            if (selectedAddress != null && it != selectedAddress?.formattedAddress) {
-                                selectedAddress = null
-                            }
-                        },
+                        streetAddress = addressInput,     
                         selectedAddress = selectedAddress,
-                        onAddressSelected = { address ->
-                            selectedAddress = address
-                            addressInput = address.formattedAddress
-                        },
                         isValidating = isValidating,
-                        onConfirm = {
-                            if (useCustomAddress) {
-                                if (selectedAddress == null) {
-                                    return@AddressSelectionStep
+                        AddressSelectionActions(
+                            onUseCustomAddressChange = { 
+                                useCustomAddress = it
+                                // Reset when switching
+                                if (it) {
+                                    addressInput = ""
+                                    selectedAddress = null
                                 }
-                                
-                                isValidating = true
-                                coroutineScope.launch {
-                                    try {
-                                        // Validate that the selected address is within Vancouver area
-                                        val validationResult = LocationUtils.validateAndGeocodeAddress(
-                                            context, 
-                                            selectedAddress!!.formattedAddress
-                                        )
+                            },
+                            onStreetAddressChange = { 
+                                addressInput = it
+                                // Clear selected address when user starts typing again
+                                if (selectedAddress != null && it != selectedAddress?.formattedAddress) {
+                                    selectedAddress = null
+                                }
+                            },
+                            onAddressSelected = { address ->
+                                selectedAddress = address
+                                addressInput = address.formattedAddress
+                            },
+                            onConfirm = {
+                                if (useCustomAddress) {
+                                    if (selectedAddress == null) {
+                                        return@AddressSelectionStep
+                                    }
+                                    
+                                    isValidating = true
+                                    coroutineScope.launch {
+                                        try {
+                                            // Validate that the selected address is within Vancouver area
+                                            val validationResult = LocationUtils.validateAndGeocodeAddress(
+                                                context, 
+                                                selectedAddress!!.formattedAddress
+                                            )
 
-                                        if (validationResult.isValid && validationResult.coordinates != null) {
-                                            customAddress = Address(
-                                                lat = selectedAddress!!.latitude,
-                                                lon = selectedAddress!!.longitude,
-                                                formattedAddress = selectedAddress!!.formattedAddress
-                                            )
-                                            
-                                            // Submit the return job
-                                            submitReturnJob(
-                                                selectedDateMillis = selectedDateMillis,
-                                                returnHour = returnHour,
-                                                returnMinute = returnMinute,
-                                                customAddress = customAddress,
-                                                isEarlyReturn = isEarlyReturn,
-                                                paymentIntentId = paymentIntentId,
-                                                onSubmit = onSubmit
-                                            )
-                                        } else {
-                                            // Address is invalid or outside service area
-                                            errorMessage = validationResult.errorMessage ?: "Invalid address. Please select a valid address within Greater Vancouver."
+                                            if (validationResult.isValid && validationResult.coordinates != null) {
+                                                customAddress = Address(
+                                                    lat = selectedAddress!!.latitude,
+                                                    lon = selectedAddress!!.longitude,
+                                                    formattedAddress = selectedAddress!!.formattedAddress
+                                                )
+                                                
+                                                // Submit the return job
+                                                submitReturnJob(
+                                                    selectedDateMillis = selectedDateMillis,
+                                                    returnHour = returnHour,
+                                                    returnMinute = returnMinute,
+                                                    customAddress = customAddress,
+                                                    isEarlyReturn = isEarlyReturn,
+                                                    paymentIntentId = paymentIntentId,
+                                                    onSubmit = onSubmit
+                                                )
+                                            } else {
+                                                // Address is invalid or outside service area
+                                                errorMessage = validationResult.errorMessage ?: "Invalid address. Please select a valid address within Greater Vancouver."
+                                                isValidating = false
+                                            }
+                                        } catch (e: Exception) {
+                                            errorMessage = "Failed to validate address. Please try again."
                                             isValidating = false
                                         }
-                                    } catch (e: Exception) {
-                                        errorMessage = "Failed to validate address. Please try again."
-                                        isValidating = false
                                     }
+                                } else {
+                                    // Use default address
+                                    submitReturnJob(
+                                        selectedDateMillis = selectedDateMillis,
+                                        returnHour = returnHour,
+                                        returnMinute = returnMinute,
+                                        customAddress = null,
+                                        isEarlyReturn = isEarlyReturn,
+                                        paymentIntentId = paymentIntentId,
+                                        onSubmit = onSubmit
+                                    )
                                 }
-                            } else {
-                                // Use default address
-                                submitReturnJob(
-                                    selectedDateMillis = selectedDateMillis,
-                                    returnHour = returnHour,
-                                    returnMinute = returnMinute,
-                                    customAddress = null,
-                                    isEarlyReturn = isEarlyReturn,
-                                    paymentIntentId = paymentIntentId,
-                                    onSubmit = onSubmit
-                                )
-                            }
-                        }
+                            }   
+                        )
                     )
                 }
                 
@@ -542,17 +544,21 @@ private fun DateSelectionStep(
     }
 }
 
+data class AddressSelectionActions(
+    val onUseCustomAddressChange: (Boolean) -> Unit,
+    val onStreetAddressChange: (String) -> Unit,
+    val onAddressSelected: (SelectedAddress) -> Unit,
+    val onConfirm: () -> Unit
+)
+
 @Composable
 private fun AddressSelectionStep(
     defaultAddress: String,
     useCustomAddress: Boolean,
-    onUseCustomAddressChange: (Boolean) -> Unit,
     streetAddress: String,
-    onStreetAddressChange: (String) -> Unit,
     selectedAddress: SelectedAddress?,
-    onAddressSelected: (SelectedAddress) -> Unit,
     isValidating: Boolean,
-    onConfirm: () -> Unit
+    actions: AddressSelectionActions
 ) {
     Column {
         Text(
@@ -570,7 +576,7 @@ private fun AddressSelectionStep(
         ) {
             RadioButton(
                 selected = !useCustomAddress,
-                onClick = { onUseCustomAddressChange(false) }
+                onClick = { actions.onUseCustomAddressChange(false) }
             )
             Spacer(modifier = Modifier.width(8.dp))
             Column {
@@ -595,7 +601,7 @@ private fun AddressSelectionStep(
         ) {
             RadioButton(
                 selected = useCustomAddress,
-                onClick = { onUseCustomAddressChange(true) }
+                onClick = { actions.onUseCustomAddressChange(true) }
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
@@ -617,8 +623,8 @@ private fun AddressSelectionStep(
             
             AddressAutocompleteField(
                 value = streetAddress,
-                onValueChange = onStreetAddressChange,
-                onAddressSelected = onAddressSelected,
+                onValueChange = actions.onStreetAddressChange,
+                onAddressSelected = actions.onAddressSelected,
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -626,7 +632,7 @@ private fun AddressSelectionStep(
         Spacer(modifier = Modifier.height(24.dp))
         
         Button(
-            onClick = onConfirm,
+            onClick = actions.onConfirm,
             enabled = !isValidating && (!useCustomAddress || selectedAddress != null),
             modifier = Modifier.fillMaxWidth()
         ) {

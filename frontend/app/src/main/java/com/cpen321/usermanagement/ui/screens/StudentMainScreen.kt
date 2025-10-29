@@ -234,12 +234,19 @@ fun StudentMainScreen(
         studentJobs = jobUiState.studentJobs,
         orderViewModel = orderViewModel,
         snackBarHostState = snackBarHostState,
-        onProfileClick = onProfileClick,
-        onSuccessMessageShown = mainViewModel::clearSuccessMessage
+        MainContentActions(
+            onProfileClick = onProfileClick,
+            onSuccessMessageShown = mainViewModel::clearSuccessMessage
+        )   
     )
 }
 
 // use shared SocketClientEntryPoint in com.cpen321.usermanagement.di
+
+data class MainContentActions(
+    val onProfileClick: () -> Unit,
+    val onSuccessMessageShown: () -> Unit
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -249,8 +256,7 @@ private fun MainContent(
     studentJobs: List<Job>,
     orderViewModel: OrderViewModel,
     snackBarHostState: SnackbarHostState,
-    onProfileClick: () -> Unit,
-    onSuccessMessageShown: () -> Unit,
+    actions: MainContentActions,
     modifier: Modifier = Modifier
 ) {
     var showCreateOrderSheet by remember { mutableStateOf(false) }
@@ -261,13 +267,13 @@ private fun MainContent(
     Scaffold(
         modifier = modifier,
         topBar = {
-            MainTopBar(onProfileClick = onProfileClick)
+            MainTopBar(onProfileClick = actions.onProfileClick)
         },
         snackbarHost = {
             MainSnackbarHost(
                 hostState = snackBarHostState,
                 successMessage = uiState.successMessage,
-                onSuccessMessageShown = onSuccessMessageShown
+                onSuccessMessageShown = actions.onSuccessMessageShown
             )
         }
     ) { paddingValues ->

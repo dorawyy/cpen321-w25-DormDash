@@ -182,14 +182,15 @@ private fun ProfileContent(
         ProfileBody(
             paddingValues = paddingValues,
             isLoading = uiState.isLoadingProfile,
-            userRole = userRole,
             user = uiState.user,
             isInteractive = isInteractive,
-            onManageProfileClick = callbacks.onManageProfileClick,
-            onManageOrdersClick = callbacks.onManageOrdersClick,
-            onDeleteAccountClick = callbacks.onDeleteAccountClick,
-            onSignOutClick = callbacks.onSignOutClick,
-            onCashOutClick = callbacks.onCashOutClick
+            ProfileMenuActions(
+                onManageProfileClick = callbacks.onManageProfileClick,
+                onManageOrdersClick = callbacks.onManageOrdersClick,
+                onDeleteAccountClick = callbacks.onDeleteAccountClick,
+                onSignOutClick = callbacks.onSignOutClick,
+                onCashOutClick = callbacks.onCashOutClick
+            )
         )
     }
 
@@ -228,18 +229,21 @@ private fun ProfileTopBar(
     )
 }
 
+data class ProfileMenuActions(
+    val onManageProfileClick: () -> Unit,
+    val onManageOrdersClick: () -> Unit,
+    val onDeleteAccountClick: () -> Unit,
+    val onSignOutClick: () -> Unit,
+    val onCashOutClick: () -> Unit
+)
+
 @Composable
 private fun ProfileBody(
     paddingValues: PaddingValues,
     isLoading: Boolean,
-    userRole: String?,
     user: User?,
     isInteractive: Boolean = true,
-    onManageProfileClick: () -> Unit,
-    onManageOrdersClick: () -> Unit,
-    onDeleteAccountClick: () -> Unit,
-    onSignOutClick: () -> Unit,
-    onCashOutClick: () -> Unit,
+    actions: ProfileMenuActions,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -258,26 +262,32 @@ private fun ProfileBody(
                 ProfileMenuItems(
                     user = user,
                     isInteractive = isInteractive,
-                    onManageProfileClick = onManageProfileClick,
-                    onManageOrdersClick  = onManageOrdersClick,
-                    onSignOutClick = onSignOutClick,
-                    onDeleteAccountClick = onDeleteAccountClick,
-                    onCashOutClick = onCashOutClick
+                    ProfileMenuItemActions(
+                        onManageProfileClick = actions.onManageProfileClick,
+                        onManageOrdersClick = actions.onManageOrdersClick,
+                        onSignOutClick = actions.onSignOutClick,
+                        onDeleteAccountClick = actions.onDeleteAccountClick,
+                        onCashOutClick = actions.onCashOutClick
+                    )
                 )
             }
         }
     }
 }
 
+data class ProfileMenuItemActions(
+    val onManageProfileClick: () -> Unit,
+    val onManageOrdersClick: () -> Unit,
+    val onSignOutClick: () -> Unit,
+    val onDeleteAccountClick: () -> Unit,
+    val onCashOutClick: () -> Unit
+)
+
 @Composable
 private fun ProfileMenuItems(
     user: User?,
     isInteractive: Boolean = true,
-    onManageProfileClick: () -> Unit,
-    onManageOrdersClick:  () -> Unit,
-    onSignOutClick: () -> Unit,
-    onDeleteAccountClick: () -> Unit,
-    onCashOutClick: () -> Unit,
+    actions: ProfileMenuItemActions,
     modifier: Modifier = Modifier
 ) {
     val spacing = LocalSpacing.current
@@ -295,21 +305,21 @@ private fun ProfileMenuItems(
         if (userRole?.uppercase() == "MOVER") {
             CreditsSection(
                 credits = user?.credits ?: 0f,
-                onCashOutClick = onCashOutClick
+                onCashOutClick = actions.onCashOutClick
             )
         }
 
         ProfileSection(
             userRole = userRole,
             isInteractive = isInteractive,
-            onManageProfileClick = onManageProfileClick,
-            onManageOrdersClick  = onManageOrdersClick
+            onManageProfileClick = actions.onManageProfileClick,
+            onManageOrdersClick  = actions.onManageOrdersClick
         )
 
         AccountSection(
             isInteractive = isInteractive,
-            onSignOutClick =  onSignOutClick,
-            onDeleteAccountClick = onDeleteAccountClick
+            onSignOutClick =  actions.onSignOutClick,
+            onDeleteAccountClick = actions.onDeleteAccountClick
         )
     }
 }
