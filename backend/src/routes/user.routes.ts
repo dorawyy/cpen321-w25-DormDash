@@ -15,8 +15,8 @@ router.post(
   async (req, res, next) => await userController.updateProfile(req, res, next)
 );
 
-router.delete('/profile', async (req, res, next) => await userController.deleteProfile(req, res, next));
+router.delete('/profile', async (req, res, next) => {await userController.deleteProfile(req, res, next)});
 
-router.post('/cash-out', async (req, res, next) => await userController.cashOut(req, res, next));
+router.post('/cash-out', async (req, res, next) => {await userController.cashOut(req, res, next)});
 
 export default router;

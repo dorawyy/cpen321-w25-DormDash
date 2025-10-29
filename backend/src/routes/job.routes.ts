@@ -7,37 +7,37 @@ const router = Router();
 const jobController = new JobController(jobService);
 
 // GET /api/jobs - Get all jobs
-router.get('/', async (req, res, next) => await jobController.getAllJobs(req, res, next));
+router.get('/', async (req, res, next) => {await jobController.getAllJobs(req, res, next)});
 
 // GET /api/jobs/available - Get available jobs for movers to accept
-router.get('/available', async (req, res, next) => await jobController.getAllAvailableJobs(req, res, next));
+router.get('/available', async (req, res, next) => {await jobController.getAllAvailableJobs(req, res, next)});
 
 // GET /api/jobs/mover - Get jobs ACCEPTED to the authenticated mover
-router.get('/mover', async (req, res, next) => await jobController.getMoverJobs(req, res, next));
+router.get('/mover', async (req, res, next) => {await jobController.getMoverJobs(req, res, next)});
 
 // GET /api/jobs/student - Get jobs for the authenticated student
-router.get('/student', async (req, res, next) => await jobController.getStudentJobs(req, res, next));
+router.get('/student', async (req, res, next) => {await jobController.getStudentJobs(req, res, next)});
 
 // GET /api/jobs/:id - Get specific job by ID
-router.get('/:id', async (req, res, next) => await jobController.getJobById(req, res, next));
+router.get('/:id', async (req, res, next) => {await jobController.getJobById(req, res, next)});
 
 // POST /api/jobs - Create a new job
-router.post('/', async (req, res, next) => await jobController.createJob(req, res, next));
+router.post('/', async (req, res, next) => {await jobController.createJob(req, res, next)});
 
 // PATCH /api/jobs/:id/status - Update job status (assign, start, complete)
-router.patch('/:id/status', async (req, res, next) => await jobController.updateJobStatus(req, res, next));
+router.patch('/:id/status', async (req, res, next) => {await jobController.updateJobStatus(req, res, next)});
 
 // POST /api/jobs/:id/arrived - mover indicates arrival and requests student confirmation
-router.post('/:id/arrived', async (req, res, next) => await jobController.send_arrival_confirmation(req, res, next));
+router.post('/:id/arrived', async (req, res, next) => {await jobController.send_arrival_confirmation(req, res, next)});
 
 // POST /api/jobs/:id/confirm-pickup - student confirms pickup
-router.post('/:id/confirm-pickup', async (req, res, next) => await jobController.confirmPickup(req, res, next));
+router.post('/:id/confirm-pickup', async (req, res, next) => {await jobController.confirmPickup(req, res, next)});
 
 // POST /api/jobs/:id/delivered - mover indicates delivery completed and requests student confirmation (return jobs)
-router.post('/:id/delivered', async (req, res, next) => await jobController.delivered(req, res, next));
+router.post('/:id/delivered', async (req, res, next) => {await jobController.delivered(req, res, next)});
 
 // POST /api/jobs/:id/confirm-delivery - student confirms delivery (return jobs)
-router.post('/:id/confirm-delivery', async (req, res, next) => await jobController.confirmDelivery(req, res, next));
+router.post('/:id/confirm-delivery', async (req, res, next) => {await jobController.confirmDelivery(req, res, next)});
 
 // Apply auth middleware to routes that change state
 router.use(authenticateToken);
