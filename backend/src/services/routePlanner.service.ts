@@ -164,7 +164,7 @@ export class RoutePlannerService {
       // Safely obtain day slots for the given day
       const daySlots = this.getDaySlotsForAvailability(availability, dayOfWeek);
 
-      if (!daySlots || daySlots.length === 0) {
+      if (daySlots.length === 0) {
         return false;
       }
 
@@ -339,7 +339,7 @@ export class RoutePlannerService {
             dayOfWeek
           );
           let withinAvailability = false;
-          if (daySlots && daySlots.length > 0) {
+          if (daySlots.length > 0) {
             withinAvailability = daySlots.some((slot: TimeRange) => {
               const [startTime, endTime] = slot;
               const [startHour, startMin] = startTime.split(':').map(Number);

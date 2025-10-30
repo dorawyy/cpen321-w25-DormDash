@@ -39,7 +39,7 @@ export function initSocket(server: http.Server) {
         .then(user => {
           // store a minimal typed payload on socket.data to avoid using `any`
           socket.data.user = {
-            id: String(user._id ?? user.id ?? ''),
+            id: String(user._id ?? user.id),
             userRole: user.userRole,
           };
           next();

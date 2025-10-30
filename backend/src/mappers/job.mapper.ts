@@ -9,15 +9,15 @@ export class JobMapper {
    * Convert a single Job document to JobResponse DTO
    */
   static toJobResponse(job: Job): JobResponse {
-    const id = job?._id?.toString?.() ?? '';
+  const id = job._id?.toString?.() ?? '';
 
-    const orderId = job.orderId?._id ? job.orderId._id.toString() : '';
+  const orderId = job.orderId?._id?.toString?.() ?? '';
 
     return {
       id,
       orderId,
-      studentId: job.studentId?.toString?.() ?? '',
-      moverId: job.moverId?.toString?.() ?? undefined,
+  studentId: job.studentId?.toString?.() ?? '',
+  moverId: job.moverId?.toString?.() ?? undefined,
       jobType: job.jobType,
       status: job.status,
       volume: job.volume,

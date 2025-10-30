@@ -167,7 +167,7 @@ export class JobService {
 
       // Emit job.created so clients (movers/students) are notified in realtime
       EventEmitter.emitJobCreated(createdJob, {
-        by: reqData.studentId ?? null,
+        by: reqData.studentId,
         ts: new Date().toISOString(),
       });
 
@@ -657,7 +657,7 @@ export class JobService {
       // Emit job.updated for the picked up job
       try {
         EventEmitter.emitJobUpdated(updatedJob, {
-          by: studentId ?? null,
+          by: studentId,
           ts: new Date().toISOString(),
         });
       } catch (emitErr) {
@@ -802,7 +802,7 @@ export class JobService {
       // Emit job.updated for the completed job
       try {
         EventEmitter.emitJobUpdated(updatedJob, {
-          by: studentId ?? null,
+          by: studentId,
           ts: new Date().toISOString(),
         });
       } catch (emitErr) {
