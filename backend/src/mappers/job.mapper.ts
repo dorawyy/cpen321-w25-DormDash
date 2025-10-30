@@ -16,8 +16,8 @@ export class JobMapper {
     return {
       id,
       orderId,
-  studentId: job.studentId?.toString?.() ?? '',
-  moverId: job.moverId?.toString?.() ?? undefined,
+      studentId: job.studentId?.toString?.() ?? '',
+      moverId: job.moverId?.toString?.(),
       jobType: job.jobType,
       status: job.status,
       volume: job.volume,

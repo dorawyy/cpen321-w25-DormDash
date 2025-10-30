@@ -406,8 +406,7 @@ export class RoutePlannerService {
         throw new Error('Selected job is null or undefined');
       }
 
-      const jobDuration =
-        selectedJob.jobDuration ?? this.estimateJobDuration(selectedJob.volume);
+      const jobDuration = selectedJob.jobDuration;
 
       const pickupLoc = selectedJob.pickupAddress;
       const dropoffLoc = selectedJob.dropoffAddress;
@@ -416,8 +415,8 @@ export class RoutePlannerService {
         throw new Error('Pickup or dropoff location is missing');
       }
 
-      const travelTime = selectedJob.travelTime ?? 0;
-      const waitingTime = selectedJob.waitingTime ?? 0;
+  const travelTime = selectedJob.travelTime;
+  const waitingTime = selectedJob.waitingTime;
 
       route.push({
         jobId: String(selectedJob.id),
@@ -432,7 +431,7 @@ export class RoutePlannerService {
         estimatedStartTime: selectedJob.scheduledTime.toISOString(),
         estimatedDuration: Math.round(jobDuration),
         distanceFromPrevious: Math.round((selectedJob.distance || 0) * 10) / 10,
-        travelTimeFromPrevious: Math.round(travelTime || 0),
+        travelTimeFromPrevious: Math.round(travelTime),
       });
 
       // Advance current time to end of job (start at scheduledTime)
@@ -441,7 +440,7 @@ export class RoutePlannerService {
       );
 
       // Increase total elapsed time by travel + waiting + job duration
-      totalElapsedTime += (travelTime || 0) + (waitingTime || 0) + jobDuration;
+  totalElapsedTime += travelTime + waitingTime + jobDuration;
 
       // Remove selected job from remaining jobs
       const jobIndex = remainingJobs.findIndex(

@@ -462,36 +462,36 @@ export class JobService {
         await this.addCreditsToMover(updatedJob);
 
         try {
-          if (job.jobType === JobType.STORAGE) {
-            await this.orderService.updateOrderStatus(
-              orderObjectId,
-              OrderStatus.IN_STORAGE,
-              extractObjectIdString(updatedJob.moverId)
-            );
-            // notfication should not depend on socket emission success so its called after db update
-            await notificationService.sendJobStatusNotification(
-              new mongoose.Types.ObjectId(jobId),
-              JobStatus.COMPLETED
-            );
-            logger.info(
-              `Order ${orderObjectId.toString()} updated to IN_STORAGE via OrderService`
-            );
-          } else if (job.jobType === JobType.RETURN) {
-            // For RETURN jobs, mark order as RETURNED (not COMPLETED yet)
-            // Student will need to confirm delivery before order is COMPLETED
-            await this.orderService.updateOrderStatus(
-              orderObjectId,
-              OrderStatus.RETURNED,
-              extractObjectIdString(updatedJob.moverId)
-            );
-            await notificationService.sendJobStatusNotification(
-              new mongoose.Types.ObjectId(jobId),
-              JobStatus.COMPLETED
-            );
-            logger.info(
-              `Order ${orderObjectId.toString()} updated to RETURNED via OrderService`
-            );
-          }
+            if (job.jobType === JobType.STORAGE) {
+                await this.orderService.updateOrderStatus(
+                orderObjectId,
+                OrderStatus.IN_STORAGE,
+                extractObjectIdString(updatedJob.moverId)
+                );
+                // notfication should not depend on socket emission success so its called after db update
+                await notificationService.sendJobStatusNotification(
+                new mongoose.Types.ObjectId(jobId),
+                JobStatus.COMPLETED
+                );
+                logger.info(
+                `Order ${orderObjectId.toString()} updated to IN_STORAGE via OrderService`
+                );
+            } else {
+                // For RETURN jobs, mark order as RETURNED (not COMPLETED yet)
+                // Student will need to confirm delivery before order is COMPLETED
+                await this.orderService.updateOrderStatus(
+                orderObjectId,
+                OrderStatus.RETURNED,
+                extractObjectIdString(updatedJob.moverId)
+                );
+                await notificationService.sendJobStatusNotification(
+                new mongoose.Types.ObjectId(jobId),
+                JobStatus.COMPLETED
+                );
+                logger.info(
+                `Order ${orderObjectId.toString()} updated to RETURNED via OrderService`
+                );
+            }
         } catch (err) {
           logger.error(
             `Failed to update order status after job completion for orderId=${orderObjectId.toString()}:`,
