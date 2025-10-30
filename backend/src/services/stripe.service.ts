@@ -22,7 +22,7 @@ export class StripeService {
     /**
      * Create a payment intent for the given amount in CAD
      */
-    async createPaymentIntent(amount: number, currency: string = 'CAD'): Promise<PaymentIntent> {
+    async createPaymentIntent(amount: number, currency: 'CAD'): Promise<PaymentIntent> {
         try {
             const stripe = this.initializeStripe();
             
