@@ -43,8 +43,15 @@ class JobRepository @Inject constructor(
             } else {
                 emit(Resource.Error("Failed to load available jobs"))
             }
-        } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "Unknown error occurred"))
+        } catch (e: java.io.IOException) {
+            android.util.Log.e("JobRepository", "Network error loading available jobs", e)
+            emit(Resource.Error(e.message ?: "Network error occurred"))
+        } catch (e: retrofit2.HttpException) {
+            android.util.Log.e("JobRepository", "HTTP error loading available jobs: ${e.code()}", e)
+            emit(Resource.Error(e.message ?: "Server error occurred"))
+        } catch (e: com.google.gson.JsonSyntaxException) {
+            android.util.Log.e("JobRepository", "JSON parsing error in job response", e)
+            emit(Resource.Error("Error parsing job data"))
         }
     }
     

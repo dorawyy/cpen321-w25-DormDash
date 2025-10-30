@@ -234,7 +234,7 @@ fun StudentMainScreen(
         studentJobs = jobUiState.studentJobs,
         orderViewModel = orderViewModel,
         snackBarHostState = snackBarHostState,
-        MainContentActions(
+        StudentMainContentActions(
             onProfileClick = onProfileClick,
             onSuccessMessageShown = mainViewModel::clearSuccessMessage
         )   
@@ -243,7 +243,7 @@ fun StudentMainScreen(
 
 // use shared SocketClientEntryPoint in com.cpen321.usermanagement.di
 
-data class MainContentActions(
+data class StudentMainContentActions(
     val onProfileClick: () -> Unit,
     val onSuccessMessageShown: () -> Unit
 )
@@ -256,7 +256,7 @@ private fun MainContent(
     studentJobs: List<Job>,
     orderViewModel: OrderViewModel,
     snackBarHostState: SnackbarHostState,
-    actions: MainContentActions,
+    actions: StudentMainContentActions,
     modifier: Modifier = Modifier
 ) {
     var showCreateOrderSheet by remember { mutableStateOf(false) }

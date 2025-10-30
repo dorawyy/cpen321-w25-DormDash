@@ -163,7 +163,7 @@ fun CreateReturnJobBottomSheet(
                 }
                 
                 ReturnJobStep.ADDRESS -> {
-                    AddressSelectionStep(
+                    AddressSelectionStep (
                         defaultAddress = activeOrder.returnAddress?.formattedAddress 
                             ?: activeOrder.studentAddress.formattedAddress,
                         useCustomAddress = useCustomAddress,
@@ -190,18 +190,18 @@ fun CreateReturnJobBottomSheet(
                                 selectedAddress = address
                                 addressInput = address.formattedAddress
                             },
-                            onConfirm = {
+                            onConfirm = onConfirm@{
                                 if (useCustomAddress) {
                                     if (selectedAddress == null) {
-                                        return@AddressSelectionStep
+                                        return@onConfirm
                                     }
-                                    
+
                                     isValidating = true
                                     coroutineScope.launch {
                                         try {
                                             // Validate that the selected address is within Vancouver area
                                             val validationResult = LocationUtils.validateAndGeocodeAddress(
-                                                context, 
+                                                context,
                                                 selectedAddress!!.formattedAddress
                                             )
 
@@ -211,7 +211,7 @@ fun CreateReturnJobBottomSheet(
                                                     lon = selectedAddress!!.longitude,
                                                     formattedAddress = selectedAddress!!.formattedAddress
                                                 )
-                                                
+
                                                 // Submit the return job
                                                 submitReturnJob(
                                                     selectedDateMillis = selectedDateMillis,
@@ -244,7 +244,7 @@ fun CreateReturnJobBottomSheet(
                                         onSubmit = onSubmit
                                     )
                                 }
-                            }   
+                            }
                         )
                     )
                 }

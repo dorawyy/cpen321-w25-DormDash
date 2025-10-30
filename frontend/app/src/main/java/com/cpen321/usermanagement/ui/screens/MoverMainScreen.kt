@@ -65,7 +65,7 @@ fun MoverMainScreen(
             error = jobUiState.error,
             snackBarHostState = snackBarHostState
         ),
-        MainContentActions(
+        MoverMainContentActions(
             onProfileClick = onProfileClick,
             onSuccessMessageShown = mainViewModel::clearSuccessMessage,
             onJobDetails = { job -> onJobDetails(job.id) },
@@ -85,7 +85,7 @@ data class MainContentState(
     val snackBarHostState: SnackbarHostState
 )
 
-data class MainContentActions(
+data class MoverMainContentActions(
     val onProfileClick: () -> Unit,
     val onSuccessMessageShown: () -> Unit,
     val onJobDetails: (com.cpen321.usermanagement.data.local.models.Job) -> Unit,
@@ -96,7 +96,7 @@ data class MainContentActions(
 @Composable
 private fun MainContent(
     state: MainContentState,
-    actions: MainContentActions,
+    actions: MoverMainContentActions,
     modifier: Modifier = Modifier
 ) {
     var currentScreen by remember { mutableStateOf(MoverScreen.CURRENT_JOBS) }

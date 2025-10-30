@@ -1,6 +1,7 @@
 package com.cpen321.usermanagement.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
+import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.cpen321.usermanagement.data.remote.dto.JobInRoute
 import com.cpen321.usermanagement.data.remote.dto.SmartRouteData
@@ -81,8 +82,10 @@ class SmartRouteViewModel @Inject constructor(
                     }
                 }
             }
-        } catch (e: Exception) {
-            android.util.Log.e("SmartRouteViewModel", "Error handling job.updated event", e)
+        } catch (e: org.json.JSONException) {
+            Log.e("SmartRouteViewModel", "Error parsing job.updated event JSON", e)
+        } catch (e: NullPointerException) {
+            Log.e("SmartRouteViewModel", "Missing required job data in event", e)
         }
     }
 

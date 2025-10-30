@@ -64,8 +64,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 val errorBody = response.errorBody()?.string()
                 Log.e(TAG, "❌ Failed to clear FCM token - Status: ${response.code()}, Error: $errorBody")
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Exception while clearing FCM token: ${e.message}", e)
+        } catch (e: java.io.IOException) {
+            Log.e(TAG, "❌ Network error clearing FCM token", e)
+            throw e
+        } catch (e: retrofit2.HttpException) {
+            Log.e(TAG, "❌ HTTP error clearing FCM token: ${e.code()}", e)
             throw e
         }
     }

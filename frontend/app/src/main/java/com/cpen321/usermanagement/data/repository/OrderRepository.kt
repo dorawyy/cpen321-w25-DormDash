@@ -126,7 +126,14 @@ class OrderRepository @Inject constructor(
             } else {
                 Result.failure(Exception("Failed to get quote: ${response.message()}"))
             }
-        } catch (e: Exception) {
+        } catch (e: java.io.IOException) {
+            android.util.Log.e("OrderRepository", "Network error getting quote", e)
+            Result.failure(e)
+        } catch (e: retrofit2.HttpException) {
+            android.util.Log.e("OrderRepository", "HTTP error getting quote: ${e.code()}", e)
+            Result.failure(e)
+        } catch (e: com.google.gson.JsonSyntaxException) {
+            android.util.Log.e("OrderRepository", "JSON parsing error in quote response", e)
             Result.failure(e)
         }
     }
