@@ -80,10 +80,10 @@ export class RouteController {
             : 'No jobs available matching your schedule',
         data: result,
       } as SmartRouteResponse);
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Error in getSmartRoute:', error);
 
-      if (error.name === 'ZodError') {
+      if (error instanceof Error && error.name === 'ZodError') {
         res.status(400).json({
           message: 'Invalid request parameters',
         } as SmartRouteResponse);
