@@ -156,7 +156,7 @@ export class JobService {
             };
         } catch (error) {
             logger.error("Error in getAllJobs service:", error);
-            throw new InternalServerError("Failed to get all jobs", error as Error);
+            throw new InternalServerError('Internal server error',error as Error);
         }
     }
 
@@ -169,7 +169,7 @@ export class JobService {
             };
         } catch (error) {
             logger.error("Error in getAllAvailableJobs service:", error);
-            throw new InternalServerError("Failed to get available jobs", error as Error);
+            throw new InternalServerError('Internal server error', error as Error);
         }
     }
 
@@ -182,7 +182,7 @@ export class JobService {
             };
         } catch (error) {
             logger.error("Error in getMoverJobs service:", error);
-            throw new InternalServerError("Failed to get mover jobs", error as Error);
+            throw new InternalServerError('Internal server error', error as Error);
         }
     }
 
@@ -195,7 +195,7 @@ export class JobService {
             };
         } catch (error) {
             logger.error("Error in getStudentJobs service:", error);
-            throw new InternalServerError("Failed to get student jobs", error as Error);
+            throw new InternalServerError('Internal server error', error as Error);
         }
     }
 
@@ -214,7 +214,7 @@ export class JobService {
         } catch (error) {
             logger.error("Error in getJobById service:", error);
             if (error instanceof JobNotFoundError) throw error;
-            throw new InternalServerError("Failed to get job", error as Error);
+            throw new InternalServerError('Internal server error', error as Error);
         }
     }
 

@@ -49,7 +49,7 @@ export class StripeService {
             };
         } catch (error: unknown) {
             logger.error('Error creating payment intent:', error);
-            throw new Error(`Failed to create payment intent: ${(error as Error).message || error}`);
+            throw new Error(`Failed to create payment intent: ${(error as Error).message}`);
         }
     }
 
@@ -128,7 +128,7 @@ export class StripeService {
             };
         } catch (error: unknown) {
             logger.error('Error creating refund:', error);
-            throw new Error(`Failed to refund payment: ${(error as Error).message || error}`);
+            throw new Error(`Failed to refund payment: ${(error as Error).message}`);
         }
     }
 

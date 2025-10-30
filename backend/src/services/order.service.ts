@@ -116,7 +116,7 @@ export class OrderService {
                 return OrderMapper.toCreateOrderResponse(createdOrder);
             } catch (err: unknown) {
                 // If duplicate key error due to race/uniqueness, try to find existing by idempotencyKey or by student+status
-                const isDup = (err as { code?: number })?.code === 11000;
+                const isDup = (err as { code?: number }).code === 11000;
                 if (isDup) {
                     if (idempotencyKey) {
                         const byKey = await orderModel.findByIdempotencyKey(idempotencyKey);
