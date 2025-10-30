@@ -86,8 +86,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                     val errorBody = response.errorBody()?.string()
                     Log.e(TAG, "❌ Failed to update FCM token - Status: ${response.code()}, Error: $errorBody")
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "❌ Exception while updating FCM token: ${e.message}", e)
+            } catch (e: java.io.IOException) {
+                Log.e(TAG, "❌ Network error while updating FCM token", e)
+            } catch (e: retrofit2.HttpException) {
+                Log.e(TAG, "❌ HTTP error while updating FCM token: ${e.code()}", e)
             }
         }
     }

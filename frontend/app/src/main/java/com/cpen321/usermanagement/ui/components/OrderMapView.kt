@@ -41,7 +41,12 @@ fun OrderMapView(
                 val location = LocationUtils.geocodeAddress(context, address)
                 mapLocation = location ?: LocationUtils.getFallbackCoordinates(address)
                 hasError = location == null
-            } catch (e: Exception) {
+            } catch (e: java.io.IOException) {
+                // Network or geocoder I/O issue - fall back to approximate coords
+                mapLocation = LocationUtils.getFallbackCoordinates(address)
+                hasError = true
+            } catch (e: IllegalArgumentException) {
+                // Invalid address input provided to geocoder
                 mapLocation = LocationUtils.getFallbackCoordinates(address)
                 hasError = true
             } finally {

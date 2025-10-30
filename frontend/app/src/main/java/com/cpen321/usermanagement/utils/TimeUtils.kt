@@ -114,7 +114,7 @@ object TimeUtils {
     fun parseTime24(timeString: String): LocalTime? {
         return try {
             LocalTime.parse(timeString, DateTimeFormatter.ofPattern("HH:mm"))
-        } catch (e: Exception) {
+        } catch (e: java.time.format.DateTimeParseException) {
             null
         }
     }

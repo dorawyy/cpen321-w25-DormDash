@@ -84,8 +84,6 @@ class SmartRouteViewModel @Inject constructor(
             }
         } catch (e: org.json.JSONException) {
             Log.e("SmartRouteViewModel", "Error parsing job.updated event JSON", e)
-        } catch (e: NullPointerException) {
-            Log.e("SmartRouteViewModel", "Missing required job data in event", e)
         }
     }
 

@@ -227,8 +227,11 @@ fun CreateReturnJobBottomSheet(
                                                 errorMessage = validationResult.errorMessage ?: "Invalid address. Please select a valid address within Greater Vancouver."
                                                 isValidating = false
                                             }
-                                        } catch (e: Exception) {
-                                            errorMessage = "Failed to validate address. Please try again."
+                                        } catch (e: java.io.IOException) {
+                                            errorMessage = "Network error validating address. Please check your connection and try again."
+                                            isValidating = false
+                                        } catch (e: IllegalArgumentException) {
+                                            errorMessage = "Invalid address format. Please enter a valid address."
                                             isValidating = false
                                         }
                                     }
@@ -300,8 +303,11 @@ fun CreateReturnJobBottomSheet(
                                             isProcessingPayment = false
                                         }
                                     )
-                                } catch (e: Exception) {
-                                    // Handle payment error
+                                } catch (e: java.io.IOException) {
+                                    // Network error during payment
+                                    isProcessingPayment = false
+                                } catch (e: retrofit2.HttpException) {
+                                    // Payment server error
                                     isProcessingPayment = false
                                 }
                             }

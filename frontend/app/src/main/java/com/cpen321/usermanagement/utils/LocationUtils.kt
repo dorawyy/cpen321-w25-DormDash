@@ -110,13 +110,23 @@ object LocationUtils {
                     formattedAddress = addressLines.ifEmpty { address },
                     errorMessage = null
                 )
-            } catch (e: Exception) {
+            } catch (e: java.io.IOException) {
+                // Network/geocoder I/O issue
                 e.printStackTrace()
                 return@withContext AddressValidationResult(
                     isValid = false,
                     coordinates = null,
                     formattedAddress = null,
-                    errorMessage = "Failed to validate address. Please check your internet connection and try again."
+                    errorMessage = "Network error validating address. Please check your connection and try again."
+                )
+            } catch (e: IllegalArgumentException) {
+                // Bad input to Geocoder
+                e.printStackTrace()
+                return@withContext AddressValidationResult(
+                    isValid = false,
+                    coordinates = null,
+                    formattedAddress = null,
+                    errorMessage = "Invalid address format. Please enter a valid address."
                 )
             }
         }
@@ -144,7 +154,10 @@ object LocationUtils {
                 } else {
                     null
                 }
-            } catch (e: Exception) {
+            } catch (e: java.io.IOException) {
+                e.printStackTrace()
+                null
+            } catch (e: IllegalArgumentException) {
                 e.printStackTrace()
                 null
             }

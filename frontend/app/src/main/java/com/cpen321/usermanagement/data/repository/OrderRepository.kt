@@ -174,7 +174,14 @@ class OrderRepository @Inject constructor(
                 Result.failure(Exception("Failed to place order: ${response.message()}"))
             }
 
-        } catch (e: Exception) {
+        } catch (e: java.io.IOException) {
+            android.util.Log.e("OrderRepository", "Network error submitting order", e)
+            Result.failure(e)
+        } catch (e: retrofit2.HttpException) {
+            android.util.Log.e("OrderRepository", "HTTP error submitting order: ${e.code()}", e)
+            Result.failure(e)
+        } catch (e: com.google.gson.JsonSyntaxException) {
+            android.util.Log.e("OrderRepository", "JSON parsing error submitting order", e)
             Result.failure(e)
         } finally {
             isSubmitting = false
@@ -198,7 +205,11 @@ class OrderRepository @Inject constructor(
             } else {
                 null
             }
-        } catch (e: Exception) {
+        } catch (e: java.io.IOException) {
+                null
+            } catch (e: retrofit2.HttpException) {
+                null
+            } catch (e: com.google.gson.JsonSyntaxException) {
                 null
             }
     }

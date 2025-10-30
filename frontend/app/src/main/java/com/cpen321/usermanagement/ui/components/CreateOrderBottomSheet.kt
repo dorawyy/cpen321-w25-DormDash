@@ -151,10 +151,19 @@ fun CreateOrderBottomSheet(
                                         currentStep = OrderCreationStep.ADDRESS_CAPTURE
                                     }
                                 )
-                            } catch (e: Exception) {
-                                errorMessage = "Failed to get pricing. Please try again."
-                                currentStep = OrderCreationStep.ADDRESS_CAPTURE
-                            }
+                            } catch (e: java.io.IOException) {
+                                    // Network issue
+                                    errorMessage = "Network error while fetching pricing. Please check your connection and try again."
+                                    currentStep = OrderCreationStep.ADDRESS_CAPTURE
+                                } catch (e: retrofit2.HttpException) {
+                                    // HTTP error from backend
+                                    errorMessage = "Server error while fetching pricing. Please try again later."
+                                    currentStep = OrderCreationStep.ADDRESS_CAPTURE
+                                } catch (e: com.google.gson.JsonSyntaxException) {
+                                    // Malformed response
+                                    errorMessage = "Unexpected response from server. Please try again."
+                                    currentStep = OrderCreationStep.ADDRESS_CAPTURE
+                                }
                         }
                     },
                     onError = { error ->
@@ -263,8 +272,16 @@ fun CreateOrderBottomSheet(
                                     errorMessage = "Payment request timed out. Please check your connection and try again."
                                     currentStep = OrderCreationStep.PAYMENT_DETAILS
                                     isSubmitting = false
-                                } catch (e: Exception) {
-                                    errorMessage = "Payment failed: ${e.message ?: "Unknown error"}. Please try again."
+                                } catch (e: java.io.IOException) {
+                                    errorMessage = "Network error during payment. Please check your connection and try again."
+                                    currentStep = OrderCreationStep.PAYMENT_DETAILS
+                                    isSubmitting = false
+                                } catch (e: retrofit2.HttpException) {
+                                    errorMessage = "Payment server error. Please try again later."
+                                    currentStep = OrderCreationStep.PAYMENT_DETAILS
+                                    isSubmitting = false
+                                } catch (e: com.google.gson.JsonSyntaxException) {
+                                    errorMessage = "Unexpected response during payment. Please try again."
                                     currentStep = OrderCreationStep.PAYMENT_DETAILS
                                     isSubmitting = false
                                 }
@@ -370,8 +387,13 @@ private fun AddressCaptureStep(
                             onError(validationResult.errorMessage ?: "Invalid address. Please select a valid address within Greater Vancouver.")
                             isValidating = false
                         }
-                    } catch (e: Exception) {
-                        onError("Failed to validate address. Please try again.")
+                    } catch (e: java.io.IOException) {
+                        // Network / Geocoder I/O error
+                        onError("Network error validating address. Please check your connection and try again.")
+                        isValidating = false
+                    } catch (e: IllegalArgumentException) {
+                        // Bad input passed to Geocoder
+                        onError("Invalid address format. Please enter a valid address.")
                         isValidating = false
                     }
                 }

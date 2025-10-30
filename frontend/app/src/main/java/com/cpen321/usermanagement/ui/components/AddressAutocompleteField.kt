@@ -168,19 +168,22 @@ private fun DebouncedAddressSearch(
         if (query.length >= minLength) {
             callbacks.onStart()
             delay(debounceMs)
-            try {
-                val preds = fetchAddressPredictions(
-                    placesClient = placesClient,
-                    query = query,
-                    context = context
-                )
-                callbacks.onResult(preds)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                callbacks.onError()
-            } finally {
-                callbacks.onFinished()
-            }
+                try {
+                    val preds = fetchAddressPredictions(
+                        placesClient = placesClient,
+                        query = query,
+                        context = context
+                    )
+                    callbacks.onResult(preds)
+                } catch (e: com.google.android.gms.common.api.ApiException) {
+                    e.printStackTrace()
+                    callbacks.onError()
+                } catch (e: java.io.IOException) {
+                    e.printStackTrace()
+                    callbacks.onError()
+                } finally {
+                    callbacks.onFinished()
+                }
         } else {
             callbacks.onResult(emptyList())
             callbacks.onError()
@@ -203,7 +206,9 @@ private suspend fun handleSuggestionClick(
             controller.setShowSuggestions(false)
             controller.setSuggestions(emptyList())
         }
-    } catch (e: Exception) {
+    } catch (e: com.google.android.gms.common.api.ApiException) {
+        e.printStackTrace()
+    } catch (e: java.io.IOException) {
         e.printStackTrace()
     }
 }
@@ -332,7 +337,10 @@ private suspend fun fetchAddressPredictions(
                 fullText = prediction.getFullText(null).toString()
             )
         }
-    } catch (e: Exception) {
+    } catch (e: com.google.android.gms.common.api.ApiException) {
+        e.printStackTrace()
+        return emptyList()
+    } catch (e: java.io.IOException) {
         e.printStackTrace()
         return emptyList()
     }
@@ -364,7 +372,9 @@ private suspend fun fetchPlaceDetails(
                 longitude = latLng.longitude
             )
         }
-    } catch (e: Exception) {
+    } catch (e: com.google.android.gms.common.api.ApiException) {
+        e.printStackTrace()
+    } catch (e: java.io.IOException) {
         e.printStackTrace()
     }
     return null

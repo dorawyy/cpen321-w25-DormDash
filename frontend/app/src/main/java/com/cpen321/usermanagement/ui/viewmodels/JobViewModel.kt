@@ -72,8 +72,6 @@ class JobViewModel @Inject constructor(
                 }
             } catch (e: org.json.JSONException) {
                 android.util.Log.e("JobViewModel", "Error parsing job data JSON", e)
-            } catch (e: NullPointerException) {
-                android.util.Log.e("JobViewModel", "Missing required job data", e)
             }
         }
     }
@@ -130,8 +128,6 @@ class JobViewModel @Inject constructor(
             }
         } catch (e: org.json.JSONException) {
             android.util.Log.e("JobViewModel", "Error parsing job.updated event JSON", e)
-        } catch (e: NullPointerException) {
-            android.util.Log.e("JobViewModel", "Missing required job data in event", e)
         }
     }
     

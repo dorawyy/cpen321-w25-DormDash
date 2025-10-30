@@ -245,8 +245,11 @@ private fun ActiveOrderStatusContent(
                         "&details=$details" +
                         "&location=$location" +
                         "&ctz=America/Los_Angeles"
-                } catch (e: Exception) {
+                } catch (e: java.time.format.DateTimeParseException) {
                     println("Error parsing date for calendar: ${e.message}")
+                    null
+                } catch (e: IllegalArgumentException) {
+                    println("Invalid date value for calendar: ${e.message}")
                     null
                 }
 
