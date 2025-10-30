@@ -65,7 +65,7 @@ export const authenticateToken: RequestHandler = (
 
       next(error);
     }
-  })().catch(next);
+  })().catch((err: unknown) => next(err));
 };
 
 /* New helper used by socket.io auth

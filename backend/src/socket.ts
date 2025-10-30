@@ -4,6 +4,7 @@ import http from 'http';
 import logger from './utils/logger.util';
 import { verifyTokenString } from './middleware/auth.middleware'; // optional helper
 import SocketData from './types/socket.types';
+import { unknown } from 'zod';
 
 let io:
   | Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, SocketData>
@@ -43,8 +44,8 @@ export function initSocket(server: http.Server) {
           };
           next();
         })
-        .catch(err => {
-          logger.warn('Socket auth error:', String(err?.message ?? err));
+        .catch((err: unknown) => {
+          logger.warn('Socket auth error:', String(err));
           next(new Error('Authentication error')); // client receives connect_error
         });
     }

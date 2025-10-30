@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { NextFunction, Router } from 'express';
 import { JobController } from '../controllers/job.controller';
 import { jobService } from '../services/job.service';
 import { authenticateToken } from '../middleware/auth.middleware';
@@ -37,27 +37,27 @@ router.post('/', (req, res, next) => {
 });
 
 // PATCH /api/jobs/:id/status - Update job status (assign, start, complete)
-router.patch('/:id/status', (req, res, next) => {
+router.patch('/:id/status', (req, res, next: NextFunction) => {
   jobController.updateJobStatus(req, res, next).catch(next);
 });
 
 // POST /api/jobs/:id/arrived - mover indicates arrival and requests student confirmation
-router.post('/:id/arrived', (req, res, next) => {
+router.post('/:id/arrived', (req, res, next: NextFunction) => {
   jobController.send_arrival_confirmation(req, res, next).catch(next);
 });
 
 // POST /api/jobs/:id/confirm-pickup - student confirms pickup
-router.post('/:id/confirm-pickup', (req, res, next) => {
+router.post('/:id/confirm-pickup', (req, res, next: NextFunction) => {
   jobController.confirmPickup(req, res, next).catch(next);
 });
 
 // POST /api/jobs/:id/delivered - mover indicates delivery completed and requests student confirmation (return jobs)
-router.post('/:id/delivered', (req, res, next) => {
+router.post('/:id/delivered', (req, res, next: NextFunction) => {
   jobController.delivered(req, res, next).catch(next);
 });
 
 // POST /api/jobs/:id/confirm-delivery - student confirms delivery (return jobs)
-router.post('/:id/confirm-delivery', (req, res, next) => {
+router.post('/:id/confirm-delivery', (req, res, next: NextFunction) => {
   jobController.confirmDelivery(req, res, next).catch(next);
 });
 
