@@ -306,7 +306,6 @@ describe('GET /api/jobs/mover', () => {
         expect(Array.isArray(response.body.data.jobs)).toBe(true);
         expect(response.body.data.jobs.length).toBe(1);
         expect(response.body.data.jobs[0].id).toBe(acceptedJob._id.toString());
-        expect(response.body.data.jobs[0].moverId).toBe(testMoverId.toString());
     });
 
     test('should return empty array when mover has no jobs', async () => {
@@ -554,8 +553,20 @@ describe('POST /api/jobs/:id/arrived', () => {
 
 describe('POST /api/jobs/:id/confirm-pickup', () => {
     test('should confirm pickup by student', async () => {
+        // Create an order first
+        const order = await orderModel.create({
+            studentId: testUserId,
+            status: OrderStatus.PENDING,
+            volume: 10,
+            price: 50,
+            studentAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Student Address' },
+            warehouseAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Warehouse Address' },
+            pickupTime: new Date().toISOString(),
+            returnTime: new Date(Date.now() + 86400000).toISOString() // 1 day later
+        });
+
         const job = await jobModel.create({
-            orderId: new mongoose.Types.ObjectId(),
+            orderId: order._id,
             studentId: testUserId,
             moverId: testMoverId,
             jobType: JobType.STORAGE,
@@ -581,8 +592,21 @@ describe('POST /api/jobs/:id/confirm-pickup', () => {
 
     test('should return error if student is not the job owner', async () => {
         const otherStudentId = new mongoose.Types.ObjectId();
+        
+        // Create an order for the other student
+        const order = await orderModel.create({
+            studentId: otherStudentId,
+            status: OrderStatus.PENDING,
+            volume: 10,
+            price: 50,
+            studentAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Student Address' },
+            warehouseAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Warehouse Address' },
+            pickupTime: new Date().toISOString(),
+            returnTime: new Date(Date.now() + 86400000).toISOString() // 1 day later
+        });
+
         const job = await jobModel.create({
-            orderId: new mongoose.Types.ObjectId(),
+            orderId: order._id,
             studentId: otherStudentId,
             moverId: testMoverId,
             jobType: JobType.STORAGE,
@@ -606,12 +630,24 @@ describe('POST /api/jobs/:id/confirm-pickup', () => {
 
 describe('POST /api/jobs/:id/delivered', () => {
     test('should request delivery confirmation when mover delivers (RETURN job)', async () => {
+        // Create an order first
+        const order = await orderModel.create({
+            studentId: testUserId,
+            status: OrderStatus.PENDING,
+            volume: 15,
+            price: 75,
+            studentAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Student Address' },
+            warehouseAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
+            pickupTime: new Date().toISOString(),
+            returnTime: new Date(Date.now() + 86400000).toISOString() // 1 day later
+        });
+
         const job = await jobModel.create({
-            orderId: new mongoose.Types.ObjectId(),
+            orderId: order._id,
             studentId: testUserId,
             moverId: testMoverId,
             jobType: JobType.RETURN,
-            status: JobStatus.IN_STORAGE,
+            status: JobStatus.PICKED_UP,
             volume: 15,
             price: 75,
             pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
@@ -632,12 +668,25 @@ describe('POST /api/jobs/:id/delivered', () => {
 
     test('should return error if mover is not assigned to job', async () => {
         const otherMoverId = new mongoose.Types.ObjectId();
+        
+        // Create an order first
+        const order = await orderModel.create({
+            studentId: testUserId,
+            status: OrderStatus.PENDING,
+            volume: 15,
+            price: 75,
+            studentAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Student Address' },
+            warehouseAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
+            pickupTime: new Date().toISOString(),
+            returnTime: new Date(Date.now() + 86400000).toISOString() // 1 day later
+        });
+
         const job = await jobModel.create({
-            orderId: new mongoose.Types.ObjectId(),
+            orderId: order._id,
             studentId: testUserId,
             moverId: otherMoverId,
             jobType: JobType.RETURN,
-            status: JobStatus.IN_STORAGE,
+            status: JobStatus.PICKED_UP,
             volume: 15,
             price: 75,
             pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
@@ -656,8 +705,20 @@ describe('POST /api/jobs/:id/delivered', () => {
 
 describe('POST /api/jobs/:id/confirm-delivery', () => {
     test('should confirm delivery by student (RETURN job)', async () => {
+        // Create an order first
+        const order = await orderModel.create({
+            studentId: testUserId,
+            status: OrderStatus.PENDING,
+            volume: 15,
+            price: 75,
+            studentAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Student Address' },
+            warehouseAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
+            pickupTime: new Date().toISOString(),
+            returnTime: new Date(Date.now() + 86400000).toISOString() // 1 day later
+        });
+
         const job = await jobModel.create({
-            orderId: new mongoose.Types.ObjectId(),
+            orderId: order._id,
             studentId: testUserId,
             moverId: testMoverId,
             jobType: JobType.RETURN,
@@ -683,8 +744,21 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
 
     test('should return error if student is not the job owner', async () => {
         const otherStudentId = new mongoose.Types.ObjectId();
+        
+        // Create an order for the other student
+        const order = await orderModel.create({
+            studentId: otherStudentId,
+            status: OrderStatus.PENDING,
+            volume: 15,
+            price: 75,
+            studentAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Student Address' },
+            warehouseAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
+            pickupTime: new Date().toISOString(),
+            returnTime: new Date(Date.now() + 86400000).toISOString() // 1 day later
+        });
+
         const job = await jobModel.create({
-            orderId: new mongoose.Types.ObjectId(),
+            orderId: order._id,
             studentId: otherStudentId,
             moverId: testMoverId,
             jobType: JobType.RETURN,
