@@ -111,6 +111,39 @@ describe('POST /api/order/create-return-Job - No Mocks', () => {
 
 describe('GET /api/order/all-orders - No Mocks', () => {
   test('should return all orders for authenticated user', async () => {
+    // First, create a couple of orders
+    const pickupTime = new Date().toISOString();
+    const returnTime = new Date(Date.now() + 86400000).toISOString(); // 1 day later
+    await request(app)
+      .post('/api/order')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        studentId: testUserId,
+        volume: 10,
+        totalPrice: 50,
+        studentAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Test Address' },
+        warehouseAddress: { lat: 55.2606, lon: -222.1133, formattedAddress: 'Warehouse Address' },
+        pickupTime: pickupTime,
+        returnTime: returnTime,
+      })
+      .expect(201);
+
+    await request(app)
+      .post('/api/order')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        studentId: testUserId,
+        volume: 5,
+        totalPrice: 30,
+        studentAddress: { lat: 40.7128, lon: -74.0060, formattedAddress: 'Test Address' },
+        warehouseAddress: { lat: 34.0522, lon: -118.2437, formattedAddress: 'Warehouse Address' },
+        pickupTime: pickupTime,
+        returnTime: returnTime,
+      })
+      .expect(201);
+      
+    // Now, fetch all orders
+
     const response = await request(app)
       .get('/api/order/all-orders')
       .set('Authorization', `Bearer ${authToken}`)
@@ -119,7 +152,9 @@ describe('GET /api/order/all-orders - No Mocks', () => {
     expect(response.body).toHaveProperty('success');
     expect(response.body).toHaveProperty('orders');
     expect(Array.isArray(response.body.orders)).toBe(true);
+    expect(response.body.orders.length).toBe(2);
   });
+  
 });
 
 describe('GET /api/order/active-order - No Mocks', () => {
