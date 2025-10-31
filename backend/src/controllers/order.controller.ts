@@ -101,7 +101,7 @@ export class OrderController {
       }
 
       // Map to CreateOrderResponse so `id` (string) is included for frontend
-      const mapped = OrderMapper.toCreateOrderResponse(order as any);
+      const mapped = OrderMapper.toCreateOrderResponse(order);
       res.status(200).json(mapped);
     } catch (error) {
       logger.error('Error in getActiveOrder controller:', error);

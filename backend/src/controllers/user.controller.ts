@@ -10,7 +10,7 @@ export class UserController {
     if (!req.user) {
       return res.status(401).json({
         message: 'User not authenticated',
-      } as any);
+      });
     }
     const user = req.user;
 
@@ -30,7 +30,7 @@ export class UserController {
       if (!req.user) {
         return res.status(401).json({
           message: 'User not authenticated',
-        } as any);
+        } );
       }
       const user = req.user;
 

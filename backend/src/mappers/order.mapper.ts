@@ -14,6 +14,7 @@ export const OrderMapper = {
       status: order.status,
       volume: order.volume,
       price: order.price,
+      totalPrice: order.price,
       studentAddress: order.studentAddress,
       warehouseAddress: order.warehouseAddress,
       returnAddress: order.returnAddress,
@@ -25,11 +26,13 @@ export const OrderMapper = {
   toOrderListItem(order: Order) {
     return {
       _id: order._id,
+      id: order._id.toString(),
       studentId: order.studentId.toString(),
       moverId: order.moverId?.toString(),
       status: order.status,
       volume: order.volume,
       price: order.price,
+      totalPrice: order.price,
       studentAddress: order.studentAddress,
       warehouseAddress: order.warehouseAddress,
       returnAddress: order.returnAddress,

@@ -49,6 +49,8 @@ export type CreateOrderRequest = z.infer<typeof createOrderSchema>;
 
 export interface CreateOrderResponse extends Order {
   id: string;
+  // Keep backward-compatible field expected by frontend
+  totalPrice?: number;
 }
 
 export interface CreateReturnJobResponse {
