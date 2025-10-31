@@ -16,8 +16,8 @@ import {
 import { notificationService } from './notification.service';
 import { OrderStatus } from '../types/order.types';
 import logger from '../utils/logger.util';
-import { EventEmitter } from '../utils/eventEmitter.util';
-import { JobMapper } from '../mappers/job.mapper';
+import { emitJobCreated, emitJobUpdated } from '../utils/eventEmitter.util';
+import { toJobResponse } from '../mappers/job.mapper';
 import { extractObjectId, extractObjectIdString } from '../utils/mongoose.util';
 import { JobNotFoundError, InternalServerError } from '../utils/errors.util';
 import { OrderService } from './order.service';
@@ -111,7 +111,7 @@ export class JobService {
           });
 
           // Emit job.updated for each cancelled job
-          EventEmitter.emitJobUpdated(updatedJob, {
+          emitJobUpdated(updatedJob, {
             by: actorId ?? null,
             ts: new Date().toISOString(),
           });
@@ -168,7 +168,7 @@ export class JobService {
       const createdJob = await jobModel.create(newJob);
 
       // Emit job.created so clients (movers/students) are notified in realtime
-      EventEmitter.emitJobCreated(createdJob, {
+      emitJobCreated(createdJob, {
         by: reqData.studentId,
         ts: new Date().toISOString(),
       });
@@ -189,7 +189,7 @@ export class JobService {
       const jobs = await jobModel.findAllJobs();
       return {
         message: 'All jobs retrieved successfully',
-        data: { jobs: jobs.map(job => JobMapper.toJobResponse(job)) },
+        data: { jobs: jobs.map(job => toJobResponse(job)) },
       };
     } catch (error) {
       logger.error('Error in getAllJobs service:', error);
@@ -202,7 +202,7 @@ export class JobService {
       const jobs = await jobModel.findAvailableJobs();
       return {
         message: 'Available jobs retrieved successfully',
-        data: { jobs: jobs.map(job => JobMapper.toJobResponse(job)) },
+        data: { jobs: jobs.map(job => toJobResponse(job)) },
       };
     } catch (error) {
       logger.error('Error in getAllAvailableJobs service:', error);
@@ -217,7 +217,7 @@ export class JobService {
       );
       return {
         message: 'Mover jobs retrieved successfully',
-        data: { jobs: jobs.map(job => JobMapper.toJobResponse(job)) },
+        data: { jobs: jobs.map(job => toJobResponse(job)) },
       };
     } catch (error) {
       logger.error('Error in getMoverJobs service:', error);
@@ -232,7 +232,7 @@ export class JobService {
       );
       return {
         message: 'Student jobs retrieved successfully',
-        data: { jobs: jobs.map(job => JobMapper.toJobResponse(job)) },
+        data: { jobs: jobs.map(job => toJobResponse(job)) },
       };
     } catch (error) {
       logger.error('Error in getStudentJobs service:', error);
@@ -250,7 +250,7 @@ export class JobService {
 
       return {
         message: 'Job retrieved successfully',
-        data: { job: JobMapper.toJobResponse(job) },
+        data: { job: toJobResponse(job) },
       };
     } catch (error) {
       logger.error('Error in getJobById service:', error);
@@ -336,7 +336,7 @@ export class JobService {
         }
         // Emit job.updated for the accepted job
         try {
-          EventEmitter.emitJobUpdated(updatedJob, {
+          emitJobUpdated(updatedJob, {
             by: updateData.moverId ?? null,
             ts: new Date().toISOString(),
           });
@@ -366,7 +366,7 @@ export class JobService {
 
         // Emit job.updated for the updated job
         try {
-          EventEmitter.emitJobUpdated(updatedJob, {
+          emitJobUpdated(updatedJob, {
             by: updateData.moverId ?? null,
             ts: new Date().toISOString(),
           });
@@ -427,7 +427,7 @@ export class JobService {
 
         // Emit job.updated for the updated job
         try {
-          EventEmitter.emitJobUpdated(updatedJob, {
+          emitJobUpdated(updatedJob, {
             by: updateData.moverId ?? null,
             ts: new Date().toISOString(),
           });
@@ -566,7 +566,7 @@ export class JobService {
 
       // Emit job.updated targeted to student and order room
       try {
-        EventEmitter.emitJobUpdated(updatedJob, {
+        emitJobUpdated(updatedJob, {
           by: moverId,
           ts: new Date().toISOString(),
         });
@@ -645,7 +645,7 @@ export class JobService {
 
       // Emit job.updated for the picked up job
       try {
-        EventEmitter.emitJobUpdated(updatedJob, {
+        emitJobUpdated(updatedJob, {
           by: studentId,
           ts: new Date().toISOString(),
         });
@@ -711,7 +711,7 @@ export class JobService {
 
       // Emit job.updated targeted to student and order room
       try {
-        EventEmitter.emitJobUpdated(updatedJob, {
+        emitJobUpdated(updatedJob, {
           by: moverId,
           ts: new Date().toISOString(),
         });
@@ -793,7 +793,7 @@ export class JobService {
 
       // Emit job.updated for the completed job
       try {
-        EventEmitter.emitJobUpdated(updatedJob, {
+        emitJobUpdated(updatedJob, {
           by: studentId,
           ts: new Date().toISOString(),
         });

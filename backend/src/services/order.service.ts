@@ -19,7 +19,7 @@ import logger from '../utils/logger.util';
 import { jobService } from './job.service';
 import { paymentService } from './payment.service';
 import { JobType, CreateJobRequest, JobStatus } from '../types/job.type';
-import { EventEmitter } from '../utils/eventEmitter.util';
+import { emitOrderCreated, emitOrderUpdated } from '../utils/eventEmitter.util';
 import { OrderMapper } from '../mappers/order.mapper';
 import { PRICING } from '../config/pricing.config';
 
@@ -133,7 +133,7 @@ export class OrderService {
         await jobService.createJob(storageJobRequest);
 
         // Emit order.created to the student and order room (do not block the response)
-        EventEmitter.emitOrderCreated(createdOrder, {
+        emitOrderCreated(createdOrder, {
           by: reqData.studentId,
           ts: new Date().toISOString(),
         });
@@ -370,7 +370,7 @@ export class OrderService {
       }
 
       // Emit order.updated via helper
-      EventEmitter.emitOrderUpdated(updated, {
+      emitOrderUpdated(updated, {
         by: studentId?.toString() ?? null,
       });
 
@@ -400,7 +400,7 @@ export class OrderService {
       }
 
       // Emit order.updated event
-      EventEmitter.emitOrderUpdated(updatedOrder, {
+      emitOrderUpdated(updatedOrder, {
         by: actorId ?? null,
         ts: new Date().toISOString(),
       });
