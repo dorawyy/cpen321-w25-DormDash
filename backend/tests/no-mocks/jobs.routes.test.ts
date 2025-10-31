@@ -10,23 +10,28 @@ import { orderModel } from '../../src/models/order.model';
 import { JobStatus, JobType } from '../../src/types/job.type';
 import { OrderStatus } from '../../src/types/order.types';
 
-// Suppress socket-related warnings
 const originalWarn = console.warn;
 let authToken: string;
 let moverAuthToken: string;
 let testUserId: mongoose.Types.ObjectId;
 let testMoverId: mongoose.Types.ObjectId;
 
-beforeAll(async () => {
-    console.warn = jest.fn(); 
-    // Connect to test database
-    await connectDB();
-
+// Cleanup function to delete all users, jobs, and orders
+const cleanupDatabase = async () => {
     const db = mongoose.connection.db;
     if (db) {
-        await db.collection('users').deleteMany({ googleId: { $in: ['test-google-id-student', 'test-google-id-mover'] } });
+        await db.collection('users').deleteMany({});
         await db.collection('jobs').deleteMany({});
+        await db.collection('orders').deleteMany({});
     }
+};
+
+beforeAll(async () => {
+    console.warn = jest.fn(); 
+    await connectDB();
+
+    // Clean up all test data before starting
+    await cleanupDatabase();
     
     // Create test student user
     const testUser = await (userModel as any).user.create({
@@ -58,24 +63,20 @@ beforeAll(async () => {
 
 beforeEach(async () => {
     // Clear jobs and orders collections before each test for isolation
-    // This ensures each test starts with a clean slate
-    // Using beforeEach (vs afterEach) means tests always start fresh, even if previous test failed
+    // Dont delete users here because test users (testUserId, testMoverId) need to persist across tests
     const db = mongoose.connection.db;
     if (db) {
-        await db.collection('jobs').deleteMany({});
-        await db.collection('orders').deleteMany({ studentId: testUserId });
+       await db.collection('jobs').deleteMany({});
+       await db.collection('orders').deleteMany({});
     }
 });
 
 afterAll(async () => {
-    // Clean up test users and jobs
-    await userModel.delete(testMoverId);
-    await jobModel.delete({ studentId: testUserId });
-
-    // Disconnect from test database
+    await cleanupDatabase();
     await disconnectDB();
     console.warn = originalWarn; 
 });
+
 
 describe('POST /api/jobs', () => {
     test('should successfully create a STORAGE job', async () => {
@@ -140,9 +141,10 @@ describe('POST /api/jobs', () => {
             .post('/api/jobs')
             .set('Authorization', `Bearer ${authToken}`)
             .send(reqData)
-            .expect(500);
+            .expect(400);
     });
 
+    // TODO: Auth can be moved to middleware tests?
     test('should return 401 without authentication', async () => {
         const reqData = {
             orderId: new mongoose.Types.ObjectId().toString(),
@@ -179,6 +181,20 @@ describe('GET /api/jobs', () => {
             updatedAt: new Date()
         });
 
+        const job2 = await jobModel.create({
+            orderId: new mongoose.Types.ObjectId(),
+            studentId: testUserId,
+            jobType: JobType.RETURN,
+            status: JobStatus.AVAILABLE,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 50.2827, lon: -120.1207, formattedAddress: 'Pickup Address' },
+            dropoffAddress: { lat: 47.2827, lon: -100.1300, formattedAddress: 'Dropoff Address' },
+            scheduledTime: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
+
         const response = await request(app)
             .get('/api/jobs')
             .set('Authorization', `Bearer ${authToken}`)
@@ -188,6 +204,7 @@ describe('GET /api/jobs', () => {
         expect(response.body.data).toBeDefined();
         expect(response.body.data.jobs).toBeDefined();
         expect(Array.isArray(response.body.data.jobs)).toBe(true);
+        expect(response.body.data.jobs.length).toBe(2);
     });
 
     test('should return empty array when no jobs exist', async () => {
@@ -241,6 +258,7 @@ describe('GET /api/jobs/available', () => {
         expect(response.body.data.jobs).toBeDefined();
         expect(Array.isArray(response.body.data.jobs)).toBe(true);
         expect(response.body.data.jobs.every((job: any) => job.status === JobStatus.AVAILABLE)).toBe(true);
+        expect(response.body.data.jobs.length).toBe(1);
     });
 });
 
@@ -288,6 +306,7 @@ describe('GET /api/jobs/mover', () => {
         expect(Array.isArray(response.body.data.jobs)).toBe(true);
         expect(response.body.data.jobs.length).toBe(1);
         expect(response.body.data.jobs[0].id).toBe(acceptedJob._id.toString());
+        expect(response.body.data.jobs[0].moverId).toBe(testMoverId.toString());
     });
 
     test('should return empty array when mover has no jobs', async () => {
@@ -393,7 +412,7 @@ describe('GET /api/jobs/:id', () => {
         await request(app)
             .get('/api/jobs/invalid-id')
             .set('Authorization', `Bearer ${authToken}`)
-            .expect(500);
+            .expect(400);
     });
 });
 
@@ -425,16 +444,14 @@ describe('PATCH /api/jobs/:id/status', () => {
             createdAt: new Date(),
             updatedAt: new Date()
         });
-        console.log(`Created job with ID: ${job}`);
         const response = await request(app)
             .patch(`/api/jobs/${job._id}/status`)
             .set('Authorization', `Bearer ${moverAuthToken}`)
             .send({ status: JobStatus.ACCEPTED })
             .expect(200);
-        console.log(`Response body: ${response.body}`);
-        expect(response.body.status).toBe(JobStatus.ACCEPTED);
-        expect(response.body.moverId).toBe(testMoverId.toString());
-        expect(response.body.orderId).toBe(order._id.toString());
+        expect(response.body.data.status).toBe(JobStatus.ACCEPTED);
+        expect(response.body.data.moverId).toBe(testMoverId.toString());
+        expect(response.body.data.orderId).toBe(order._id.toString());
     });
 
     test('should update job status to PICKED_UP', async () => {
@@ -459,30 +476,30 @@ describe('PATCH /api/jobs/:id/status', () => {
             .send({ status: JobStatus.PICKED_UP })
             .expect(200);
 
-        expect(response.body.status).toBe(JobStatus.PICKED_UP);
+        expect(response.body.data.status).toBe(JobStatus.PICKED_UP);
     });
 
-    // test('should return 400 for invalid status', async () => {
-    //     const job = await jobModel.create({
-    //         orderId: new mongoose.Types.ObjectId(),
-    //         studentId: testUserId,
-    //         jobType: JobType.STORAGE,
-    //         status: JobStatus.AVAILABLE,
-    //         volume: 10,
-    //         price: 50,
-    //         pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
-    //         dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-    //         scheduledTime: new Date().toISOString(),
-    //         createdAt: new Date(),
-    //         updatedAt: new Date()
-    //     });
+    test('should return 400 for invalid status', async () => {
+        const job = await jobModel.create({
+            orderId: new mongoose.Types.ObjectId(),
+            studentId: testUserId,
+            jobType: JobType.STORAGE,
+            status: JobStatus.AVAILABLE,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
+            scheduledTime: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
 
-    //     await request(app)
-    //         .patch(`/api/jobs/${job._id}/status`)
-    //         .set('Authorization', `Bearer ${moverAuthToken}`)
-    //         .send({ status: 'INVALID_STATUS' })
-    //         .expect(400);
-    // });
+        await request(app)
+            .patch(`/api/jobs/${job._id}/status`)
+            .set('Authorization', `Bearer ${moverAuthToken}`)
+            .send({ status: 'INVALID_STATUS' })
+            .expect(400);
+    });
 });
 
 describe('POST /api/jobs/:id/arrived', () => {
@@ -531,7 +548,7 @@ describe('POST /api/jobs/:id/arrived', () => {
         await request(app)
             .post(`/api/jobs/${job._id}/arrived`)
             .set('Authorization', `Bearer ${moverAuthToken}`)
-            .expect(500);
+            .expect(403); // FIX: should be 403 Forbidden
     });
 });
 
@@ -562,129 +579,129 @@ describe('POST /api/jobs/:id/confirm-pickup', () => {
         expect(response.body.message).toBe('Pickup confirmed');
     });
 
-    // test('should return error if student is not the job owner', async () => {
-    //     const otherStudentId = new mongoose.Types.ObjectId();
-    //     const job = await jobModel.create({
-    //         orderId: new mongoose.Types.ObjectId(),
-    //         studentId: otherStudentId,
-    //         moverId: testMoverId,
-    //         jobType: JobType.STORAGE,
-    //         status: JobStatus.AWAITING_STUDENT_CONFIRMATION,
-    //         volume: 10,
-    //         price: 50,
-    //         pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
-    //         dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-    //         scheduledTime: new Date().toISOString(),
-    //         verificationRequestedAt: new Date(),
-    //         createdAt: new Date(),
-    //         updatedAt: new Date()
-    //     });
+    test('should return error if student is not the job owner', async () => {
+        const otherStudentId = new mongoose.Types.ObjectId();
+        const job = await jobModel.create({
+            orderId: new mongoose.Types.ObjectId(),
+            studentId: otherStudentId,
+            moverId: testMoverId,
+            jobType: JobType.STORAGE,
+            status: JobStatus.AWAITING_STUDENT_CONFIRMATION,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
+            scheduledTime: new Date().toISOString(),
+            verificationRequestedAt: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
 
-    //     await request(app)
-    //         .post(`/api/jobs/${job._id}/confirm-pickup`)
-    //         .set('Authorization', `Bearer ${authToken}`)
-    //         .expect(403);
-    // });
+        await request(app)
+            .post(`/api/jobs/${job._id}/confirm-pickup`)
+            .set('Authorization', `Bearer ${authToken}`)
+            .expect(403);
+    });
 });
 
-// describe('POST /api/jobs/:id/delivered', () => {
-//     test('should request delivery confirmation when mover delivers (RETURN job)', async () => {
-//         const job = await jobModel.create({
-//             orderId: new mongoose.Types.ObjectId(),
-//             studentId: testUserId,
-//             moverId: testMoverId,
-//             jobType: JobType.RETURN,
-//             status: JobStatus.IN_STORAGE,
-//             volume: 15,
-//             price: 75,
-//             pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
-//             dropoffAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
-//             scheduledTime: new Date().toISOString(),
-//             createdAt: new Date(),
-//             updatedAt: new Date()
-//         });
+describe('POST /api/jobs/:id/delivered', () => {
+    test('should request delivery confirmation when mover delivers (RETURN job)', async () => {
+        const job = await jobModel.create({
+            orderId: new mongoose.Types.ObjectId(),
+            studentId: testUserId,
+            moverId: testMoverId,
+            jobType: JobType.RETURN,
+            status: JobStatus.IN_STORAGE,
+            volume: 15,
+            price: 75,
+            pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
+            scheduledTime: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
 
-//         const response = await request(app)
-//             .post(`/api/jobs/${job._id}/delivered`)
-//             .set('Authorization', `Bearer ${moverAuthToken}`)
-//             .expect(200);
+        const response = await request(app)
+            .post(`/api/jobs/${job._id}/delivered`)
+            .set('Authorization', `Bearer ${moverAuthToken}`)
+            .expect(200);
 
-//         expect(response.body.success).toBe(true);
-//         expect(response.body.message).toBe('Delivery confirmation requested');
-//     });
+        expect(response.body.success).toBe(true);
+        expect(response.body.message).toBe('Delivery confirmation requested');
+    });
 
-//     test('should return error if mover is not assigned to job', async () => {
-//         const otherMoverId = new mongoose.Types.ObjectId();
-//         const job = await jobModel.create({
-//             orderId: new mongoose.Types.ObjectId(),
-//             studentId: testUserId,
-//             moverId: otherMoverId,
-//             jobType: JobType.RETURN,
-//             status: JobStatus.IN_STORAGE,
-//             volume: 15,
-//             price: 75,
-//             pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
-//             dropoffAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
-//             scheduledTime: new Date().toISOString(),
-//             createdAt: new Date(),
-//             updatedAt: new Date()
-//         });
+    test('should return error if mover is not assigned to job', async () => {
+        const otherMoverId = new mongoose.Types.ObjectId();
+        const job = await jobModel.create({
+            orderId: new mongoose.Types.ObjectId(),
+            studentId: testUserId,
+            moverId: otherMoverId,
+            jobType: JobType.RETURN,
+            status: JobStatus.IN_STORAGE,
+            volume: 15,
+            price: 75,
+            pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
+            scheduledTime: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
 
-//         await request(app)
-//             .post(`/api/jobs/${job._id}/delivered`)
-//             .set('Authorization', `Bearer ${moverAuthToken}`)
-//             .expect(403);
-//     });
-// });
+        await request(app)
+            .post(`/api/jobs/${job._id}/delivered`)
+            .set('Authorization', `Bearer ${moverAuthToken}`)
+            .expect(403);
+    });
+});
 
-// describe('POST /api/jobs/:id/confirm-delivery', () => {
-//     test('should confirm delivery by student (RETURN job)', async () => {
-//         const job = await jobModel.create({
-//             orderId: new mongoose.Types.ObjectId(),
-//             studentId: testUserId,
-//             moverId: testMoverId,
-//             jobType: JobType.RETURN,
-//             status: JobStatus.AWAITING_STUDENT_CONFIRMATION,
-//             volume: 15,
-//             price: 75,
-//             pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
-//             dropoffAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
-//             scheduledTime: new Date().toISOString(),
-//             verificationRequestedAt: new Date(),
-//             createdAt: new Date(),
-//             updatedAt: new Date()
-//         });
+describe('POST /api/jobs/:id/confirm-delivery', () => {
+    test('should confirm delivery by student (RETURN job)', async () => {
+        const job = await jobModel.create({
+            orderId: new mongoose.Types.ObjectId(),
+            studentId: testUserId,
+            moverId: testMoverId,
+            jobType: JobType.RETURN,
+            status: JobStatus.AWAITING_STUDENT_CONFIRMATION,
+            volume: 15,
+            price: 75,
+            pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
+            scheduledTime: new Date().toISOString(),
+            verificationRequestedAt: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
 
-//         const response = await request(app)
-//             .post(`/api/jobs/${job._id}/confirm-delivery`)
-//             .set('Authorization', `Bearer ${authToken}`)
-//             .expect(200);
+        const response = await request(app)
+            .post(`/api/jobs/${job._id}/confirm-delivery`)
+            .set('Authorization', `Bearer ${authToken}`)
+            .expect(200);
 
-//         expect(response.body.success).toBe(true);
-//         expect(response.body.message).toBe('Delivery confirmed');
-//     });
+        expect(response.body.success).toBe(true);
+        expect(response.body.message).toBe('Delivery confirmed');
+    });
 
-//     test('should return error if student is not the job owner', async () => {
-//         const otherStudentId = new mongoose.Types.ObjectId();
-//         const job = await jobModel.create({
-//             orderId: new mongoose.Types.ObjectId(),
-//             studentId: otherStudentId,
-//             moverId: testMoverId,
-//             jobType: JobType.RETURN,
-//             status: JobStatus.AWAITING_STUDENT_CONFIRMATION,
-//             volume: 15,
-//             price: 75,
-//             pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
-//             dropoffAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
-//             scheduledTime: new Date().toISOString(),
-//             verificationRequestedAt: new Date(),
-//             createdAt: new Date(),
-//             updatedAt: new Date()
-//         });
+    test('should return error if student is not the job owner', async () => {
+        const otherStudentId = new mongoose.Types.ObjectId();
+        const job = await jobModel.create({
+            orderId: new mongoose.Types.ObjectId(),
+            studentId: otherStudentId,
+            moverId: testMoverId,
+            jobType: JobType.RETURN,
+            status: JobStatus.AWAITING_STUDENT_CONFIRMATION,
+            volume: 15,
+            price: 75,
+            pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
+            scheduledTime: new Date().toISOString(),
+            verificationRequestedAt: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
 
-//         await request(app)
-//             .post(`/api/jobs/${job._id}/confirm-delivery`)
-//             .set('Authorization', `Bearer ${authToken}`)
-//             .expect(403);
-//     });
-// });
+        await request(app)
+            .post(`/api/jobs/${job._id}/confirm-delivery`)
+            .set('Authorization', `Bearer ${authToken}`)
+            .expect(403);
+    });
+});

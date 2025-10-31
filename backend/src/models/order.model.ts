@@ -143,7 +143,6 @@ export class OrderModel {
     }
   }
 
-
 }
 
 export const orderModel = new OrderModel();
