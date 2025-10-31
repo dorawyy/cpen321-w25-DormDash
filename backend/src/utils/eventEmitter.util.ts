@@ -100,7 +100,7 @@ export class EventEmitter {
           meta
         );
         logger.info(
-          `Emitted job.updated for assigned job ${payload.job.id} to mover ${job.moverId?.toString()}`
+          `Emitted job.updated for assigned job ${payload.job.id} to mover ${job.moverId.toString()}`
         );
       }
     } catch (err) {

@@ -269,11 +269,6 @@ export class JobService {
       throw new Error('jobId is required');
     }
 
-    if (!updateData.status) {
-      logger.error('updateJobStatus: Missing status', { jobId });
-      throw new Error('status is required');
-    }
-
     try {
       logger.info(
         `updateJobStatus: jobId=${jobId}, status=${updateData.status}, moverId=${updateData.moverId ?? 'none'}`
