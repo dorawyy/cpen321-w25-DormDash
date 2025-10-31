@@ -23,7 +23,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('*', notFoundHandler);
 app.use(errorHandler);
 
-connectDB();
+void connectDB();
 const server = app.listen(PORT, () => {
   logger.info(`🚀 Server running on port ${PORT}`);
 });

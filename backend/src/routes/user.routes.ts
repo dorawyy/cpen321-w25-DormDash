@@ -7,7 +7,7 @@ import { validateBody } from '../middleware/validation.middleware';
 const router = Router();
 const userController = new UserController();
 
-router.get('/profile', (req, res) => userController.getProfile(req, res));
+router.get('/profile', (req, res) => { userController.getProfile(req, res); });
 
 router.post(
   '/profile',
