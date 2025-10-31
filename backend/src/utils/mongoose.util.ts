@@ -12,8 +12,8 @@ import mongoose from 'mongoose';
  * @param field - Field that might be an ObjectId or populated document
  * @returns ObjectId or null if field is invalid
  */
-export function extractObjectId(field: any): mongoose.Types.ObjectId | null {
-  if (!field) return null;
+export function extractObjectId(field: unknown): mongoose.Types.ObjectId | null {
+  if (field == null) return null;
 
   // If it's already an ObjectId
   if (field instanceof mongoose.Types.ObjectId) {
@@ -21,16 +21,30 @@ export function extractObjectId(field: any): mongoose.Types.ObjectId | null {
   }
 
   // If it's a populated document with _id
-  if (field._id) {
-    return field._id;
+  if (typeof field === 'object' && field !== null) {
+    const maybe = field as { _id?: unknown };
+    if (maybe._id) {
+      if (maybe._id instanceof mongoose.Types.ObjectId) return maybe._id;
+      if (typeof maybe._id === 'string') {
+        try {
+          return new mongoose.Types.ObjectId(maybe._id);
+        } catch {
+          // fall through
+        }
+      }
+    }
   }
 
   // Try to create ObjectId from string
-  try {
-    return new mongoose.Types.ObjectId(field);
-  } catch {
-    return null;
+  if (typeof field === 'string') {
+    try {
+      return new mongoose.Types.ObjectId(field);
+    } catch {
+      return null;
+    }
   }
+
+  return null;
 }
 
 /**

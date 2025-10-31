@@ -6,7 +6,6 @@ import { JobStatus, JobType } from '../types/job.type';
 import { jobModel } from '../models/job.model';
 import { userModel } from '../models/user.model';
 import { FirebaseMessagingError } from 'firebase-admin/messaging';
-``;
 
 class NotificationService {
   async sendNotificationToDevice(payload: NotificationPayload) {
@@ -26,10 +25,10 @@ class NotificationService {
       logger.error(
         `Error sending notification to ${payload.fcmToken}: ${String(error)}`
       );
+      const err = error as FirebaseMessagingError | undefined;
       if (
-        (error as FirebaseMessagingError).code ===
-          'messaging/registration-token-not-registered' ||
-        (error as FirebaseMessagingError).code === 'messaging/invalid-argument'
+        err?.code === 'messaging/registration-token-not-registered' ||
+        err?.code === 'messaging/invalid-argument'
       ) {
         logger.warn(
           `Token ${payload.fcmToken} is invalid or expired, clearing from database`
@@ -38,7 +37,7 @@ class NotificationService {
         try {
           await userModel.clearInvalidFcmToken(payload.fcmToken);
           logger.info(`Cleared invalid FCM token from database`);
-        } catch (clearError) {
+        } catch (clearError: unknown) {
           logger.error(`Failed to clear invalid FCM token: ${String(clearError)}`);
         }
       }
@@ -62,9 +61,29 @@ class NotificationService {
         return;
       }
 
-      const student = job.studentId as any;
-      if (!student?.fcmToken) {
-        logger.warn(`No FCM token found for student ${student._id}`);
+      // job.studentId can be either an ObjectId reference or a populated user document.
+      // Safely obtain the student's FCM token by checking for a populated object first,
+      // otherwise fetch the user record.
+      let studentFcmToken: string | undefined;
+      let studentIdStr = '';
+
+      if (typeof job.studentId === 'object' && job.studentId !== null) {
+        const s = job.studentId as { fcmToken?: string; _id?: mongoose.Types.ObjectId };
+        studentFcmToken = s.fcmToken;
+        studentIdStr = s._id ? String(s._id) : '';
+      } else {
+        // Not populated: try to load the user to get the fcm token
+        try {
+          const fetched = await userModel.findById(job.studentId as mongoose.Types.ObjectId);
+          studentFcmToken = fetched?.fcmToken;
+          studentIdStr = fetched?._id ? String(fetched._id) : String(job.studentId);
+        } catch (fetchErr: unknown) {
+          logger.error('Failed to fetch student for notification:', fetchErr);
+        }
+      }
+
+      if (!studentFcmToken) {
+        logger.warn(`No FCM token found for student ${studentIdStr || 'unknown'}`);
         return;
       }
 
@@ -95,7 +114,7 @@ class NotificationService {
       }
 
       const notification: NotificationPayload = {
-        fcmToken: student.fcmToken,
+        fcmToken: studentFcmToken!,
         title,
         body,
         data: {
@@ -106,10 +125,10 @@ class NotificationService {
 
       await this.sendNotificationToDevice(notification);
       logger.info(
-        `Notification sent to student ${student._id.toString()} for job ${job._id.toString()} with status ${status}`
+        `Notification sent to student ${studentIdStr || 'unknown'} for job ${job._id.toString()} with status ${status}`
       );
-    } catch (error: any) {
-      logger.error('Failed to send job status notification:', error);
+    } catch (error: unknown) {
+      logger.error('Failed to send job status notification:', String(error));
     }
   }
 

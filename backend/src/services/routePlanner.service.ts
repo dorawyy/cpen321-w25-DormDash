@@ -289,7 +289,7 @@ export class RoutePlannerService {
 
     // STEP 1: Sort all jobs by scheduled time (earliest first)
     // This ensures we respect time constraints above all else
-    remainingJobs.sort((a, b) => {
+    remainingJobs.sort((a: { scheduledTime: Date | string }, b: { scheduledTime: Date | string }) => {
       const timeA = new Date(a.scheduledTime).getTime();
       const timeB = new Date(b.scheduledTime).getTime();
       return timeA - timeB;
@@ -395,10 +395,11 @@ export class RoutePlannerService {
       // STEP 3: Select the earliest feasible job
       // Since jobs are already sorted by scheduledTime, feasibleJobs[0] is the earliest
       // Pick the earliest scheduled feasible job
-      feasibleJobs.sort(
-        (a: any, b: any) =>
-          new Date(a.scheduledTime).getTime() -
-          new Date(b.scheduledTime).getTime()
+      // feasibleJobs was produced by mapping and filtering earlier; it contains only objects
+      // where scheduledTime has been converted to Date. Cast here to a simpler typed array
+      // so we can sort without introducing `any` on the comparator parameters.
+      (feasibleJobs as Array<{ scheduledTime: Date }>).sort(
+        (a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime()
       );
       const selectedJob = feasibleJobs[0];
 
