@@ -178,7 +178,7 @@ export class OrderService {
       );
 
       if (hasReturnJob) {
-        logger.info(`Return job already exists for order ${activeOrder._id}`);
+        logger.info(`Return job already exists for order ${activeOrder._id.toString()}`);
         return {
           success: true,
           message: 'Return job already exists for this order',
@@ -253,10 +253,10 @@ export class OrderService {
             refundAmount
           );
           logger.info(
-            `Processed early return refund of $${refundAmount} for order ${activeOrder._id}`
+            `Processed early return refund of $${refundAmount} for order ${activeOrder._id.toString()}`
           );
         } catch (refundError) {
-          logger.error(`Failed to process early return refund: ${refundError}`);
+          logger.error(`Failed to process early return refund: ${String(refundError)}`);
           // Continue with job creation even if refund fails
         }
       }
@@ -336,10 +336,10 @@ export class OrderService {
       if (order.paymentIntentId) {
         try {
           logger.info(
-            `Processing refund for order ${orderId}, payment intent: ${order.paymentIntentId}`
+            `Processing refund for order ${orderId.toString()}, payment intent: ${order.paymentIntentId}`
           );
           await paymentService.refundPayment(order.paymentIntentId);
-          logger.info(`Refund processed successfully for order ${orderId}`);
+          logger.info(`Refund processed successfully for order ${orderId.toString()}`);
         } catch (refundError) {
           logger.error('Failed to process refund:', refundError);
           // Continue with cancellation even if refund fails - admin can handle manually

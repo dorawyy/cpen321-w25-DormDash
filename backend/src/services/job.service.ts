@@ -97,7 +97,7 @@ export class JobService {
           });
           if (!updatedJob) {
             logger.error(
-              `Failed to update job ${jobDoc._id} for order ${orderId}`
+              `Failed to update job ${jobDoc._id.toString()} for order ${orderId.toString()}`
             );
             continue;
           }
@@ -115,7 +115,7 @@ export class JobService {
           });
         } catch (err) {
           logger.error(
-            `Failed to cancel job ${jobDoc._id} for order ${orderId}:`,
+            `Failed to cancel job ${jobDoc._id.toString()} for order ${orderId.toString()}:`,
             err
           );
         }

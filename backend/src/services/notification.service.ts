@@ -24,7 +24,7 @@ class NotificationService {
       logger.info(`Successfully sent notification: ${response}`);
     } catch (error: unknown) {
       logger.error(
-        `Error sending notification to ${payload.fcmToken}: ${error}`
+        `Error sending notification to ${payload.fcmToken}: ${String(error)}`
       );
       if (
         (error as FirebaseMessagingError).code ===
@@ -39,7 +39,7 @@ class NotificationService {
           await userModel.clearInvalidFcmToken(payload.fcmToken);
           logger.info(`Cleared invalid FCM token from database`);
         } catch (clearError) {
-          logger.error(`Failed to clear invalid FCM token: ${clearError}`);
+          logger.error(`Failed to clear invalid FCM token: ${String(clearError)}`);
         }
       }
     }
@@ -58,7 +58,7 @@ class NotificationService {
     try {
       const job = await jobModel.findById(jobId);
       if (!job) {
-        logger.warn(`Job not found for id ${jobId}`);
+        logger.warn(`Job not found for id ${jobId.toString()}`);
         return;
       }
 

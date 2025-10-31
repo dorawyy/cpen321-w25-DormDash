@@ -54,7 +54,7 @@ export class MediaService {
           String(unlinkErr)
         );
       }
-      throw new Error(`Failed to save profile picture: ${error}`);
+      throw new Error(`Failed to save profile picture: ${String(error)}`);
     }
   }
 

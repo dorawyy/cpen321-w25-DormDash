@@ -123,7 +123,7 @@ export class UserModel {
           { $set: { fcmToken: null } }
         );
         logger.info(
-          `Cleared FCM token ${validatedData.fcmToken} from other users before assigning to user ${userId}`
+          `Cleared FCM token ${validatedData.fcmToken} from other users before assigning to user ${userId.toString()}`
         );
       }
 
