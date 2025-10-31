@@ -201,89 +201,90 @@ fun CreateOrderBottomSheet(
                         isSubmitting = isSubmitting,
                         onProcessPayment = {
                             // Prevent duplicate starts
-                            if (isSubmitting) return@PaymentDetailsStep
-                            isSubmitting = true
+                            if (!isSubmitting) {
+                                isSubmitting = true
 
-                            currentStep = OrderCreationStep.PROCESSING_PAYMENT
-                            errorMessage = null
+                                currentStep = OrderCreationStep.PROCESSING_PAYMENT
+                                errorMessage = null
 
-                            // Create payment intent and process payment with timeout
-                            coroutineScope.launch {
-                                try {
-                                    // Add timeout protection (30 seconds)
-                                    withTimeout(30000L) {
-                                        // Step 1: Create payment intent
-                                        println("Creating payment intent for amount: ${order.totalPrice}")
-                                        val intentResult = paymentRepository.createPaymentIntent(order.totalPrice)
-                                        intentResult.fold(
-                                            onSuccess = { intent ->
-                                                println("Payment intent created successfully: ${intent.id}")
-                                                paymentIntentResponse = intent
+                                // Create payment intent and process payment with timeout
+                                coroutineScope.launch {
+                                    try {
+                                        // Add timeout protection (30 seconds)
+                                        withTimeout(30000L) {
+                                            // Step 1: Create payment intent
+                                            println("Creating payment intent for amount: ${order.totalPrice}")
+                                            val intentResult = paymentRepository.createPaymentIntent(order.totalPrice)
+                                            intentResult.fold(
+                                                onSuccess = { intent ->
+                                                    println("Payment intent created successfully: ${intent.id}")
+                                                    paymentIntentResponse = intent
 
-                                                // Step 2: Process payment with customer info
-                                                val customerInfo = CustomerInfo(
-                                                    name = paymentDetails.cardholderName,
-                                                    email = paymentDetails.email,
-                                                    address = PaymentAddress(
-                                                        line1 = order.currentAddress,
-                                                        city = "Vancouver",
-                                                        state = "BC",
-                                                        postalCode = "V6T1Z4",
-                                                        country = "CA"
+                                                    // Step 2: Process payment with customer info
+                                                    val customerInfo = CustomerInfo(
+                                                        name = paymentDetails.cardholderName,
+                                                        email = paymentDetails.email,
+                                                        address = PaymentAddress(
+                                                            line1 = order.currentAddress,
+                                                            city = "Vancouver",
+                                                            state = "BC",
+                                                            postalCode = "V6T1Z4",
+                                                            country = "CA"
+                                                        )
                                                     )
-                                                )
 
-                                                println("Processing payment with intent ID: ${intent.id}")
-                                                val paymentResult = paymentRepository.processPayment(
-                                                    intent.id,
-                                                    customerInfo,
-                                                    TestPaymentMethods.VISA_SUCCESS // Use selected test card
-                                                )
+                                                    println("Processing payment with intent ID: ${intent.id}")
+                                                    val paymentResult = paymentRepository.processPayment(
+                                                        intent.id,
+                                                        customerInfo,
+                                                        TestPaymentMethods.VISA_SUCCESS // Use selected test card
+                                                    )
 
-                                                paymentResult.fold(
-                                                    onSuccess = { payment ->
-                                                        if (payment.status == "SUCCEEDED") {
-                                                            // Submit order to backend with payment intent ID
-                                                            onSubmitOrder(order, intent.id)
-                                                            currentStep = OrderCreationStep.ORDER_CONFIRMATION
-                                                            // keep isSubmitting=true until sheet closes to avoid re-submits
-                                                        } else {
-                                                            errorMessage = "Payment was declined. Please try a different payment method."
+                                                    paymentResult.fold(
+                                                        onSuccess = { payment ->
+                                                            if (payment.status == "SUCCEEDED") {
+                                                                // Submit order to backend with payment intent ID
+                                                                onSubmitOrder(order, intent.id)
+                                                                currentStep = OrderCreationStep.ORDER_CONFIRMATION
+                                                                // keep isSubmitting=true until sheet closes to avoid re-submits
+                                                            } else {
+                                                                errorMessage = "Payment was declined. Please try a different payment method."
+                                                                currentStep = OrderCreationStep.PAYMENT_DETAILS
+                                                                isSubmitting = false
+                                                            }
+                                                        },
+                                                        onFailure = { exception ->
+                                                            errorMessage = "Payment processing failed: ${exception.message}"
                                                             currentStep = OrderCreationStep.PAYMENT_DETAILS
                                                             isSubmitting = false
                                                         }
-                                                    },
-                                                    onFailure = { exception ->
-                                                        errorMessage = "Payment processing failed: ${exception.message}"
-                                                        currentStep = OrderCreationStep.PAYMENT_DETAILS
-                                                        isSubmitting = false
-                                                    }
-                                                )
-                                            },
-                                            onFailure = { exception ->
-                                                println("Failed to create payment intent: ${exception.message}")
-                                                errorMessage = "Failed to initialize payment: ${exception.message}"
-                                                currentStep = OrderCreationStep.PAYMENT_DETAILS
-                                                isSubmitting = false
-                                            }
-                                        )
+                                                    )
+                                                },
+                                                onFailure = { exception ->
+                                                    println("Failed to create payment intent: ${exception.message}")
+                                                    errorMessage = "Failed to initialize payment: ${exception.message}"
+                                                    currentStep = OrderCreationStep.PAYMENT_DETAILS
+                                                    isSubmitting = false
+                                                }
+                                            )
+                                        }
+                                    } catch (e: TimeoutCancellationException) {
+                                        errorMessage = "Payment request timed out. Please check your connection and try again."
+                                        currentStep = OrderCreationStep.PAYMENT_DETAILS
+                                        isSubmitting = false
+                                    } catch (e: java.io.IOException) {
+                                        errorMessage = "Network error during payment. Please check your connection and try again."
+                                        currentStep = OrderCreationStep.PAYMENT_DETAILS
+                                        isSubmitting = false
+                                    } catch (e: retrofit2.HttpException) {
+                                        errorMessage = "Payment server error. Please try again later."
+                                        currentStep = OrderCreationStep.PAYMENT_DETAILS
+                                        isSubmitting = false
+                                    } catch (e: com.google.gson.JsonSyntaxException) {
+                                        errorMessage = "Unexpected response during payment. Please try again."
+                                        currentStep = OrderCreationStep.PAYMENT_DETAILS
+                                        isSubmitting = false
                                     }
-                                } catch (e: TimeoutCancellationException) {
-                                    errorMessage = "Payment request timed out. Please check your connection and try again."
-                                    currentStep = OrderCreationStep.PAYMENT_DETAILS
-                                    isSubmitting = false
-                                } catch (e: java.io.IOException) {
-                                    errorMessage = "Network error during payment. Please check your connection and try again."
-                                    currentStep = OrderCreationStep.PAYMENT_DETAILS
-                                    isSubmitting = false
-                                } catch (e: retrofit2.HttpException) {
-                                    errorMessage = "Payment server error. Please try again later."
-                                    currentStep = OrderCreationStep.PAYMENT_DETAILS
-                                    isSubmitting = false
-                                } catch (e: com.google.gson.JsonSyntaxException) {
-                                    errorMessage = "Unexpected response during payment. Please try again."
-                                    currentStep = OrderCreationStep.PAYMENT_DETAILS
-                                    isSubmitting = false
                                 }
                             }
                         }
@@ -362,39 +363,39 @@ private fun AddressCaptureStep(
             onClick = {
                 if (selectedAddress == null) {
                     onError("Please select an address from the suggestions")
-                    return@Button
                 }
-                
-                isValidating = true
-                coroutineScope.launch {
-                    try {
-                        // Validate that the selected address is within Vancouver area
-                        val validationResult = LocationUtils.validateAndGeocodeAddress(
-                            context, 
-                            selectedAddress!!.formattedAddress
-                        )
-
-                        if (validationResult.isValid && validationResult.coordinates != null) {
-                            // Address is valid and within Vancouver area
-                            val address = Address(
-                                lat = selectedAddress!!.latitude,
-                                lon = selectedAddress!!.longitude,
-                                formattedAddress = selectedAddress!!.formattedAddress
+                else{
+                    isValidating = true
+                    coroutineScope.launch {
+                        try {
+                            // Validate that the selected address is within Vancouver area
+                            val validationResult = LocationUtils.validateAndGeocodeAddress(
+                                context,
+                                selectedAddress!!.formattedAddress
                             )
-                            onAddressConfirmed(address)
-                        } else {
-                            // Address is invalid or outside service area
-                            onError(validationResult.errorMessage ?: "Invalid address. Please select a valid address within Greater Vancouver.")
+
+                            if (validationResult.isValid && validationResult.coordinates != null) {
+                                // Address is valid and within Vancouver area
+                                val address = Address(
+                                    lat = selectedAddress!!.latitude,
+                                    lon = selectedAddress!!.longitude,
+                                    formattedAddress = selectedAddress!!.formattedAddress
+                                )
+                                onAddressConfirmed(address)
+                            } else {
+                                // Address is invalid or outside service area
+                                onError(validationResult.errorMessage ?: "Invalid address. Please select a valid address within Greater Vancouver.")
+                                isValidating = false
+                            }
+                        } catch (e: java.io.IOException) {
+                            // Network / Geocoder I/O error
+                            onError("Network error validating address. Please check your connection and try again.")
+                            isValidating = false
+                        } catch (e: IllegalArgumentException) {
+                            // Bad input passed to Geocoder
+                            onError("Invalid address format. Please enter a valid address.")
                             isValidating = false
                         }
-                    } catch (e: java.io.IOException) {
-                        // Network / Geocoder I/O error
-                        onError("Network error validating address. Please check your connection and try again.")
-                        isValidating = false
-                    } catch (e: IllegalArgumentException) {
-                        // Bad input passed to Geocoder
-                        onError("Invalid address format. Please enter a valid address.")
-                        isValidating = false
                     }
                 }
             },

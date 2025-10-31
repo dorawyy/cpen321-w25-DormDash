@@ -175,49 +175,47 @@ fun CreateReturnJobBottomSheet(
                                 selectedAddress = address
                                 addressInput = address.formattedAddress
                             },
-                            onConfirm = onConfirm@{
+                            onConfirm = {
                                 if (useCustomAddress) {
-                                    if (selectedAddress == null) {
-                                        return@onConfirm
-                                    }
-
-                                    isValidating = true
-                                    coroutineScope.launch {
-                                        try {
-                                            // Validate that the selected address is within Vancouver area
-                                            val validationResult = LocationUtils.validateAndGeocodeAddress(
-                                                context,
-                                                selectedAddress!!.formattedAddress
-                                            )
-
-                                            if (validationResult.isValid && validationResult.coordinates != null) {
-                                                customAddress = Address(
-                                                    lat = selectedAddress!!.latitude,
-                                                    lon = selectedAddress!!.longitude,
-                                                    formattedAddress = selectedAddress!!.formattedAddress
+                                    if (selectedAddress != null) {
+                                        isValidating = true
+                                        coroutineScope.launch {
+                                            try {
+                                                // Validate that the selected address is within Vancouver area
+                                                val validationResult = LocationUtils.validateAndGeocodeAddress(
+                                                    context,
+                                                    selectedAddress!!.formattedAddress
                                                 )
 
-                                                // Submit the return job
-                                                submitReturnJob(
-                                                    selectedDateMillis = selectedDateMillis,
-                                                    returnHour = returnHour,
-                                                    returnMinute = returnMinute,
-                                                    customAddress = customAddress,
-                                                    isEarlyReturn = isEarlyReturn,
-                                                    paymentIntentId = paymentIntentId,
-                                                    onSubmit = onSubmit
-                                                )
-                                            } else {
-                                                // Address is invalid or outside service area
-                                                errorMessage = validationResult.errorMessage ?: "Invalid address. Please select a valid address within Greater Vancouver."
+                                                if (validationResult.isValid && validationResult.coordinates != null) {
+                                                    customAddress = Address(
+                                                        lat = selectedAddress!!.latitude,
+                                                        lon = selectedAddress!!.longitude,
+                                                        formattedAddress = selectedAddress!!.formattedAddress
+                                                    )
+
+                                                    // Submit the return job
+                                                    submitReturnJob(
+                                                        selectedDateMillis = selectedDateMillis,
+                                                        returnHour = returnHour,
+                                                        returnMinute = returnMinute,
+                                                        customAddress = customAddress,
+                                                        isEarlyReturn = isEarlyReturn,
+                                                        paymentIntentId = paymentIntentId,
+                                                        onSubmit = onSubmit
+                                                    )
+                                                } else {
+                                                    // Address is invalid or outside service area
+                                                    errorMessage = validationResult.errorMessage ?: "Invalid address. Please select a valid address within Greater Vancouver."
+                                                    isValidating = false
+                                                }
+                                            } catch (e: java.io.IOException) {
+                                                errorMessage = "Network error validating address. Please check your connection and try again."
+                                                isValidating = false
+                                            } catch (e: IllegalArgumentException) {
+                                                errorMessage = "Invalid address format. Please enter a valid address."
                                                 isValidating = false
                                             }
-                                        } catch (e: java.io.IOException) {
-                                            errorMessage = "Network error validating address. Please check your connection and try again."
-                                            isValidating = false
-                                        } catch (e: IllegalArgumentException) {
-                                            errorMessage = "Invalid address format. Please enter a valid address."
-                                            isValidating = false
                                         }
                                     }
                                 } else {

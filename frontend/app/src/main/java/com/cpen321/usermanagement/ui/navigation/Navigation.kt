@@ -323,11 +323,13 @@ private fun AppNavHost(
             route = "${Screen.JobDetails.route}/{jobId}",
             arguments = listOf(navArgument("jobId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val jobId = backStackEntry.arguments?.getString("jobId") ?: return@composable
-            JobDetailsScreen(
-                jobId = jobId,
-                onNavigateBack = { navController.popBackStack() }
-            )
+            val jobId = backStackEntry.arguments?.getString("jobId")
+            if ( jobId != null){
+                JobDetailsScreen(
+                    jobId = jobId,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
         }
     }
 }

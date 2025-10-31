@@ -34,16 +34,15 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         sendTokenToBackend(token)
     }
 
-    public fun fetchAndSendFcmToken(place: String) {
+     fun fetchAndSendFcmToken(place: String) {
         Log.d("place", "fetchAndSendFcmToken called from: $place")
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-            if (!task.isSuccessful) {
-                Log.w("MyFCM", "Fetching FCM token failed", task.exception)
-                return@addOnCompleteListener
-            } else {
+            if (task.isSuccessful) {
                 val token = task.result
                 Log.d("ManualFCM", "Manual token: $token")
                 sendTokenToBackend(token)
+            } else {
+                Log.w("MyFCM", "Fetching FCM token failed", task.exception)
             }
         }
     }
