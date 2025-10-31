@@ -75,7 +75,7 @@ export class RoutePlannerService {
       try {
         if (invalidLocationJobs.length > 0) {
           logger.debug(
-            `Jobs excluded for missing/invalid location: ${JSON.stringify(invalidLocationJobs.map(j => ({ id: j.id ?? 'unknown', pickup: j.pickupAddress, dropoff: j.dropoffAddress })))}`
+            `Jobs excluded for missing/invalid location: ${JSON.stringify(invalidLocationJobs.map(j => ({ id: j.id, pickup: j.pickupAddress, dropoff: j.dropoffAddress })))}`
           );
         }
       } catch (e) {

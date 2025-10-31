@@ -78,7 +78,7 @@ export class JobController {
     next: NextFunction
   ) {
     try {
-      if (!req.user || !req.user._id) {
+      if (!req.user?._id) {
         throw new Error('User not authenticated');
       }
       const result = await this.jobService.getStudentJobs(

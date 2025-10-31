@@ -443,10 +443,6 @@ export class JobService {
 
       // If job is completed, update order status
       if (updateData.status === JobStatus.COMPLETED) {
-        if (!job) {
-          throw new JobNotFoundError(jobId);
-        }
-
         logger.debug(`Found job for COMPLETED flow: ${JSON.stringify(job)}`);
 
         // Extract orderId using utility
@@ -501,10 +497,6 @@ export class JobService {
           );
           throw err;
         }
-      }
-
-      if (!updatedJob) {
-        throw new Error('Updated job is null');
       }
 
       const orderObjectId = extractObjectId(updatedJob.orderId);
