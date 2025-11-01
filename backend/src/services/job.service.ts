@@ -808,7 +808,11 @@ export class JobService {
         );
       }
 
-      const nonNullUpdatedJob = updatedJob!; // Explicit non-null assertion
+      if (!updatedJob) {
+        throw new Error('Failed to update job - no job returned');
+      }
+
+      const nonNullUpdatedJob = updatedJob; 
       return {
         id: nonNullUpdatedJob._id.toString(),
         status: nonNullUpdatedJob.status,

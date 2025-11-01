@@ -301,13 +301,6 @@ export class RoutePlannerService {
           // Ensure we are dealing with plain objects (they were normalized earlier)
           const j = job;
           const location = j.pickupAddress;
-          if (location.lat == null || location.lon == null) {
-            const jobId = j.id ? j.id : 'unknown';
-            logger.warn(
-              `Job ${jobId} missing location data: ${JSON.stringify(j)}`
-            );
-            return null;
-          }
 
           // Explicitly type location as a coordinate object after validation
           const validLocation: { lat: number; lon: number } = location;
@@ -437,7 +430,7 @@ export class RoutePlannerService {
       );
 
       // Increase total elapsed time by travel + waiting + job duration
-  totalElapsedTime += travelTime + waitingTime + jobDuration;
+    totalElapsedTime += travelTime + waitingTime + jobDuration;
 
       // Remove selected job from remaining jobs
       const jobIndex = remainingJobs.findIndex(

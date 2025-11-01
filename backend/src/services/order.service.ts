@@ -3,7 +3,6 @@ import { orderModel } from '../models/order.model';
 import { jobModel } from '../models/job.model';
 import { WAREHOUSES } from '../constants/warehouses';
 import {
-  CreateOrderRequest,
   CreateOrderRequestWithIdempotency,
   QuoteRequest,
   GetQuoteResponse,
@@ -101,7 +100,7 @@ export class OrderService {
       } = reqData;
 
       // studentId is already a string from CreateOrderRequest
-      const studentObjectId = new mongoose.Types.ObjectId(studentId as string);
+      const studentObjectId = new mongoose.Types.ObjectId(studentId);
 
       const newOrder: Order = {
         _id: new mongoose.Types.ObjectId(),

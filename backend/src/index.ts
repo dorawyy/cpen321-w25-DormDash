@@ -23,7 +23,11 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('*', notFoundHandler);
 app.use(errorHandler);
 
-void connectDB();
+connectDB().catch((error: unknown) => {
+  logger.error('Failed to connect to database:', error);
+  process.exit(1);
+});
+
 const server = app.listen(PORT, () => {
   logger.info(`🚀 Server running on port ${PORT}`);
 });

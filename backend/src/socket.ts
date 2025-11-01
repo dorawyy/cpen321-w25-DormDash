@@ -5,9 +5,9 @@ import logger from './utils/logger.util';
 import { verifyTokenString } from './middleware/auth.middleware'; // optional helper
 import SocketData from './types/socket.types';
 
-let io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, SocketData>
+let io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, SocketData> | undefined;
 
-export function initSocket(server: http.Server) {
+export function initSocket(server: http.Server): Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, SocketData> {
   io = new Server<
     DefaultEventsMap,
     DefaultEventsMap,
@@ -87,7 +87,9 @@ export function initSocket(server: http.Server) {
 }
 
 export function getIo(): Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, SocketData> {
-  if (!io) throw new Error('Socket.io not initialized');
+  if (!io) {
+    throw new Error('Socket.io not initialized');
+  }
   return io;
 }
 

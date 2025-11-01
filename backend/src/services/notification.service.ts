@@ -68,9 +68,7 @@ class NotificationService {
       // Normalize: always load the user record to obtain the current FCM token.
       // This avoids relying on whether the job document was populated or not and
       // keeps runtime behavior deterministic.
-      const studentDoc = await userModel.findById(
-        job.studentId as mongoose.Types.ObjectId
-      );
+      const studentDoc = await userModel.findById(job.studentId);
       const studentFcmToken = studentDoc?.fcmToken;
       const studentIdStr = studentDoc?._id ? String(studentDoc._id) : String(job.studentId);
 
