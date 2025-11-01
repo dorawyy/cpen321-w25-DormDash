@@ -150,17 +150,21 @@ export class JobService {
     }
 
     try {
+      const orderId: string = reqData.orderId;
+      const studentId: string = reqData.studentId;
+      const scheduledTimeStr: string = reqData.scheduledTime;
+      
       const newJob: Job = {
         _id: new mongoose.Types.ObjectId(),
-        orderId: new mongoose.Types.ObjectId(reqData.orderId),
-        studentId: new mongoose.Types.ObjectId(reqData.studentId as string),
+        orderId: new mongoose.Types.ObjectId(orderId),
+        studentId: new mongoose.Types.ObjectId(studentId),
         jobType: reqData.jobType,
         status: JobStatus.AVAILABLE,
         volume: reqData.volume,
         price: reqData.price,
         pickupAddress: reqData.pickupAddress,
         dropoffAddress: reqData.dropoffAddress,
-        scheduledTime: new Date(reqData.scheduledTime),
+        scheduledTime: new Date(scheduledTimeStr),
         createdAt: new Date(),
         updatedAt: new Date(),
       };

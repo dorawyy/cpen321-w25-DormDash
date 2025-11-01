@@ -309,7 +309,9 @@ export class RoutePlannerService {
             return null;
           }
 
-          const distance = this.calculateDistance(currentLocation, location);
+          // Explicitly type location as a coordinate object after validation
+          const validLocation: { lat: number; lon: number } = location;
+          const distance = this.calculateDistance(currentLocation, validLocation);
           const travelTime = this.estimateTravelTime(distance); // in minutes
           const arrivalTime = new Date(
             currentTime.getTime() + travelTime * 60000

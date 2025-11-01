@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 
-import { GetProfileResponse, UpdateProfileRequest } from '../types/user.types';
+import { GetProfileResponse, UpdateProfileRequest, IUser } from '../types/user.types';
 import logger from '../utils/logger.util';
 import { deleteAllUserImages } from '../services/media.service';
 import { userModel } from '../models/user.model';
@@ -34,7 +34,8 @@ export class UserController {
       }
       const user = req.user;
 
-      const updatedUser = await userModel.update(user._id, req.body);
+      // Explicitly type req.body as Partial<IUser>
+      const updatedUser = await userModel.update(user._id, req.body as Partial<IUser>);
 
       if (!updatedUser) {
         return res.status(404).json({

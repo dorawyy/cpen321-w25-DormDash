@@ -107,7 +107,7 @@ export class UserModel {
     user: Partial<IUser>
   ): Promise<IUser | null> {
     try {
-      const validatedData = updateProfileSchema.parse(user);
+      const validatedData = updateProfileSchema.parse(user) as Partial<IUser>;
 
       // If updating FCM token, first remove it from any other users
       // FCM tokens are device-specific, so one token can only belong to one user
@@ -129,7 +129,7 @@ export class UserModel {
 
       const updatedUser = await this.user.findByIdAndUpdate(
         userId,
-        validatedData,
+        validatedData as mongoose.UpdateQuery<IUser>,
         {
           new: true,
         }

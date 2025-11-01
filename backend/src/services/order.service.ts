@@ -100,7 +100,8 @@ export class OrderService {
         paymentIntentId,
       } = reqData;
 
-      const studentObjectId = new mongoose.Types.ObjectId(studentId);
+      // studentId is already a string from CreateOrderRequest
+      const studentObjectId = new mongoose.Types.ObjectId(studentId as string);
 
       const newOrder: Order = {
         _id: new mongoose.Types.ObjectId(),
@@ -194,8 +195,9 @@ export class OrderService {
       let adjustmentFee = 0;
       let refundAmount = 0;
       const expectedReturnDate = new Date(activeOrder.returnTime);
-      const actualReturnDate = returnJobRequest?.actualReturnDate
-        ? new Date(returnJobRequest.actualReturnDate)
+      const actualReturnDateString: string | undefined = returnJobRequest?.actualReturnDate;
+      const actualReturnDate = actualReturnDateString
+        ? new Date(actualReturnDateString)
         : new Date();
 
       const daysDifference = Math.ceil(
@@ -225,8 +227,9 @@ export class OrderService {
         activeOrder.returnAddress ||
         activeOrder.studentAddress;
 
-      const finalReturnTime = returnJobRequest?.actualReturnDate
-        ? new Date(returnJobRequest.actualReturnDate).toISOString()
+      const returnDateString: string | undefined = returnJobRequest?.actualReturnDate;
+      const finalReturnTime = returnDateString
+        ? new Date(returnDateString).toISOString()
         : new Date(activeOrder.returnTime).toISOString();
 
       await orderModel.update(activeOrder._id, {

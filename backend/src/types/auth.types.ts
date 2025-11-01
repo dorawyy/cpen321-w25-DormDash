@@ -8,9 +8,11 @@ export const authenticateUserSchema = z.object({
   idToken: z.string().min(1, 'Google token is required'),
 });
 
-// Request types
+// Request types - explicitly typed to avoid 'any' inference
 // ------------------------------------------------------------
-export type AuthenticateUserRequest = z.infer<typeof authenticateUserSchema>;
+export interface AuthenticateUserRequest {
+  idToken: string;
+}
 
 export interface AuthenticateUserResponse {
   message: string;

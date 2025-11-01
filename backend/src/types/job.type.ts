@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import mongoose from 'mongoose';
-import { addressSchema } from './order.types';
+import { addressSchema, Address } from './order.types';
 
 // Job Types Enum
 export enum JobType {
@@ -25,9 +25,18 @@ export const jobSchema = z.object({
   scheduledTime: z.string().datetime(),
 });
 
-// Request types
+// Request types - explicitly typed to avoid 'any' inference
 // ------------------------------------------------------------
-export type CreateJobRequest = z.infer<typeof jobSchema>;
+export interface CreateJobRequest {
+  orderId: string;
+  studentId: string;
+  jobType: JobType;
+  volume: number;
+  price: number;
+  pickupAddress: Address;
+  dropoffAddress: Address;
+  scheduledTime: string;
+}
 
 // Generic type
 // ------------------------------------------------------------
@@ -41,9 +50,6 @@ export enum JobStatus {
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED',
 }
-
-// Reuse Address type from order types
-export type Address = z.infer<typeof addressSchema>;
 
 export interface Job {
   _id: mongoose.Types.ObjectId; // Added _id to align with Mongoose documents

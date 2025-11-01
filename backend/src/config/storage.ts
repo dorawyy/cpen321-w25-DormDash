@@ -17,7 +17,8 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     // Use a cryptographically strong UUID for filenames to avoid predictable names
     const uniqueSuffix = crypto.randomUUID();
-    cb(null, `${uniqueSuffix}${path.extname(file.originalname)}`);
+    const originalName: string = file.originalname || 'file';
+    cb(null, `${uniqueSuffix}${path.extname(originalName)}`);
   },
 });
 

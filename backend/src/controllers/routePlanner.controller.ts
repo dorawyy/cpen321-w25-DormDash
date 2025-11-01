@@ -67,10 +67,14 @@ export class RouteController {
         },
       });
 
+      // Extract explicitly typed values
+      const moverIdStr: string = validatedRequest.moverId;
+      const currentLocationObj: { lat: number; lon: number } = validatedRequest.currentLocation;
+
       // Calculate smart route
       const result = await routePlannerService.calculateSmartRoute(
-        validatedRequest.moverId,
-        validatedRequest.currentLocation,
+        moverIdStr,
+        currentLocationObj,
         maxDuration
       );
 

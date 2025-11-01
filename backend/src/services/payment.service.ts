@@ -19,9 +19,12 @@ export class PaymentService {
         `Creating payment intent for amount: ${request.amount} ${request.currency}`
       );
 
+      const amount: number = request.amount;
+      const currency: 'CAD' = request.currency;
+      
       const paymentIntent = await stripeService.createPaymentIntent(
-        request.amount as number,
-        request.currency
+        amount,
+        currency
       );
 
       logger.info(`Payment intent created: ${paymentIntent.id}`);
@@ -39,9 +42,12 @@ export class PaymentService {
     try {
       logger.info(`Processing payment for intent: ${request.paymentIntentId}`);
 
+      const paymentIntentId: string = request.paymentIntentId;
+      const paymentMethodId: string = request.paymentMethodId;
+      
       const result = await stripeService.confirmPayment(
-        request.paymentIntentId,
-        request.paymentMethodId
+        paymentIntentId,
+        paymentMethodId
       );
 
       logger.info(

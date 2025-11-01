@@ -25,7 +25,8 @@ export class MediaController {
       }
 
       const user = req.user;
-      const sanitizedFilePath = sanitizeInput(req.file.path);
+      const filePath: string = req.file.path || '';
+      const sanitizedFilePath = sanitizeInput(filePath);
       const image = await saveImage(
         sanitizedFilePath,
         user._id.toString()

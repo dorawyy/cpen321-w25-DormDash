@@ -10,6 +10,14 @@ export const smartRouteRequestSchema = z.object({
   }),
 });
 
+export interface SmartRouteRequestValidated {
+  moverId: string;
+  currentLocation: {
+    lat: number;
+    lon: number;
+  };
+}
+
 export interface SmartRouteRequest {
   currentLat: number;
   currentLon: number;

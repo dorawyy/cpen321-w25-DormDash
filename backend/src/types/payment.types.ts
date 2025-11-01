@@ -12,12 +12,17 @@ export const processPaymentSchema = z.object({
   paymentMethodId: z.string(),
 });
 
-// Payment Types
-export type CreatePaymentIntentRequest = z.infer<
-  typeof createPaymentIntentSchema
->;
+// Payment Types - explicitly typed to avoid 'any' inference
+export interface CreatePaymentIntentRequest {
+  amount: number;
+  currency: 'CAD';
+  orderId?: string;
+}
 
-export type ProcessPaymentRequest = z.infer<typeof processPaymentSchema>;
+export interface ProcessPaymentRequest {
+  paymentIntentId: string;
+  paymentMethodId: string;
+}
 
 export interface PaymentIntent {
   id: string;

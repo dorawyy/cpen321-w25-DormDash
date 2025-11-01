@@ -58,12 +58,15 @@ export class StripeService {
         throw new Error('Payment intent created without client secret');
       }
 
+      // Explicitly type the status from Stripe
+      const stripeStatus: string = paymentIntent.status;
+
       return {
         id: paymentIntent.id,
         amount, // Return original amount in dollars
         currency,
         clientSecret: paymentIntent.client_secret,
-        status: this.mapStripeStatusToOur(paymentIntent.status),
+        status: this.mapStripeStatusToOur(stripeStatus),
       };
     } catch (error: unknown) {
       logger.error('Error creating payment intent:', error);
@@ -90,9 +93,12 @@ export class StripeService {
         }
       );
 
+      // Explicitly type the status from Stripe
+      const stripeStatus: string = paymentIntent.status;
+
       return {
         paymentId: paymentIntent.id,
-        status: this.mapStripeStatusToPaymentStatus(paymentIntent.status),
+        status: this.mapStripeStatusToPaymentStatus(stripeStatus),
         amount: paymentIntent.amount / 100, // Convert back to dollars
         currency: paymentIntent.currency.toUpperCase(),
         failureReason: paymentIntent.last_payment_error?.message,
@@ -120,9 +126,12 @@ export class StripeService {
       const paymentIntent =
         await stripe.paymentIntents.retrieve(paymentIntentId);
 
+      // Explicitly type the status from Stripe
+      const stripeStatus: string = paymentIntent.status;
+
       return {
         paymentId: paymentIntent.id,
-        status: this.mapStripeStatusToPaymentStatus(paymentIntent.status),
+        status: this.mapStripeStatusToPaymentStatus(stripeStatus),
         amount: paymentIntent.amount / 100,
         currency: paymentIntent.currency.toUpperCase(),
         failureReason: paymentIntent.last_payment_error?.message,

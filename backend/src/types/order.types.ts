@@ -7,6 +7,13 @@ export const addressSchema = z.object({
   formattedAddress: z.string(),
 });
 
+// Explicit Address type to avoid 'any' inference issues
+export interface Address {
+  lat: number;
+  lon: number;
+  formattedAddress: string;
+}
+
 // Order zod Schema
 // ------------------------------------------------------------
 export const quoteSchema = z.object({
@@ -33,11 +40,17 @@ export const createReturnJobSchema = z.object({
   actualReturnDate: z.string().datetime().optional(), // Actual return date for late fee calculation
 });
 
-// Request types
+// Request types - explicitly typed to avoid 'any' inference
 // ------------------------------------------------------------
-export type QuoteRequest = z.infer<typeof quoteSchema>;
+export interface QuoteRequest {
+  studentId: string;
+  studentAddress: Address;
+}
 
-export type CreateReturnJobRequest = z.infer<typeof createReturnJobSchema>;
+export interface CreateReturnJobRequest {
+  returnAddress?: Address;
+  actualReturnDate?: string;
+}
 
 export interface GetQuoteResponse {
   distancePrice: number;
@@ -45,7 +58,17 @@ export interface GetQuoteResponse {
   dailyStorageRate: number; // Daily storage rate for late return fee calculation
 }
 
-export type CreateOrderRequest = z.infer<typeof createOrderSchema>;
+export interface CreateOrderRequest {
+  studentId: string;
+  volume: number;
+  totalPrice: number;
+  studentAddress: Address;
+  warehouseAddress: Address;
+  pickupTime: string;
+  returnTime: string;
+  returnAddress?: Address;
+  paymentIntentId?: string;
+}
 
 // Extend CreateOrderRequest with idempotencyKey for createOrder service method
 export interface CreateOrderRequestWithIdempotency extends CreateOrderRequest {
@@ -66,8 +89,6 @@ export interface CreateReturnJobResponse {
 }
 
 export type GetActiveOrderResponse = Order | null;
-
-export type Address = z.infer<typeof addressSchema>;
 
 // Generic type
 // ------------------------------------------------------------

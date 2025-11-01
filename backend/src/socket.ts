@@ -28,10 +28,14 @@ export function initSocket(server: http.Server) {
       >,
       next
     ) => {
-      const token =
+      const tokenValue =
         socket.handshake.auth?.token ??
         socket.handshake.query?.token ??
         socket.handshake.headers?.authorization;
+      
+      // Ensure token is a string or undefined
+      const token = typeof tokenValue === 'string' ? tokenValue : undefined;
+      
       verifyTokenString(token)
         .then(user => {
           // store a minimal typed payload on socket.data to avoid using `any`
