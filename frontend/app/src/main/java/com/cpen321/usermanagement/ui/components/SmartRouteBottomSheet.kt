@@ -79,10 +79,6 @@ fun SmartRouteBottomSheet(
 
     SmartRouteBottomSheetContent(
         onDismiss = onDismiss,
-        snackbarHostState = snackbarHostState,
-        spacing = spacing,
-        showDurationSelector = showDurationSelector,
-        selectedDuration = selectedDuration,
         onDurationSelected = { selectedDuration = it },
         onDurationConfirm = {
             if (!hasLocationPermission) {
@@ -92,53 +88,65 @@ fun SmartRouteBottomSheet(
             }
             showDurationSelector = false
         },
-        uiState = uiState,
-        hasLocationPermission = hasLocationPermission,
         onRequestPermission = { locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION) },
         onRetry = { fetchCurrentLocationAndRoute(context, viewModel, selectedDuration) },
         onJobClick = onJobClick,
-        onAcceptAll = onAcceptAll
+        onAcceptAll = onAcceptAll,
+        BottomSheetContentState(
+            snackbarHostState = snackbarHostState,
+            spacing = spacing,
+            showDurationSelector = showDurationSelector,
+            selectedDuration = selectedDuration,
+            uiState = uiState,
+            hasLocationPermission = hasLocationPermission
+        )
     )
 }
+
+data class BottomSheetContentState(
+    val snackbarHostState: SnackbarHostState,
+    val spacing: Spacing,
+    val showDurationSelector: Boolean,
+    val selectedDuration: Int?,
+    val uiState: SmartRouteUiState,
+    val hasLocationPermission: Boolean
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SmartRouteBottomSheetContent(
     onDismiss: () -> Unit,
-    snackbarHostState: SnackbarHostState,
-    spacing: Spacing,
-    showDurationSelector: Boolean,
-    selectedDuration: Int?,
     onDurationSelected: (Int?) -> Unit,
     onDurationConfirm: () -> Unit,
-    uiState: SmartRouteUiState,
-    hasLocationPermission: Boolean,
     onRequestPermission: () -> Unit,
     onRetry: () -> Unit,
     onJobClick: (String) -> Unit,
-    onAcceptAll: (List<String>) -> Unit
+    onAcceptAll: (List<String>) -> Unit,
+    state: BottomSheetContentState
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ) {
         Scaffold(
-            snackbarHost = { SnackbarHost(snackbarHostState) }
+            snackbarHost = { SnackbarHost(state.snackbarHostState) }
         ) { paddingValues ->
             SmartRouteContent(
-                spacing = spacing,
-                paddingValues = paddingValues,
                 onDismiss = onDismiss,
-                showDurationSelector = showDurationSelector,
-                selectedDuration = selectedDuration,
                 onDurationSelected = onDurationSelected,
                 onDurationConfirm = onDurationConfirm,
-                uiState = uiState,
-                hasLocationPermission = hasLocationPermission,
                 onRequestPermission = onRequestPermission,
                 onRetry = onRetry,
                 onJobClick = onJobClick,
-                onAcceptAll = onAcceptAll
+                onAcceptAll = onAcceptAll,
+                ContentState(
+                    spacing = state.spacing,
+                    paddingValues = paddingValues,
+                    showDurationSelector = state.showDurationSelector,
+                    selectedDuration = state.selectedDuration,
+                    uiState = state.uiState,
+                    hasLocationPermission = state.hasLocationPermission
+                )
             )
         }
     }
@@ -192,49 +200,53 @@ private fun rememberLocationPermissionState(
     return Pair(hasLocationPermission, locationPermissionLauncher)
 }
 
+data class ContentState(
+    val spacing: Spacing,
+    val paddingValues: PaddingValues,
+    val showDurationSelector: Boolean,
+    val selectedDuration: Int?,
+    val uiState: SmartRouteUiState,
+    val hasLocationPermission: Boolean
+)
+
 @Composable
 private fun SmartRouteContent(
-    spacing: Spacing,
-    paddingValues: PaddingValues,
     onDismiss: () -> Unit,
-    showDurationSelector: Boolean,
-    selectedDuration: Int?,
     onDurationSelected: (Int?) -> Unit,
     onDurationConfirm: () -> Unit,
-    uiState: SmartRouteUiState,
-    hasLocationPermission: Boolean,
     onRequestPermission: () -> Unit,
     onRetry: () -> Unit,
     onJobClick: (String) -> Unit,
-    onAcceptAll: (List<String>) -> Unit
+    onAcceptAll: (List<String>) -> Unit,
+    state: ContentState
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(spacing.medium)
-            .padding(paddingValues)
+            .padding(state.spacing.medium)
+            .padding(state.paddingValues)
     ) {
         // Header
         SmartRouteHeader(onDismiss = onDismiss)
 
-        Spacer(modifier = Modifier.height(spacing.medium))
+        Spacer(modifier = Modifier.height(state.spacing.medium))
 
         // Show duration selector first, then route
-        if (showDurationSelector) {
+        if (state.showDurationSelector) {
             DurationSelector(
-                selectedDuration = selectedDuration,
+                selectedDuration = state.selectedDuration,
                 onDurationSelected = onDurationSelected,
                 onConfirm = onDurationConfirm
             )
         } else {
             SmartRouteStateContent(
-                uiState = uiState,
-                hasLocationPermission = hasLocationPermission,
+                uiState = state.uiState,
+                hasLocationPermission = state.hasLocationPermission,
                 onRequestPermission = onRequestPermission,
                 onRetry = onRetry,
                 onJobClick = onJobClick,
                 onAcceptAll = onAcceptAll,
-                spacing = spacing
+                spacing = state.spacing
             )
         }
     }

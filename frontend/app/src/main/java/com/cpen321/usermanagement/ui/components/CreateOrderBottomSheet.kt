@@ -30,11 +30,13 @@ import com.cpen321.usermanagement.data.repository.PaymentRepository
 import com.cpen321.usermanagement.ui.components.shared.DatePickerDialog
 import com.cpen321.usermanagement.utils.LocationUtils
 import com.cpen321.usermanagement.utils.TimeUtils
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.TimeoutCancellationException
 import java.text.SimpleDateFormat
 import java.util.*
+import android.content.Context
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -317,33 +319,17 @@ private fun AddressCaptureStep(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     
-    // Single address field with autocomplete
     var addressInput by remember { mutableStateOf("") }
     var selectedAddress by remember { mutableStateOf<SelectedAddress?>(null) }
     var isValidating by remember { mutableStateOf(false) }
 
     Column {
-        Text(
-            text = "We need your pickup address to find the nearest warehouse",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-        Text(
-            text = "Currently serving Greater Vancouver, BC only",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
+        AddressCaptureInstructions()
         
-        // Address autocomplete field
         AddressAutocompleteField(
             value = addressInput,
             onValueChange = { 
                 addressInput = it
-                // Clear selected address when user starts typing again
                 if (selectedAddress != null && it != selectedAddress?.formattedAddress) {
                     selectedAddress = null
                 }
@@ -356,65 +342,108 @@ private fun AddressCaptureStep(
         )
         
         Spacer(modifier = Modifier.height(8.dp))
-        
         Spacer(modifier = Modifier.height(32.dp))
         
-        Button(
-            onClick = {
-                if (selectedAddress == null) {
-                    onError("Please select an address from the suggestions")
-                }
-                else{
-                    isValidating = true
-                    coroutineScope.launch {
-                        try {
-                            // Validate that the selected address is within Vancouver area
-                            val validationResult = LocationUtils.validateAndGeocodeAddress(
-                                context,
-                                selectedAddress!!.formattedAddress
-                            )
-
-                            if (validationResult.isValid && validationResult.coordinates != null) {
-                                // Address is valid and within Vancouver area
-                                val address = Address(
-                                    lat = selectedAddress!!.latitude,
-                                    lon = selectedAddress!!.longitude,
-                                    formattedAddress = selectedAddress!!.formattedAddress
-                                )
-                                onAddressConfirmed(address)
-                            } else {
-                                // Address is invalid or outside service area
-                                onError(validationResult.errorMessage ?: "Invalid address. Please select a valid address within Greater Vancouver.")
-                                isValidating = false
-                            }
-                        } catch (e: java.io.IOException) {
-                            // Network / Geocoder I/O error
-                            onError("Network error validating address. Please check your connection and try again.")
-                            isValidating = false
-                        } catch (e: IllegalArgumentException) {
-                            // Bad input passed to Geocoder
-                            onError("Invalid address format. Please enter a valid address.")
-                            isValidating = false
-                        }
-                    }
-                }
-            },
-            enabled = !isValidating && selectedAddress != null,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            if (isValidating) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Validating Address...")
-                }
-            } else {
-                Text("Get Base Delivery Charge")
+        AddressValidationButton(
+            isValidating = isValidating,
+            hasSelectedAddress = selectedAddress != null,
+            onValidate = {
+                handleAddressValidation(
+                    selectedAddress = selectedAddress,
+                    context = context,
+                    coroutineScope = coroutineScope,
+                    onAddressConfirmed = onAddressConfirmed,
+                    onError = onError,
+                    onValidatingChange = { isValidating = it }
+                )
             }
+        )
+    }
+}
+
+@Composable
+private fun AddressCaptureInstructions() {
+    Text(
+        text = "We need your pickup address to find the nearest warehouse",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(bottom = 8.dp)
+    )
+
+    Text(
+        text = "Currently serving Greater Vancouver, BC only",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.Medium,
+        modifier = Modifier.padding(bottom = 24.dp)
+    )
+}
+
+@Composable
+private fun AddressValidationButton(
+    isValidating: Boolean,
+    hasSelectedAddress: Boolean,
+    onValidate: () -> Unit
+) {
+    Button(
+        onClick = onValidate,
+        enabled = !isValidating && hasSelectedAddress,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        if (isValidating) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Validating Address...")
+            }
+        } else {
+            Text("Get Base Delivery Charge")
+        }
+    }
+}
+
+private fun handleAddressValidation(
+    selectedAddress: SelectedAddress?,
+    context: Context,
+    coroutineScope: CoroutineScope,
+    onAddressConfirmed: (Address) -> Unit,
+    onError: (String) -> Unit,
+    onValidatingChange: (Boolean) -> Unit
+) {
+    if (selectedAddress == null) {
+        onError("Please select an address from the suggestions")
+        return
+    }
+    
+    onValidatingChange(true)
+    coroutineScope.launch {
+        try {
+            val validationResult = LocationUtils.validateAndGeocodeAddress(
+                context,
+                selectedAddress.formattedAddress
+            )
+
+            if (validationResult.isValid && validationResult.coordinates != null) {
+                val address = Address(
+                    lat = selectedAddress.latitude,
+                    lon = selectedAddress.longitude,
+                    formattedAddress = selectedAddress.formattedAddress
+                )
+                onAddressConfirmed(address)
+            } else {
+                onError(validationResult.errorMessage ?: "Invalid address. Please select a valid address within Greater Vancouver.")
+                onValidatingChange(false)
+            }
+        } catch (e: java.io.IOException) {
+            onError("Network error validating address. Please check your connection and try again.")
+            onValidatingChange(false)
+        } catch (e: IllegalArgumentException) {
+            onError("Invalid address format. Please enter a valid address.")
+            onValidatingChange(false)
         }
     }
 }
