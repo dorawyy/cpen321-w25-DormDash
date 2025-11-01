@@ -5,6 +5,7 @@ import {
   SmartRouteResponse,
 } from '../types/route.types';
 import logger from '../utils/logger.util';
+import { extractObjectIdString } from '../utils/mongoose.util';
 
 export class RouteController {
   /**
@@ -57,8 +58,9 @@ export class RouteController {
       }
 
       // Validate request using schema
+      // Convert moverId to a safe string (handles populated docs / ObjectId)
       const validatedRequest = smartRouteRequestSchema.parse({
-        moverId: moverId.toString(),
+        moverId: extractObjectIdString(moverId),
         currentLocation: {
           lat: currentLat,
           lon: currentLon,

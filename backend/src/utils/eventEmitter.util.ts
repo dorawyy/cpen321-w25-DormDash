@@ -2,6 +2,7 @@ import { emitToRooms } from '../socket';
 import { Job } from '../types/job.type';
 import { Order } from '../types/order.types';
 import logger from './logger.util';
+import { extractObjectIdString } from './mongoose.util';
 
 /**
  * EventMeta - Metadata for all events
@@ -15,8 +16,9 @@ export interface EventMeta {
  * Helper: Extract ID from potentially populated Mongoose field
  */
 function extractId(field: unknown): string {
+  // Prefer extracting a canonical ObjectId string when possible.
   if (!field) return '';
-  return (field as { _id?: unknown })._id?.toString() ?? field.toString();
+  return extractObjectIdString(field);
 }
 
 /**
