@@ -16,9 +16,11 @@ export class AuthController {
     next: NextFunction
   ) {
     try {
-      const { idToken } = req.body;
+      // Ensure the incoming idToken is treated as a string to avoid zod-infer/any leaks
+      const { idToken } = req.body as AuthenticateUserRequest;
+      const idTokenStr: string = idToken;
 
-      const data = await authService.signUpWithGoogle(idToken);
+      const data = await authService.signUpWithGoogle(idTokenStr);
 
       return res.status(201).json({
         message: 'User signed up successfully',

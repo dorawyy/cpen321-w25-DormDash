@@ -46,7 +46,7 @@ export class OrderService {
     return new OrderService();
   }
 
-  async getQuote(reqData: QuoteRequest): Promise<GetQuoteResponse> {
+  getQuote(reqData: QuoteRequest): Promise<GetQuoteResponse> {
     try {
       const { studentAddress } = reqData;
 
@@ -61,14 +61,14 @@ export class OrderService {
       );
       const dailyStorageRate = PRICING.DAILY_STORAGE_RATE;
 
-      return {
+      return Promise.resolve({
         distancePrice,
         warehouseAddress: closestWarehouse,
         dailyStorageRate,
-      };
+      });
     } catch (error) {
       logger.error('Error in getQuote service:', error);
-      throw new Error('Failed to calculate quote');
+      return Promise.reject(new Error('Failed to calculate quote'));
     }
   }
 
