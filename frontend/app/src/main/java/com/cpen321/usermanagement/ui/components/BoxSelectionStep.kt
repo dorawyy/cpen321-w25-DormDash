@@ -22,6 +22,36 @@ import com.cpen321.usermanagement.utils.TimeUtils
 import java.text.SimpleDateFormat
 import java.util.*
 
+private data class DateTimeState(
+    val showPickupDatePicker: Boolean = false,
+    val selectedPickupDateMillis: Long = System.currentTimeMillis() + (24 * 60 * 60 * 1000L),
+    val pickupHour: Int = 10,
+    val pickupMinute: Int = 0,
+    val showPickupTimeDialog: Boolean = false,
+    val showReturnDatePicker: Boolean = false,
+    val selectedReturnDateMillis: Long = System.currentTimeMillis() + (7 * 24 * 60 * 60 * 1000L),
+    val returnHour: Int = 17,
+    val returnMinute: Int = 0,
+    val showReturnTimeDialog: Boolean = false
+)
+
+private data class DateTimeDisplay(
+    val pickupDate: String,
+    val pickupHour: Int,
+    val pickupMinute: Int,
+    val returnDate: String,
+    val returnHour: Int,
+    val returnMinute: Int,
+    val isReturnBeforePickup: Boolean
+)
+
+private data class DateTimeActions(
+    val onShowPickupDatePicker: () -> Unit,
+    val onShowPickupTimePicker: () -> Unit,
+    val onShowReturnDatePicker: () -> Unit,
+    val onShowReturnTimePicker: () -> Unit
+)
+
 // Step 3: Box Selection with Dynamic Pricing
 @Composable
 fun BoxSelectionStep(
@@ -598,87 +628,3 @@ private fun PriceRow(label: String, amount: Double) {
     }
 }
 
-@Composable
-private fun TimePickerDialog(
-    initialHour: Int,
-    initialMinute: Int,
-    onTimeSelected: (Int, Int) -> Unit,
-    onDismiss: () -> Unit
-) {
-    var selectedHour by remember { mutableStateOf(initialHour) }
-    var selectedMinute by remember { mutableStateOf(initialMinute) }
-    
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Select Time") },
-        text = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Hour selector
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    IconButton(onClick = { selectedHour = (selectedHour + 1) % 24 }) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = "Increase hour",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Text(
-                        text = String.format("%02d", selectedHour),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    IconButton(onClick = { selectedHour = if (selectedHour > 0) selectedHour - 1 else 23 }) {
-                        Icon(
-                            Icons.Default.Remove,
-                            contentDescription = "Decrease hour",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-                
-                Text(
-                    text = ":",
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-                
-                // Minute selector
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    IconButton(onClick = { selectedMinute = (selectedMinute + 15) % 60 }) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = "Increase minute",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Text(
-                        text = String.format("%02d", selectedMinute),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    IconButton(onClick = { selectedMinute = if (selectedMinute >= 15) selectedMinute - 15 else 45 }) {
-                        Icon(
-                            Icons.Default.Remove,
-                            contentDescription = "Decrease minute",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onTimeSelected(selectedHour, selectedMinute) }) {
-                Text("OK")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
