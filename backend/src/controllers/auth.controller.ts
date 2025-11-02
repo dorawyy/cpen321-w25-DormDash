@@ -17,7 +17,7 @@ export class AuthController {
   ) {
     try {
       // Ensure the incoming idToken is treated as a string to avoid zod-infer/any leaks
-      const { idToken } = req.body as AuthenticateUserRequest;
+      const { idToken } = req.body;
       const idTokenStr: string = idToken;
 
       const data = await authService.signUpWithGoogle(idTokenStr);
