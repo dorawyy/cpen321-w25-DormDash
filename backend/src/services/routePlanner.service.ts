@@ -368,13 +368,15 @@ export class RoutePlannerService {
       // STEP 2: Filter to only feasible jobs (can arrive on time)
       // Filter jobs that are feasible by arrival, within mover availability,
       // and — if a maxDuration is provided — fit within the remaining time budget.
+      // NOTE: maxDuration should only count ACTIVE work time (travel + job execution),
+      // NOT waiting time (idle time waiting for scheduled start).
       const feasibleJobs = jobsWithDistances.filter(j => {
         if (!j.isFeasibleByArrival) return false;
         if (!j.withinAvailability) return false;
         if (typeof maxDuration === 'number') {
-          const extraTime =
-            (j.travelTime || 0) + (j.waitingTime || 0) + (j.jobDuration || 0);
-          if (totalElapsedTime + extraTime > maxDuration) return false;
+          // Only count active work time: travel + job duration (exclude waiting)
+          const activeWorkTime = (j.travelTime || 0) + (j.jobDuration || 0);
+          if (totalElapsedTime + activeWorkTime > maxDuration) return false;
         }
         return true;
       });
@@ -424,8 +426,9 @@ export class RoutePlannerService {
         selectedJob.scheduledTime.getTime() + jobDuration * 60000
       );
 
-      // Increase total elapsed time by travel + waiting + job duration
-    totalElapsedTime += travelTime + waitingTime + jobDuration;
+      // Increase total elapsed time by ACTIVE work time only (travel + job)
+      // Waiting time is idle and shouldn't count against max duration
+      totalElapsedTime += travelTime + jobDuration;
 
       // Remove selected job from remaining jobs
       const jobIndex = remainingJobs.findIndex(

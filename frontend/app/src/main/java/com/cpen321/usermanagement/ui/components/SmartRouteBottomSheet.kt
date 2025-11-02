@@ -539,149 +539,172 @@ private fun RouteJobCard(
 ) {
     val spacing = LocalSpacing.current
     
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(spacing.medium)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .background(
-                                MaterialTheme.colorScheme.primary,
-                                RoundedCornerShape(16.dp)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "${index + 1}",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(spacing.small))
-                    Text(
-                        text = job.jobType,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
-                }
-                Text(
-                    text = "$${String.format("%.2f", job.price)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(spacing.medium)) {
+            JobCardHeader(job = job, index = index, spacing = spacing)
             Spacer(modifier = Modifier.height(spacing.small))
             
-            // Travel info from previous
             if (job.distanceFromPrevious > 0) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.DirectionsCar,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = Color.Black
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "${String.format("%.1f", job.distanceFromPrevious)} km • ${job.travelTimeFromPrevious} min travel",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Black
-                    )
-                }
+                TravelInfoRow(job = job)
                 Spacer(modifier = Modifier.height(spacing.extraSmall))
             }
             
-            // Pickup address
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.LocationOn,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = Color.Black
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = job.pickupAddress.formattedAddress,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Black,
-                    maxLines = 1
-                )
-            }
-            
+            PickupAddressRow(address = job.pickupAddress.formattedAddress)
             Spacer(modifier = Modifier.height(spacing.extraSmall))
             
-            // Time and duration
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Schedule,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = Color.Black
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = TimeUtils.formatDateTime(job.scheduledTime),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Black
-                    )
-                }
-                Text(
-                    text = "${job.estimatedDuration} min job",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Black
-                )
-            }
+            TimingAndDurationRow(job = job, spacing = spacing)
             
-            // Volume
-            Text(
-                text = "${String.format("%.1f", job.volume)} m³",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Black,
-                modifier = Modifier.padding(top = spacing.extraSmall)
-            )
-            
+            VolumeText(volume = job.volume, spacing = spacing)
             Spacer(modifier = Modifier.height(spacing.small))
             
-            // Accept button
-            Button(
-                onClick = onJobClick,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Icon(
-                    Icons.Default.Schedule,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(spacing.extraSmall))
-                Text("Accept Job")
-            }
+            AcceptJobButton(onJobClick = onJobClick, spacing = spacing)
         }
+    }
+}
+
+@Composable
+private fun JobCardHeader(job: JobInRoute, index: Int, spacing: Spacing) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            JobIndexBadge(index = index + 1)
+            Spacer(modifier = Modifier.width(spacing.small))
+            Text(
+                text = job.jobType,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+        }
+        Text(
+            text = "$${String.format("%.2f", job.price)}",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+private fun JobIndexBadge(index: Int) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .background(
+                MaterialTheme.colorScheme.primary,
+                RoundedCornerShape(16.dp)
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "$index",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onPrimary
+        )
+    }
+}
+
+@Composable
+private fun TravelInfoRow(job: JobInRoute) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            Icons.Default.DirectionsCar,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = Color.Black
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = "${String.format("%.1f", job.distanceFromPrevious)} km • ${job.travelTimeFromPrevious} min travel",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.Black
+        )
+    }
+}
+
+@Composable
+private fun PickupAddressRow(address: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            Icons.Default.LocationOn,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = Color.Black
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = address,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.Black,
+            maxLines = 1
+        )
+    }
+}
+
+@Composable
+private fun TimingAndDurationRow(job: JobInRoute, spacing: Spacing) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Default.Schedule,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = Color.Black
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = TimeUtils.formatDateTime(job.scheduledTime),
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Black
+            )
+        }
+        Text(
+            text = "${job.estimatedDuration} min job",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.Black
+        )
+    }
+}
+
+@Composable
+private fun VolumeText(volume: Double, spacing: Spacing) {
+    Text(
+        text = "${String.format("%.1f", volume)} m³",
+        style = MaterialTheme.typography.bodySmall,
+        color = Color.Black,
+        modifier = Modifier.padding(top = spacing.extraSmall)
+    )
+}
+
+@Composable
+private fun AcceptJobButton(onJobClick: () -> Unit, spacing: Spacing) {
+    Button(
+        onClick = onJobClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary
+        )
+    ) {
+        Icon(
+            Icons.Default.Schedule,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(modifier = Modifier.width(spacing.extraSmall))
+        Text("Accept Job")
     }
 }
 
