@@ -132,14 +132,16 @@ private fun SmartRouteBottomSheetContent(
             snackbarHost = { SnackbarHost(state.snackbarHostState) }
         ) { paddingValues ->
             SmartRouteContent(
-                onDismiss = onDismiss,
-                onDurationSelected = onDurationSelected,
-                onDurationConfirm = onDurationConfirm,
-                onRequestPermission = onRequestPermission,
-                onRetry = onRetry,
-                onJobClick = onJobClick,
-                onAcceptAll = onAcceptAll,
-                ContentState(
+                callbacks = SmartRouteCallbacks(
+                    onDismiss = onDismiss,
+                    onDurationSelected = onDurationSelected,
+                    onDurationConfirm = onDurationConfirm,
+                    onRequestPermission = onRequestPermission,
+                    onRetry = onRetry,
+                    onJobClick = onJobClick,
+                    onAcceptAll = onAcceptAll
+                ),
+                state = ContentState(
                     spacing = state.spacing,
                     paddingValues = paddingValues,
                     showDurationSelector = state.showDurationSelector,
@@ -209,15 +211,19 @@ data class ContentState(
     val hasLocationPermission: Boolean
 )
 
+data class SmartRouteCallbacks(
+    val onDismiss: () -> Unit,
+    val onDurationSelected: (Int?) -> Unit,
+    val onDurationConfirm: () -> Unit,
+    val onRequestPermission: () -> Unit,
+    val onRetry: () -> Unit,
+    val onJobClick: (String) -> Unit,
+    val onAcceptAll: (List<String>) -> Unit
+)
+
 @Composable
 private fun SmartRouteContent(
-    onDismiss: () -> Unit,
-    onDurationSelected: (Int?) -> Unit,
-    onDurationConfirm: () -> Unit,
-    onRequestPermission: () -> Unit,
-    onRetry: () -> Unit,
-    onJobClick: (String) -> Unit,
-    onAcceptAll: (List<String>) -> Unit,
+    callbacks: SmartRouteCallbacks,
     state: ContentState
 ) {
     Column(
@@ -227,7 +233,7 @@ private fun SmartRouteContent(
             .padding(state.paddingValues)
     ) {
         // Header
-        SmartRouteHeader(onDismiss = onDismiss)
+        SmartRouteHeader(onDismiss = callbacks.onDismiss)
 
         Spacer(modifier = Modifier.height(state.spacing.medium))
 
@@ -235,17 +241,17 @@ private fun SmartRouteContent(
         if (state.showDurationSelector) {
             DurationSelector(
                 selectedDuration = state.selectedDuration,
-                onDurationSelected = onDurationSelected,
-                onConfirm = onDurationConfirm
+                onDurationSelected = callbacks.onDurationSelected,
+                onConfirm = callbacks.onDurationConfirm
             )
         } else {
             SmartRouteStateContent(
                 uiState = state.uiState,
                 hasLocationPermission = state.hasLocationPermission,
-                onRequestPermission = onRequestPermission,
-                onRetry = onRetry,
-                onJobClick = onJobClick,
-                onAcceptAll = onAcceptAll,
+                onRequestPermission = callbacks.onRequestPermission,
+                onRetry = callbacks.onRetry,
+                onJobClick = callbacks.onJobClick,
+                onAcceptAll = callbacks.onAcceptAll,
                 spacing = state.spacing
             )
         }
