@@ -241,86 +241,123 @@ private fun ReturnJobStepContent(
 ) {
     when (state.currentStep) {
         ReturnJobStep.SELECT_DATE -> {
-            DateSelectionStep(
-                DateSelectionState(
-                    expectedReturnDate = TimeUtils.formatDatePickerDate(state.expectedReturnDate),
-                    selectedDate = TimeUtils.formatDatePickerDate(state.selectedDateMillis),
-                    returnHour = state.returnHour,
-                    returnMinute = state.returnMinute,
-                    daysDifference = state.daysDifference,
-                    adjustmentAmount = state.adjustmentAmount,
-                    isEarlyReturn = state.isEarlyReturn,
-                    isLateReturn = state.isLateReturn
-                ),
-                DateSelectionActions(
-                    onDateClick = { state.onDatePickerChange(true) },
-                    onTimeClick = { state.onTimeDialogChange(true) },
-                    onNext = {
-                        state.onStepChange(
-                            if (state.isLateReturn) ReturnJobStep.PAYMENT else ReturnJobStep.ADDRESS
-                        )
-                    }
-                )
-            )
+            DateStepHandler(state = state)
         }
         
         ReturnJobStep.ADDRESS -> {
-            AddressSelectionStep(
-                defaultAddress = activeOrder.returnAddress?.formattedAddress 
-                    ?: activeOrder.studentAddress.formattedAddress,
-                useCustomAddress = state.useCustomAddress,
-                streetAddress = state.addressInput,
-                selectedAddress = state.selectedAddress,
-                isValidating = state.isValidating,
-                AddressSelectionActions(
-                    onUseCustomAddressChange = { 
-                        state.onUseCustomAddressChange(it)
-                        if (it) {
-                            state.onAddressInputChange("")
-                            state.onSelectedAddressChange(null)
-                        }
-                    },
-                    onStreetAddressChange = {
-                        state.onAddressInputChange(it)
-                        if (state.selectedAddress != null && it != state.selectedAddress?.formattedAddress) {
-                            state.onSelectedAddressChange(null)
-                        }
-                    },
-                    onAddressSelected = { address ->
-                        state.onSelectedAddressChange(address)
-                        state.onAddressInputChange(address.formattedAddress)
-                    },
-                    onConfirm = {
-                        handleAddressConfirmation(
-                            useCustomAddress = state.useCustomAddress,
-                            selectedAddress = state.selectedAddress,
-                            context = context,
-                            coroutineScope = coroutineScope,
-                            state = state,
-                            onSubmit = onSubmit
-                        )
-                    }
-                )
+            AddressStepHandler(
+                activeOrder = activeOrder,
+                state = state,
+                context = context,
+                coroutineScope = coroutineScope,
+                onSubmit = onSubmit
             )
         }
         
         ReturnJobStep.PAYMENT -> {
-            PaymentStep(
-                lateFee = state.adjustmentAmount,
-                isProcessing = state.isProcessingPayment,
-                onPayment = { selectedCard ->
-                    handlePaymentProcessing(
-                        selectedCard = selectedCard,
-                        adjustmentAmount = state.adjustmentAmount,
-                        activeOrder = activeOrder,
-                        paymentRepository = paymentRepository,
-                        coroutineScope = coroutineScope,
-                        state = state
-                    )
-                }
+            PaymentStepHandler(
+                activeOrder = activeOrder,
+                state = state,
+                paymentRepository = paymentRepository,
+                coroutineScope = coroutineScope
             )
         }
     }
+}
+
+@Composable
+private fun DateStepHandler(state: ReturnJobState) {
+    DateSelectionStep(
+        DateSelectionState(
+            expectedReturnDate = TimeUtils.formatDatePickerDate(state.expectedReturnDate),
+            selectedDate = TimeUtils.formatDatePickerDate(state.selectedDateMillis),
+            returnHour = state.returnHour,
+            returnMinute = state.returnMinute,
+            daysDifference = state.daysDifference,
+            adjustmentAmount = state.adjustmentAmount,
+            isEarlyReturn = state.isEarlyReturn,
+            isLateReturn = state.isLateReturn
+        ),
+        DateSelectionActions(
+            onDateClick = { state.onDatePickerChange(true) },
+            onTimeClick = { state.onTimeDialogChange(true) },
+            onNext = {
+                state.onStepChange(
+                    if (state.isLateReturn) ReturnJobStep.PAYMENT else ReturnJobStep.ADDRESS
+                )
+            }
+        )
+    )
+}
+
+@Composable
+private fun AddressStepHandler(
+    activeOrder: Order,
+    state: ReturnJobState,
+    context: android.content.Context,
+    coroutineScope: kotlinx.coroutines.CoroutineScope,
+    onSubmit: (CreateReturnJobRequest, String?) -> Unit
+) {
+    AddressSelectionStep(
+        defaultAddress = activeOrder.returnAddress?.formattedAddress 
+            ?: activeOrder.studentAddress.formattedAddress,
+        useCustomAddress = state.useCustomAddress,
+        streetAddress = state.addressInput,
+        selectedAddress = state.selectedAddress,
+        isValidating = state.isValidating,
+        AddressSelectionActions(
+            onUseCustomAddressChange = { 
+                state.onUseCustomAddressChange(it)
+                if (it) {
+                    state.onAddressInputChange("")
+                    state.onSelectedAddressChange(null)
+                }
+            },
+            onStreetAddressChange = {
+                state.onAddressInputChange(it)
+                if (state.selectedAddress != null && it != state.selectedAddress?.formattedAddress) {
+                    state.onSelectedAddressChange(null)
+                }
+            },
+            onAddressSelected = { address ->
+                state.onSelectedAddressChange(address)
+                state.onAddressInputChange(address.formattedAddress)
+            },
+            onConfirm = {
+                handleAddressConfirmation(
+                    useCustomAddress = state.useCustomAddress,
+                    selectedAddress = state.selectedAddress,
+                    context = context,
+                    coroutineScope = coroutineScope,
+                    state = state,
+                    onSubmit = onSubmit
+                )
+            }
+        )
+    )
+}
+
+@Composable
+private fun PaymentStepHandler(
+    activeOrder: Order,
+    state: ReturnJobState,
+    paymentRepository: PaymentRepository,
+    coroutineScope: kotlinx.coroutines.CoroutineScope
+) {
+    PaymentStep(
+        lateFee = state.adjustmentAmount,
+        isProcessing = state.isProcessingPayment,
+        onPayment = { selectedCard ->
+            handlePaymentProcessing(
+                selectedCard = selectedCard,
+                adjustmentAmount = state.adjustmentAmount,
+                activeOrder = activeOrder,
+                paymentRepository = paymentRepository,
+                coroutineScope = coroutineScope,
+                state = state
+            )
+        }
+    )
 }
 
 @Composable
@@ -480,8 +517,6 @@ private fun handlePaymentProcessing(
             )
         } catch (e: java.io.IOException) {
             state.onProcessingPaymentChange(false)
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e
         }
     }
 }
@@ -734,340 +769,6 @@ private fun FeePreviewCard(
             )
         }
     }
-}
-
-data class AddressSelectionActions(
-    val onUseCustomAddressChange: (Boolean) -> Unit,
-    val onStreetAddressChange: (String) -> Unit,
-    val onAddressSelected: (SelectedAddress) -> Unit,
-    val onConfirm: () -> Unit
-)
-
-@Composable
-private fun AddressSelectionStep(
-    defaultAddress: String,
-    useCustomAddress: Boolean,
-    streetAddress: String,
-    selectedAddress: SelectedAddress?,
-    isValidating: Boolean,
-    actions: AddressSelectionActions
-) {
-    Column {
-        Text(
-            text = "Return Address",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        DefaultAddressOption(
-            defaultAddress = defaultAddress,
-            isSelected = !useCustomAddress,
-            onSelect = { actions.onUseCustomAddressChange(false) }
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        CustomAddressOption(
-            isSelected = useCustomAddress,
-            onSelect = { actions.onUseCustomAddressChange(true) }
-        )
-        
-        if (useCustomAddress) {
-            Spacer(modifier = Modifier.height(16.dp))
-            CustomAddressInput(
-                streetAddress = streetAddress,
-                onValueChange = actions.onStreetAddressChange,
-                onAddressSelected = actions.onAddressSelected
-            )
-        }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        ConfirmAddressButton(
-            isValidating = isValidating,
-            isEnabled = !useCustomAddress || selectedAddress != null,
-            onConfirm = actions.onConfirm
-        )
-    }
-}
-
-@Composable
-private fun DefaultAddressOption(
-    defaultAddress: String,
-    isSelected: Boolean,
-    onSelect: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        RadioButton(
-            selected = isSelected,
-            onClick = onSelect
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Column {
-            Text(
-                text = "Use default address",
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Text(
-                text = defaultAddress,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-private fun CustomAddressOption(isSelected: Boolean, onSelect: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        RadioButton(
-            selected = isSelected,
-            onClick = onSelect
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "Use custom address",
-            style = MaterialTheme.typography.bodyLarge
-        )
-    }
-}
-
-@Composable
-private fun CustomAddressInput(
-    streetAddress: String,
-    onValueChange: (String) -> Unit,
-    onAddressSelected: (SelectedAddress) -> Unit
-) {
-    Text(
-        text = "Currently serving Greater Vancouver, BC only",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.primary,
-        fontWeight = FontWeight.Medium,
-        modifier = Modifier.padding(bottom = 8.dp)
-    )
-    
-    AddressAutocompleteField(
-        value = streetAddress,
-        onValueChange = onValueChange,
-        onAddressSelected = onAddressSelected,
-        modifier = Modifier.fillMaxWidth()
-    )
-}
-
-@Composable
-private fun ConfirmAddressButton(
-    isValidating: Boolean,
-    isEnabled: Boolean,
-    onConfirm: () -> Unit
-) {
-    Button(
-        onClick = onConfirm,
-        enabled = !isValidating && isEnabled,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        if (isValidating) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Validating Address...")
-            }
-        } else {
-            Text("Confirm Return Details")
-        }
-    }
-}
-
-@Composable
-private fun PaymentStep(
-    lateFee: Double,
-    isProcessing: Boolean,
-    onPayment: (TestCard) -> Unit
-) {
-    var selectedTestCard by remember { mutableStateOf(TestPaymentMethods.TEST_CARDS[0]) }
-    var showCardSelector by remember { mutableStateOf(false) }
-    
-    Column {
-        Text(
-            text = "Payment Required",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        LateFeeCard(lateFee)
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        TestCardSelector(
-            selectedCard = selectedTestCard,
-            onShowSelector = { showCardSelector = true }
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        PaymentButton(
-            lateFee = lateFee,
-            isProcessing = isProcessing,
-            onPayment = { onPayment(selectedTestCard) }
-        )
-    }
-    
-    if (showCardSelector) {
-        TestCardSelectorDialog(
-            selectedCard = selectedTestCard,
-            onCardSelected = { card ->
-                selectedTestCard = card
-                showCardSelector = false
-            },
-            onDismiss = { showCardSelector = false }
-        )
-    }
-}
-
-@Composable
-private fun LateFeeCard(lateFee: Double) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Late Return Fee",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = "Total Amount Due",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            
-            Text(
-                text = "$${String.format("%.2f", lateFee)}",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
-
-@Composable
-private fun TestCardSelector(selectedCard: TestCard, onShowSelector: () -> Unit) {
-    OutlinedCard(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onShowSelector
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = selectedCard.description,
-                    style = MaterialTheme.typography.titleSmall
-                )
-                Text(
-                    text = "•••• ${selectedCard.number.takeLast(4)}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Icon(
-                Icons.Default.Edit,
-                contentDescription = "Change card"
-            )
-        }
-    }
-}
-
-@Composable
-private fun PaymentButton(
-    lateFee: Double,
-    isProcessing: Boolean,
-    onPayment: () -> Unit
-) {
-    Button(
-        onClick = onPayment,
-        enabled = !isProcessing,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        if (isProcessing) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Processing Payment...")
-            }
-        } else {
-            Text("Pay $${String.format("%.2f", lateFee)}")
-        }
-    }
-}
-
-@Composable
-private fun TestCardSelectorDialog(
-    selectedCard: TestCard,
-    onCardSelected: (TestCard) -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Select Test Card") },
-        text = {
-            Column {
-                TestPaymentMethods.TEST_CARDS.forEach { card ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = card == selectedCard,
-                            onClick = { onCardSelected(card) }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                text = card.description,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Text(
-                                text = "•••• ${card.number.takeLast(4)}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Done")
-            }
-        }
-    )
 }
 
 
