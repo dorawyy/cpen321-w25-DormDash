@@ -42,112 +42,128 @@ import android.content.Context
 @Composable
 fun CreateOrderBottomSheet(
     onDismiss: () -> Unit,
-    onSubmitOrder: (OrderRequest, String?) -> Unit, // Added paymentIntentId parameter
+    onSubmitOrder: (OrderRequest, String?) -> Unit,
     orderViewModel: OrderViewModel,
     paymentRepository: PaymentRepository,
     modifier: Modifier = Modifier
 ) {
-    // Step management
-    var currentStep by remember { mutableStateOf(OrderCreationStep.ADDRESS_CAPTURE) }
-    var studentAddress by remember { mutableStateOf<Address?>(null) }
-    var warehouseAddress by remember { mutableStateOf<Address?>(null) }
-    var pricingRules by remember { mutableStateOf<PricingRules?>(null) }
-    
-    // Order and payment data
-    var orderRequest by remember { mutableStateOf<OrderRequest?>(null) }
-    var paymentIntentResponse by remember { mutableStateOf<CreatePaymentIntentResponse?>(null) }
-    var paymentDetails by remember { mutableStateOf(PaymentDetails()) }
-    var isSubmitting by remember { mutableStateOf(false) }
-    
-    // Error handling
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    
+    val state = rememberOrderCreationState()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     
-    Column(
-        modifier = modifier.padding(24.dp)
-    ) {
+    Column(modifier = modifier.padding(24.dp)) {
         OrderCreationHeader(
-            currentStep = currentStep,
+            currentStep = state.currentStep,
             onDismiss = onDismiss,
-            onBack = { 
-                currentStep = when(currentStep) {
-                    OrderCreationStep.BOX_SELECTION -> OrderCreationStep.ADDRESS_CAPTURE
-                    OrderCreationStep.PAYMENT_DETAILS -> OrderCreationStep.BOX_SELECTION
-                    OrderCreationStep.PROCESSING_PAYMENT -> OrderCreationStep.PAYMENT_DETAILS
-                    else -> OrderCreationStep.ADDRESS_CAPTURE
-                }
-            }
+            onBack = { state.navigateBack() }
         )
         
         Spacer(modifier = Modifier.height(24.dp))
-        
-        ErrorMessageDisplay(errorMessage = errorMessage)
+        ErrorMessageDisplay(errorMessage = state.errorMessage)
         
         OrderCreationStepContent(
-            currentStep = currentStep,
-            studentAddress = studentAddress,
-            pricingRules = pricingRules,
-            orderRequest = orderRequest,
-            paymentDetails = paymentDetails,
-            isSubmitting = isSubmitting,
-            onAddressConfirmed = { address ->
-                studentAddress = address
-                currentStep = OrderCreationStep.LOADING_QUOTE
+            currentStep = state.currentStep,
+            data = OrderCreationData(
+                studentAddress = state.studentAddress,
+                pricingRules = state.pricingRules,
+                orderRequest = state.orderRequest,
+                paymentDetails = state.paymentDetails,
+                isSubmitting = state.isSubmitting
+            ),
+            callbacks = OrderCreationCallbacks(
+                onAddressConfirmed = { address ->
+                    state.studentAddress = address
+                    state.currentStep = OrderCreationStep.LOADING_QUOTE
+                    state.errorMessage = null
+                    
+                    coroutineScope.launch {
+                        handleQuoteFetch(
+                            orderViewModel = orderViewModel,
+                            address = address,
+                            onSuccess = { quoteResponse ->
+                                state.warehouseAddress = quoteResponse.warehouseAddress
+                                state.pricingRules = PricingRules(
+                                    distanceServiceFee = quoteResponse.distancePrice
+                                )
+                                state.currentStep = OrderCreationStep.BOX_SELECTION
+                            },
+                            onError = { error ->
+                                state.errorMessage = error
+                                state.currentStep = OrderCreationStep.ADDRESS_CAPTURE
+                            }
+                        )
+                    }
+                },
+                onAddressError = { error -> state.errorMessage = error },
+                onProceedToPayment = { order ->
+                    state.orderRequest = order
+                    state.currentStep = OrderCreationStep.PAYMENT_DETAILS
+                    state.errorMessage = null
+                },
+                onPaymentDetailsChange = { details -> state.paymentDetails = details },
+                onProcessPayment = { 
+                    state.processPayment(coroutineScope, paymentRepository, onSubmitOrder)
+                },
+                onClose = onDismiss
+            )
+        )
+    }
+}
+
+@Composable
+private fun rememberOrderCreationState() = remember {
+    OrderCreationState()
+}
+
+private class OrderCreationState {
+    var currentStep by mutableStateOf(OrderCreationStep.ADDRESS_CAPTURE)
+    var studentAddress by mutableStateOf<Address?>(null)
+    var warehouseAddress by mutableStateOf<Address?>(null)
+    var pricingRules by mutableStateOf<PricingRules?>(null)
+    var orderRequest by mutableStateOf<OrderRequest?>(null)
+    var paymentIntentResponse by mutableStateOf<CreatePaymentIntentResponse?>(null)
+    var paymentDetails by mutableStateOf(PaymentDetails())
+    var isSubmitting by mutableStateOf(false)
+    var errorMessage by mutableStateOf<String?>(null)
+    
+    fun navigateBack() {
+        currentStep = when(currentStep) {
+            OrderCreationStep.BOX_SELECTION -> OrderCreationStep.ADDRESS_CAPTURE
+            OrderCreationStep.PAYMENT_DETAILS -> OrderCreationStep.BOX_SELECTION
+            OrderCreationStep.PROCESSING_PAYMENT -> OrderCreationStep.PAYMENT_DETAILS
+            else -> OrderCreationStep.ADDRESS_CAPTURE
+        }
+    }
+    
+    fun processPayment(
+        coroutineScope: kotlinx.coroutines.CoroutineScope,
+        paymentRepository: PaymentRepository,
+        onSubmitOrder: (OrderRequest, String?) -> Unit
+    ) {
+        orderRequest?.let { order ->
+            if (!isSubmitting) {
+                isSubmitting = true
+                currentStep = OrderCreationStep.PROCESSING_PAYMENT
                 errorMessage = null
                 
                 coroutineScope.launch {
-                    handleQuoteFetch(
-                        orderViewModel = orderViewModel,
-                        address = address,
-                        onSuccess = { quoteResponse ->
-                            warehouseAddress = quoteResponse.warehouseAddress
-                            pricingRules = PricingRules(distanceServiceFee = quoteResponse.distancePrice)
-                            currentStep = OrderCreationStep.BOX_SELECTION
+                    handlePaymentProcessing(
+                        order = order,
+                        paymentDetails = paymentDetails,
+                        paymentRepository = paymentRepository,
+                        onSuccess = { intentId ->
+                            onSubmitOrder(order, intentId)
+                            currentStep = OrderCreationStep.ORDER_CONFIRMATION
                         },
                         onError = { error ->
                             errorMessage = error
-                            currentStep = OrderCreationStep.ADDRESS_CAPTURE
+                            currentStep = OrderCreationStep.PAYMENT_DETAILS
+                            isSubmitting = false
                         }
                     )
                 }
-            },
-            onAddressError = { error -> errorMessage = error },
-            onProceedToPayment = { order ->
-                orderRequest = order
-                currentStep = OrderCreationStep.PAYMENT_DETAILS
-                errorMessage = null
-            },
-            onPaymentDetailsChange = { details -> paymentDetails = details },
-            onProcessPayment = {
-                orderRequest?.let { order ->
-                    if (!isSubmitting) {
-                        isSubmitting = true
-                        currentStep = OrderCreationStep.PROCESSING_PAYMENT
-                        errorMessage = null
-                        
-                        coroutineScope.launch {
-                            handlePaymentProcessing(
-                                order = order,
-                                paymentDetails = paymentDetails,
-                                paymentRepository = paymentRepository,
-                                onSuccess = { intentId ->
-                                    onSubmitOrder(order, intentId)
-                                    currentStep = OrderCreationStep.ORDER_CONFIRMATION
-                                },
-                                onError = { error ->
-                                    errorMessage = error
-                                    currentStep = OrderCreationStep.PAYMENT_DETAILS
-                                    isSubmitting = false
-                                }
-                            )
-                        }
-                    }
-                }
-            },
-            onClose = onDismiss
-        )
+            }
+        }
     }
 }
 
@@ -206,26 +222,34 @@ fun ErrorMessageDisplay(errorMessage: String?) {
     }
 }
 
+private data class OrderCreationCallbacks(
+    val onAddressConfirmed: (Address) -> Unit,
+    val onAddressError: (String) -> Unit,
+    val onProceedToPayment: (OrderRequest) -> Unit,
+    val onPaymentDetailsChange: (PaymentDetails) -> Unit,
+    val onProcessPayment: () -> Unit,
+    val onClose: () -> Unit
+)
+
+private data class OrderCreationData(
+    val studentAddress: Address?,
+    val pricingRules: PricingRules?,
+    val orderRequest: OrderRequest?,
+    val paymentDetails: PaymentDetails,
+    val isSubmitting: Boolean
+)
+
 @Composable
 private fun OrderCreationStepContent(
     currentStep: OrderCreationStep,
-    studentAddress: Address?,
-    pricingRules: PricingRules?,
-    orderRequest: OrderRequest?,
-    paymentDetails: PaymentDetails,
-    isSubmitting: Boolean,
-    onAddressConfirmed: (Address) -> Unit,
-    onAddressError: (String) -> Unit,
-    onProceedToPayment: (OrderRequest) -> Unit,
-    onPaymentDetailsChange: (PaymentDetails) -> Unit,
-    onProcessPayment: () -> Unit,
-    onClose: () -> Unit
+    data: OrderCreationData,
+    callbacks: OrderCreationCallbacks
 ) {
     when (currentStep) {
         OrderCreationStep.ADDRESS_CAPTURE -> {
             AddressCaptureStep(
-                onAddressConfirmed = onAddressConfirmed,
-                onError = onAddressError
+                onAddressConfirmed = callbacks.onAddressConfirmed,
+                onError = callbacks.onAddressError
             )
         }
         
@@ -234,23 +258,23 @@ private fun OrderCreationStepContent(
         }
         
         OrderCreationStep.BOX_SELECTION -> {
-            pricingRules?.let { rules ->
+            data.pricingRules?.let { rules ->
                 BoxSelectionStep(
                     pricingRules = rules,
-                    studentAddress = studentAddress!!,
-                    onProceedToPayment = onProceedToPayment
+                    studentAddress = data.studentAddress!!,
+                    onProceedToPayment = callbacks.onProceedToPayment
                 )
             }
         }
         
         OrderCreationStep.PAYMENT_DETAILS -> {
-            orderRequest?.let { order ->
+            data.orderRequest?.let { order ->
                 PaymentDetailsStep(
                     orderRequest = order,
-                    paymentDetails = paymentDetails,
-                    onPaymentDetailsChange = onPaymentDetailsChange,
-                    isSubmitting = isSubmitting,
-                    onProcessPayment = onProcessPayment
+                    paymentDetails = data.paymentDetails,
+                    onPaymentDetailsChange = callbacks.onPaymentDetailsChange,
+                    isSubmitting = data.isSubmitting,
+                    onProcessPayment = callbacks.onProcessPayment
                 )
             }
         }
@@ -260,10 +284,10 @@ private fun OrderCreationStepContent(
         }
         
         OrderCreationStep.ORDER_CONFIRMATION -> {
-            orderRequest?.let { order ->
+            data.orderRequest?.let { order ->
                 OrderConfirmationStep(
                     orderRequest = order,
-                    onClose = onClose
+                    onClose = callbacks.onClose
                 )
             }
         }
