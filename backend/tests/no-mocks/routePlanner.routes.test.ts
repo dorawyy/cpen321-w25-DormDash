@@ -1,23 +1,16 @@
 import { describe, expect, test, beforeAll, afterAll, beforeEach, jest } from '@jest/globals';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
-import mongoose from 'mongoose';
+import mongoose, { mongo } from 'mongoose';
 import app from '../../src/app';
 import { connectDB, disconnectDB } from '../../src/config/database';
 import { userModel } from '../../src/models/user.model';
 
-// Mock socket to prevent warnings during tests
-jest.mock('../../src/socket', () => ({
-  emitToRooms: jest.fn(),
-  getIo: jest.fn(),
-  initSocket: jest.fn(),
-}));
 
 // Suppress console logs during tests
 const originalConsole = {
   log: console.log,
   warn: console.warn,
-  error: console.error,
   info: console.info,
 };
 
@@ -28,7 +21,6 @@ beforeAll(async () => {
   // Suppress all console output during tests for clean test output
   console.log = jest.fn();
   console.warn = jest.fn();
-  console.error = jest.fn();
   console.info = jest.fn();
 
   // Connect to test database
@@ -87,7 +79,6 @@ afterAll(async () => {
   // Restore console functions
   console.log = originalConsole.log;
   console.warn = originalConsole.warn;
-  console.error = originalConsole.error;
   console.info = originalConsole.info;
 });
 
@@ -227,17 +218,70 @@ describe('GET /api/routePlanner/smart - Get Smart Route', () => {
     expect(response.body.data.startLocation).toHaveProperty('lon', -123.1207);
   });
 
-  test('should return startLocation matching input coordinates', async () => {
+  test('should return empty route if no jobs available', async () => {
     const response = await request(app)
-      .get('/api/routePlanner/smart')
-      .query({
-        currentLat: 49.2827,
-        currentLon: -123.1207
-      })
-      .set('Authorization', `Bearer ${authToken}`)
-      .expect(200);
+        .get('/api/routePlanner/smart')
+        .query({
+            currentLat: 0,
+            currentLon: 0
+        })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);   
+    expect(response.body).toHaveProperty('message', 'No jobs available matching your schedule');
+    expect(response.body.data).toHaveProperty('route');
+    expect(Array.isArray(response.body.data.route)).toBe(true);
+    expect(response.body.data.route.length).toBe(0);
+  });
+  
+  test('should not suggest jobs that exceed maxDuration', async () => {
+    //fist inject jobs that are within and beyond maxDuration
+    mongoose.connection.db.collection('jobs').insertMany([
+        {
+            _id: new mongoose.Types.ObjectId(),
+            studentId: new mongoose.Types.ObjectId(),
+            orderId: new mongoose.Types.ObjectId(),
+            jobType: 'PICKUP',
+            volume: 1,
+            price: 50,
+            pickupAddress: '123 Test St, Test City, TC',
+            dropoffAddress: '456 Sample Ave, Sample City, SC',
+            scheduledTime: new Date(Date.now() + 3600000), // 1 hour from now
+            status: 'PENDING'
+        },
+        {
+            _id: new mongoose.Types.ObjectId(),
+            studentId: new mongoose.Types.ObjectId(),
+            orderId: new mongoose.Types.ObjectId(),
+            jobType: 'DROPOFF',
+            volume: 2,
+            price: 100,
+            pickupAddress: '789 Example Rd, Example City, EC',
+            dropoffAddress: '101 Demo Blvd, Demo City, DC',
+            scheduledTime: new Date(Date.now() + 7200000), // 2 hours from now
+            status:
+            'PENDING'
+        }
+    ]);
 
-    expect(response.body.data.startLocation).toHaveProperty('lat', 49.2827);
-    expect(response.body.data.startLocation).toHaveProperty('lon', -123.1207);
+    const response = await request(app)
+        .get('/api/routePlanner/smart')
+        .query({
+            currentLat: 49.2827,
+            currentLon: -123.1207,
+            maxDuration: 30 // 30 minutes
+        })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+    expect(response.body).toHaveProperty('message', 'No jobs available matching your schedule');
+    expect(response.body.data).toHaveProperty('route');
+    expect(Array.isArray(response.body.data.route)).toBe(true);
+    expect(response.body.data.route.length).toBe(0);
+    
+    // Clean up injected jobs
+    await
+    mongoose.connection.db.collection('jobs').deleteMany({
+        pickupAddress: { $in: ['123 Test St, Test City, TC', '789 Example Rd, Example City, EC'] }
     });
+  });   
 });
