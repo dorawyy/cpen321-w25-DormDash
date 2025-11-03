@@ -352,11 +352,26 @@ private fun ProfileSection(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(LocalSpacing.current.medium)
     ) {
-        ManageProfileButton(onClick = onManageProfileClick, enabled = isInteractive)
+        MenuButtonItem(
+            text = stringResource(R.string.manage_profile),
+            iconRes = R.drawable.ic_manage_profile,
+            onClick = onManageProfileClick,
+            enabled = isInteractive,
+        )
         if (userRole?.uppercase() == "MOVER") {
-            JobHistoryButton(onClick = onManageOrdersClick, enabled = isInteractive)
+            MenuButtonItem(
+                text = stringResource(R.string.job_history),
+                iconRes = R.drawable.ic_edit,
+                onClick = onManageOrdersClick,
+                enabled = isInteractive,
+            )
         } else {
-            ManageOrdersButton(onClick = onManageOrdersClick, enabled = isInteractive)
+            MenuButtonItem(
+                text = stringResource(R.string.manage_orders),
+                iconRes = R.drawable.ic_edit,
+                onClick = onManageOrdersClick,
+                enabled = isInteractive,
+            )
         }
     }
 }
@@ -372,8 +387,18 @@ private fun AccountSection(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(LocalSpacing.current.medium)
     ) {
-        SignOutButton (onClick = onSignOutClick, enabled = isInteractive)
-        DeleteAccountButton(onClick = onDeleteAccountClick, enabled = isInteractive)
+        MenuButtonItem(
+            text = stringResource(R.string.sign_out),
+            iconRes = R.drawable.ic_sign_out,
+            onClick = onSignOutClick,
+            enabled = isInteractive,
+        )
+        MenuButtonItem(
+            text = stringResource(R.string.delete_account),
+            iconRes = R.drawable.ic_delete_forever,
+            onClick = onDeleteAccountClick,
+            enabled = isInteractive,
+        )
     }
 }
 
@@ -422,70 +447,6 @@ private fun CreditsSection(
             Text("Cash Out")
         }
     }
-}
-
-@Composable
-private fun ManageProfileButton(
-    onClick: () -> Unit,
-    enabled: Boolean = true
-) {
-    MenuButtonItem(
-        text = stringResource(R.string.manage_profile),
-        iconRes = R.drawable.ic_manage_profile,
-        onClick = onClick,
-        enabled = enabled,
-    )
-}
-
-@Composable
-private fun JobHistoryButton(
-    onClick: () -> Unit,
-    enabled: Boolean = true
-) {
-    MenuButtonItem(
-        text = stringResource(R.string.job_history),
-        iconRes = R.drawable.ic_edit,
-        onClick = onClick,
-        enabled = enabled,
-    )
-}
-
-@Composable
-private fun ManageOrdersButton(
-    onClick: () -> Unit,
-    enabled: Boolean = true
-) {
-    MenuButtonItem(
-        text = stringResource(R.string.manage_orders),
-        iconRes = R.drawable.ic_edit,
-        onClick = onClick,
-        enabled = enabled,
-    )
-}
-
-@Composable
-private fun SignOutButton(
-    onClick: () -> Unit,
-    enabled: Boolean = true
-){
-    MenuButtonItem(
-        text = stringResource(R.string.sign_out),
-        iconRes = R.drawable.ic_sign_out,
-        onClick = onClick,
-        enabled = enabled,
-    )
-}
-@Composable
-private fun DeleteAccountButton(
-    onClick: () -> Unit,
-    enabled: Boolean = true
-) {
-    MenuButtonItem(
-        text = stringResource(R.string.delete_account),
-        iconRes = R.drawable.ic_delete_forever,
-        onClick = onClick,
-        enabled = enabled,
-    )
 }
 
 @Composable
