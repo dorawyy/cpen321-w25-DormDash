@@ -403,7 +403,6 @@ export class RoutePlannerService {
       const pickupLoc = selectedJob.pickupAddress;
       const dropoffLoc = selectedJob.dropoffAddress;
       const travelTime = selectedJob.travelTime;
-      const waitingTime = selectedJob.waitingTime;
 
       route.push({
         jobId: String(selectedJob.id),

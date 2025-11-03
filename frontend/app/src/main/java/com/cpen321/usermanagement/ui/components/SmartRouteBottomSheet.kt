@@ -78,21 +78,23 @@ fun SmartRouteBottomSheet(
     }
 
     SmartRouteBottomSheetContent(
-        onDismiss = onDismiss,
-        onDurationSelected = { selectedDuration = it },
-        onDurationConfirm = {
-            if (!hasLocationPermission) {
-                locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-            } else {
-                fetchCurrentLocationAndRoute(context, viewModel, selectedDuration)
-            }
-            showDurationSelector = false
-        },
-        onRequestPermission = { locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION) },
-        onRetry = { fetchCurrentLocationAndRoute(context, viewModel, selectedDuration) },
-        onJobClick = onJobClick,
-        onAcceptAll = onAcceptAll,
-        BottomSheetContentState(
+        callbacks = BottomSheetCallbacks(
+            onDismiss = onDismiss,
+            onDurationSelected = { selectedDuration = it },
+            onDurationConfirm = {
+                if (!hasLocationPermission) {
+                    locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                } else {
+                    fetchCurrentLocationAndRoute(context, viewModel, selectedDuration)
+                }
+                showDurationSelector = false
+            },
+            onRequestPermission = { locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION) },
+            onRetry = { fetchCurrentLocationAndRoute(context, viewModel, selectedDuration) },
+            onJobClick = onJobClick,
+            onAcceptAll = onAcceptAll
+        ),
+        state = BottomSheetContentState(
             snackbarHostState = snackbarHostState,
             spacing = spacing,
             showDurationSelector = showDurationSelector,
@@ -112,20 +114,24 @@ data class BottomSheetContentState(
     val hasLocationPermission: Boolean
 )
 
+data class BottomSheetCallbacks(
+    val onDismiss: () -> Unit,
+    val onDurationSelected: (Int?) -> Unit,
+    val onDurationConfirm: () -> Unit,
+    val onRequestPermission: () -> Unit,
+    val onRetry: () -> Unit,
+    val onJobClick: (String) -> Unit,
+    val onAcceptAll: (List<String>) -> Unit
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SmartRouteBottomSheetContent(
-    onDismiss: () -> Unit,
-    onDurationSelected: (Int?) -> Unit,
-    onDurationConfirm: () -> Unit,
-    onRequestPermission: () -> Unit,
-    onRetry: () -> Unit,
-    onJobClick: (String) -> Unit,
-    onAcceptAll: (List<String>) -> Unit,
+    callbacks: BottomSheetCallbacks,
     state: BottomSheetContentState
 ) {
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = callbacks.onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ) {
         Scaffold(
@@ -133,13 +139,13 @@ private fun SmartRouteBottomSheetContent(
         ) { paddingValues ->
             SmartRouteContent(
                 callbacks = SmartRouteCallbacks(
-                    onDismiss = onDismiss,
-                    onDurationSelected = onDurationSelected,
-                    onDurationConfirm = onDurationConfirm,
-                    onRequestPermission = onRequestPermission,
-                    onRetry = onRetry,
-                    onJobClick = onJobClick,
-                    onAcceptAll = onAcceptAll
+                    onDismiss = callbacks.onDismiss,
+                    onDurationSelected = callbacks.onDurationSelected,
+                    onDurationConfirm = callbacks.onDurationConfirm,
+                    onRequestPermission = callbacks.onRequestPermission,
+                    onRetry = callbacks.onRetry,
+                    onJobClick = callbacks.onJobClick,
+                    onAcceptAll = callbacks.onAcceptAll
                 ),
                 state = ContentState(
                     spacing = state.spacing,
