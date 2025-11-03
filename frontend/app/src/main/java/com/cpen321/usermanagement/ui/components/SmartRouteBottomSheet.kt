@@ -557,12 +557,7 @@ private fun RouteJobCard(
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "${index + 1}",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
+                        TextWithIndex(index = index)
                     }
                     Spacer(modifier = Modifier.width(spacing.small))
                     Text(
@@ -600,6 +595,16 @@ private fun RouteJobCard(
             }
         }
     }
+}
+
+@Composable
+private fun TextWithIndex(index: Int) {
+    Text(
+        text = "${index + 1}",
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onPrimary
+    )
 }
 
 @Composable
