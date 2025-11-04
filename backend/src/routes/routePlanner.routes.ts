@@ -6,6 +6,10 @@ const router = Router();
 
 // GET /api/routes/smart - Calculate optimized route for mover
 // Query params: currentLat, currentLon
-router.get('/smart', authenticateToken, routeController.getSmartRoute.bind(routeController));
+router.get('/smart', authenticateToken, (req, res, next) => {
+  routeController.getSmartRoute(req, res).catch((err: unknown) => {
+    next(err);
+  });
+});
 
 export default router;

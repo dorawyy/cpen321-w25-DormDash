@@ -5,7 +5,8 @@ import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.google.android.gms.maps.model.LatLng
-
+import java.io.IOException
+import android.location.Address
 /**
  * Location utilities for geocoding addresses to coordinates
  */
@@ -30,101 +31,88 @@ object LocationUtils {
     /**
      * Validate and geocode an address, ensuring it's within Vancouver, BC area
      */
-    suspend fun validateAndGeocodeAddress(context: Context, address: String): AddressValidationResult {
-        return withContext(Dispatchers.IO) {
-            try {
-                val geocoder = Geocoder(context)
-                val results = geocoder.getFromLocationName(address, 1)
+    suspend fun validateAndGeocodeAddress(
+        context: Context,
+        address: String
+    ): AddressValidationResult = withContext(Dispatchers.IO) {
+        try {
+            val geocoder = Geocoder(context)
+            val results = geocoder.getFromLocationName(address, 1)
 
-                if (results.isNullOrEmpty()) {
-                    return@withContext AddressValidationResult(
-                        isValid = false,
-                        coordinates = null,
-                        formattedAddress = null,
-                        errorMessage = "Address not found. Please enter a valid address."
-                    )
-                }
-
-                val location = results[0]
-                val lat = location.latitude
-                val lon = location.longitude
-
-                // Check if the geocoder actually found a proper street address
-                // If there's no street number or thoroughfare (street name), it likely just matched postal code
-                val thoroughfare = location.thoroughfare // Street name
-                val subThoroughfare = location.subThoroughfare // Street number
-                val featureName = location.featureName // Could be street number or name
-
-                // Check if we have a real street address (not just postal code match)
-                if (thoroughfare.isNullOrBlank() && featureName.isNullOrBlank()) {
-                    return@withContext AddressValidationResult(
-                        isValid = false,
-                        coordinates = null,
-                        formattedAddress = null,
-                        errorMessage = "Please enter a complete street address (e.g., 123 Main St, not just a postal code)."
-                    )
-                }
-
-                // Check if address is in Vancouver, BC
-                if (!isInVancouverArea(lat, lon)) {
-                    return@withContext AddressValidationResult(
-                        isValid = false,
-                        coordinates = null,
-                        formattedAddress = null,
-                        errorMessage = "We currently only service Greater Vancouver."
-                    )
-                }
-
-                // Check if it's in BC, Canada
-                val locality = location.locality ?: ""
-                val adminArea = location.adminArea ?: ""
-                val countryCode = location.countryCode ?: ""
-
-                if (countryCode != "CA" || adminArea != "British Columbia") {
-                    return@withContext AddressValidationResult(
-                        isValid = false,
-                        coordinates = null,
-                        formattedAddress = null,
-                        errorMessage = "Address must be in British Columbia, Canada."
-                    )
-                }
-
-                // Validate that we have city/locality information
-                if (locality.isBlank() && location.subAdminArea.isNullOrBlank()) {
-                    return@withContext AddressValidationResult(
-                        isValid = false,
-                        coordinates = null,
-                        formattedAddress = null,
-                        errorMessage = "Please enter a complete address with a valid city name."
-                    )
-                }
-
-                // Build formatted address
-                val addressLines = (0 until (location.maxAddressLineIndex + 1))
-                    .map { location.getAddressLine(it) }
-                    .joinToString(", ")
-
-                return@withContext AddressValidationResult(
-                    isValid = true,
-                    coordinates = LatLng(lat, lon),
-                    formattedAddress = addressLines.ifEmpty { address },
-                    errorMessage = null
-                )
-            } catch (e: Exception) {
-                e.printStackTrace()
-                return@withContext AddressValidationResult(
+            if (results.isNullOrEmpty()) {
+                AddressValidationResult(
                     isValid = false,
                     coordinates = null,
                     formattedAddress = null,
-                    errorMessage = "Failed to validate address. Please check your internet connection and try again."
+                    errorMessage = "Address not found. Please enter a valid address."
+                )
+            } else {
+                validateLocation(results, address)
+            }
+        } catch (e: IOException) {
+            AddressValidationResult(
+                isValid = false,
+                coordinates = null,
+                formattedAddress = null,
+                errorMessage = "Network error validating address. Please check your connection and try again."
+            )
+        } catch (e: IllegalArgumentException) {
+            AddressValidationResult(
+                isValid = false,
+                coordinates = null,
+                formattedAddress = null,
+                errorMessage = "Invalid address format. Please enter a valid address."
+            )
+        }
+    }
+
+
+    private fun validateLocation(results : List<Address>, fallbackAddress: String ) : AddressValidationResult{
+        val location = results[0]
+
+        val lat = location.latitude
+        val lon = location.longitude
+
+        val thoroughfare = location.thoroughfare
+        val subThoroughfare = location.subThoroughfare
+        val featureName = location.featureName
+        return when {
+            thoroughfare.isNullOrBlank() && featureName.isNullOrBlank() ->
+                failure("Please enter a complete street address (e.g., 123 Main St, not just a postal code).")
+
+            !isInVancouverArea(lat, lon) ->
+                failure("We currently only service Greater Vancouver.")
+
+            (location.countryCode ?: "") != "CA" ||
+                    (location.adminArea ?: "") != "British Columbia" ->
+                failure("Address must be in British Columbia, Canada.")
+
+            (location.locality ?: "").isBlank() && location.subAdminArea.isNullOrBlank() ->
+                failure("Please enter a complete address with a valid city name.")
+
+            else -> {
+                val formatted = (0..location.maxAddressLineIndex)
+                    .joinToString(", ") { idx -> location.getAddressLine(idx) }
+
+                AddressValidationResult(
+                    isValid = true,
+                    coordinates = LatLng(lat, lon),
+                    formattedAddress = formatted.ifEmpty { fallbackAddress },
+                    errorMessage = null
                 )
             }
         }
     }
 
-    /**
-     * Check if coordinates are within Greater Vancouver area
-     */
+
+    private fun failure(message: String): AddressValidationResult =
+        AddressValidationResult(
+            isValid = false,
+            coordinates = null,
+            formattedAddress = null,
+            errorMessage = message
+        )
+
     private fun isInVancouverArea(lat: Double, lon: Double): Boolean {
         return lat in VANCOUVER_MIN_LAT..VANCOUVER_MAX_LAT &&
                lon >= VANCOUVER_MIN_LON && lon <= VANCOUVER_MAX_LON
@@ -146,7 +134,10 @@ object LocationUtils {
                 } else {
                     null
                 }
-            } catch (e: Exception) {
+            } catch (e: java.io.IOException) {
+                e.printStackTrace()
+                null
+            } catch (e: IllegalArgumentException) {
                 e.printStackTrace()
                 null
             }

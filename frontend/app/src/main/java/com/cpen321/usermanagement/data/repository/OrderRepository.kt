@@ -19,16 +19,12 @@ class OrderRepository @Inject constructor(
     private var lastStudentAddress: Address? = null
     private var isSubmitting: Boolean = false
     
-    /**
-     * Helper to get current user ID
-     */
-     private suspend fun getCurrentUserId(): String? {
+    
+    private suspend fun getCurrentUserId(): String? {
         return authRepository.getCurrentUser()?._id
     }
     
-    /**
-     * Transform frontend OrderRequest to backend CreateOrderRequest
-     */
+    
     private suspend fun transformToCreateOrderRequest(
         orderRequest: OrderRequest, 
         studentAddr: Address? = null, 
@@ -130,7 +126,14 @@ class OrderRepository @Inject constructor(
             } else {
                 Result.failure(Exception("Failed to get quote: ${response.message()}"))
             }
-        } catch (e: Exception) {
+        } catch (e: java.io.IOException) {
+            android.util.Log.e("OrderRepository", "Network error getting quote", e)
+            Result.failure(e)
+        } catch (e: retrofit2.HttpException) {
+            android.util.Log.e("OrderRepository", "HTTP error getting quote: ${e.code()}", e)
+            Result.failure(e)
+        } catch (e: com.google.gson.JsonSyntaxException) {
+            android.util.Log.e("OrderRepository", "JSON parsing error in quote response", e)
             Result.failure(e)
         }
     }
@@ -171,7 +174,14 @@ class OrderRepository @Inject constructor(
                 Result.failure(Exception("Failed to place order: ${response.message()}"))
             }
 
-        } catch (e: Exception) {
+        } catch (e: java.io.IOException) {
+            android.util.Log.e("OrderRepository", "Network error submitting order", e)
+            Result.failure(e)
+        } catch (e: retrofit2.HttpException) {
+            android.util.Log.e("OrderRepository", "HTTP error submitting order: ${e.code()}", e)
+            Result.failure(e)
+        } catch (e: com.google.gson.JsonSyntaxException) {
+            android.util.Log.e("OrderRepository", "JSON parsing error submitting order", e)
             Result.failure(e)
         } finally {
             isSubmitting = false
@@ -195,7 +205,11 @@ class OrderRepository @Inject constructor(
             } else {
                 null
             }
-        } catch (e: Exception) {
+        } catch (e: java.io.IOException) {
+                null
+            } catch (e: retrofit2.HttpException) {
+                null
+            } catch (e: com.google.gson.JsonSyntaxException) {
                 null
             }
     }
@@ -234,16 +248,18 @@ class OrderRepository @Inject constructor(
     suspend fun cancelOrder(){
         val response = orderApi.cancelOrder()
         if (!response.isSuccessful) {
-            throw Exception("Failed to cancel order: ${response.code()} ${response.message()}")
+            // Throw a Retrofit HttpException so callers can inspect status/code
+            throw retrofit2.HttpException(response)
         }
     }
 
     suspend fun createReturnJob(request: CreateReturnJobRequest): CreateReturnJobResponse {
         val response = orderApi.createReturnJob(request)
         if (!response.isSuccessful) {
-            throw Exception("Failed to create return job: ${response.code()} ${response.message()}")
+            // Surface server error as a HttpException with the response so handlers can react
+            throw retrofit2.HttpException(response)
         }
-        return response.body() ?: throw Exception("Empty response from server")
+        return response.body() ?: throw IllegalStateException("Empty response from server")
     }
 
 }

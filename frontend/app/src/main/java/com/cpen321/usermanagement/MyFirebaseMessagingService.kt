@@ -34,16 +34,15 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         sendTokenToBackend(token)
     }
 
-    public fun fetchAndSendFcmToken(place: String) {
+     fun fetchAndSendFcmToken(place: String) {
         Log.d("place", "fetchAndSendFcmToken called from: $place")
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-            if (!task.isSuccessful) {
-                Log.w("MyFCM", "Fetching FCM token failed", task.exception)
-                return@addOnCompleteListener
-            } else {
+            if (task.isSuccessful) {
                 val token = task.result
                 Log.d("ManualFCM", "Manual token: $token")
                 sendTokenToBackend(token)
+            } else {
+                Log.w("MyFCM", "Fetching FCM token failed", task.exception)
             }
         }
     }
@@ -64,8 +63,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 val errorBody = response.errorBody()?.string()
                 Log.e(TAG, "❌ Failed to clear FCM token - Status: ${response.code()}, Error: $errorBody")
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Exception while clearing FCM token: ${e.message}", e)
+        } catch (e: java.io.IOException) {
+            Log.e(TAG, "❌ Network error clearing FCM token", e)
+            throw e
+        } catch (e: retrofit2.HttpException) {
+            Log.e(TAG, "❌ HTTP error clearing FCM token: ${e.code()}", e)
             throw e
         }
     }
@@ -83,8 +85,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                     val errorBody = response.errorBody()?.string()
                     Log.e(TAG, "❌ Failed to update FCM token - Status: ${response.code()}, Error: $errorBody")
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "❌ Exception while updating FCM token: ${e.message}", e)
+            } catch (e: java.io.IOException) {
+                Log.e(TAG, "❌ Network error while updating FCM token", e)
+            } catch (e: retrofit2.HttpException) {
+                Log.e(TAG, "❌ HTTP error while updating FCM token: ${e.code()}", e)
             }
         }
     }

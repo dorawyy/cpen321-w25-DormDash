@@ -29,8 +29,17 @@ class PaymentRepository @Inject constructor(
                 println("PaymentRepository: HTTP error ${response.code()}: ${response.message()}")
                 Result.failure(Exception("HTTP ${response.code()}: ${response.message()}"))
             }
-        } catch (e: Exception) {
-            println("PaymentRepository: Exception creating payment intent: ${e.message}")
+        } catch (e: java.io.IOException) {
+            android.util.Log.e("PaymentRepository", "Network error creating payment intent", e)
+            println("PaymentRepository: Network error creating payment intent: ${e.message}")
+            Result.failure(e)
+        } catch (e: retrofit2.HttpException) {
+            android.util.Log.e("PaymentRepository", "HTTP error creating payment intent: ${e.code()}", e)
+            println("PaymentRepository: HTTP exception creating payment intent: ${e.message}")
+            Result.failure(e)
+        } catch (e: com.google.gson.JsonSyntaxException) {
+            android.util.Log.e("PaymentRepository", "JSON parsing error in payment intent response", e)
+            println("PaymentRepository: JSON parsing error: ${e.message}")
             Result.failure(e)
         }
     }
@@ -67,8 +76,17 @@ class PaymentRepository @Inject constructor(
                 println("PaymentRepository: HTTP error processing payment ${response.code()}: ${response.message()}")
                 Result.failure(Exception("HTTP ${response.code()}: ${response.message()}"))
             }
-        } catch (e: Exception) {
-            println("PaymentRepository: Exception processing payment: ${e.message}")
+        } catch (e: java.io.IOException) {
+            android.util.Log.e("PaymentRepository", "Network error processing payment", e)
+            println("PaymentRepository: Network error processing payment: ${e.message}")
+            Result.failure(e)
+        } catch (e: retrofit2.HttpException) {
+            android.util.Log.e("PaymentRepository", "HTTP error processing payment: ${e.code()}", e)
+            println("PaymentRepository: HTTP exception processing payment: ${e.message}")
+            Result.failure(e)
+        } catch (e: com.google.gson.JsonSyntaxException) {
+            android.util.Log.e("PaymentRepository", "JSON parsing error in payment response", e)
+            println("PaymentRepository: JSON parsing error: ${e.message}")
             Result.failure(e)
         }
     }

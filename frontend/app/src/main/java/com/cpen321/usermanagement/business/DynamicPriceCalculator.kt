@@ -1,6 +1,7 @@
 package com.cpen321.usermanagement.business
 
 import com.cpen321.usermanagement.data.local.models.*
+import android.util.Log
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -61,7 +62,8 @@ class DynamicPriceCalculator(private val pricingRules: PricingRules) {
             } else {
                 1 // Default to 1 day if parsing fails
             }
-        } catch (e: Exception) {
+        } catch (e: java.text.ParseException) {
+            Log.e("DynamicPriceCalculator", "Error parsing dates: $startDate, $endDate", e)
             1 // Default to 1 day if calculation fails
         }
     }

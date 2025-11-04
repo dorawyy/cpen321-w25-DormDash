@@ -6,7 +6,7 @@ import {
   AuthenticateUserResponse,
 } from '../types/auth.types';
 import logger from '../utils/logger.util';
-import { UserRole } from '../types/user.types';
+import { UserRole, IUser } from '../types/user.types';
 import { userModel } from '../models/user.model';
 
 export class AuthController {
@@ -16,9 +16,11 @@ export class AuthController {
     next: NextFunction
   ) {
     try {
+      // Ensure the incoming idToken is treated as a string to avoid zod-infer/any leaks
       const { idToken } = req.body;
+      const idTokenStr: string = idToken;
 
-      const data = await authService.signUpWithGoogle(idToken);
+      const data = await authService.signUpWithGoogle(idTokenStr);
 
       return res.status(201).json({
         message: 'User signed up successfully',
@@ -93,41 +95,44 @@ export class AuthController {
   }
 
   async selectRole(
-    req: Request<unknown, unknown, {userRole: UserRole}>,
+    req: Request<unknown, unknown, { userRole: UserRole }>,
     res: Response,
     next: NextFunction
   ) {
     try {
-      const user = req.user!; // From JWT middleware
+      if (!req.user) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
+      const user = req.user;
       const { userRole } = req.body;
-      
+
       // Initialize credits to 0 when selecting MOVER role
-      const updateData: any = { userRole };
+      const updateData: Partial<IUser> = { userRole };
       if (userRole === 'MOVER') {
         updateData.credits = 0;
       }
-      
+
       const updatedUser = await userModel.update(user._id, updateData);
-      
+
       if (!updatedUser) {
         return res.status(404).json({
           message: 'User not found',
         });
       }
-      
+
       return res.status(200).json({
         message: 'Role selected successfully',
-        data: { user: updatedUser }
+        data: { user: updatedUser },
       });
     } catch (error) {
       logger.error('Role selection failed:', error);
-      
+
       if (error instanceof Error) {
         return res.status(500).json({
           message: error.message || 'Failed to select role',
         });
       }
-      
+
       next(error);
     }
   }
