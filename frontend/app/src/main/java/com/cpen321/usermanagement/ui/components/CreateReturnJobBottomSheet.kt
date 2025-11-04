@@ -364,7 +364,10 @@ private fun PaymentStepHandler(
 private fun ReturnJobDialogs(state: ReturnJobState) {
     if (state.showDatePicker) {
         DatePickerDialog(
-            onDateSelected = { dateMillis -> state.onDateChange(dateMillis) },
+            onDateSelected = { dateMillis ->
+                state.onDateChange(dateMillis)
+                state.onDatePickerChange(false)
+            },
             onDismiss = { state.onDatePickerChange(false) },
             title = "Select Return Date",
             initialDateMillis = state.selectedDateMillis,
@@ -377,6 +380,7 @@ private fun ReturnJobDialogs(state: ReturnJobState) {
             onTimeSelected = { hour, minute ->
                 state.onHourChange(hour)
                 state.onMinuteChange(minute)
+                state.onTimeDialogChange(false)
             },
             onDismiss = { state.onTimeDialogChange(false) },
             initialHour = state.returnHour,
@@ -422,19 +426,19 @@ private fun handleAddressConfirmation(
                     )
 
                     if (validationResult.isValid && validationResult.coordinates != null) {
-                        state.onCustomAddressChange(
-                            Address(
-                                lat = selectedAddress.latitude,
-                                lon = selectedAddress.longitude,
-                                formattedAddress = selectedAddress.formattedAddress
-                            )
+                        val validatedAddress = Address(
+                            lat = selectedAddress.latitude,
+                            lon = selectedAddress.longitude,
+                            formattedAddress = selectedAddress.formattedAddress
                         )
+                        
+                        state.onCustomAddressChange(validatedAddress)
 
                         submitReturnJob(
                             selectedDateMillis = state.selectedDateMillis,
                             returnHour = state.returnHour,
                             returnMinute = state.returnMinute,
-                            customAddress = state.customAddress,
+                            customAddress = validatedAddress,
                             isEarlyReturn = state.isEarlyReturn,
                             paymentIntentId = state.paymentIntentId,
                             onSubmit = onSubmit

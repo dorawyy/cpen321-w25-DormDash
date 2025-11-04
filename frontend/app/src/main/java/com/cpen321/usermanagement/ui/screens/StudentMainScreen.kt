@@ -389,6 +389,10 @@ private fun CreateReturnJobBottomSheetHandler(
             coroutineScope.launch {
                 try {
                     val response = orderViewModel.createReturnJob(request)
+
+                    // Refresh order data before dismissing to ensure UI shows updated info
+                    orderViewModel.refreshActiveOrder()
+
                     onDismiss()
                     
                     val message = when {
@@ -402,7 +406,6 @@ private fun CreateReturnJobBottomSheetHandler(
                     }
                     
                     snackBarHostState.showSnackbar(message = message, duration = SnackbarDuration.Long)
-                    orderViewModel.refreshActiveOrder()
                 } catch (e: HttpException) {
                     snackBarHostState.showSnackbar(
                         message = "Failed to create return job: Server error (${e.code()})",
