@@ -9,6 +9,8 @@ import {
   Order,
   CreateReturnJobResponse,
   CreateReturnJobRequest,
+  CreateOrderRequest,
+  CreateOrderRequestWithIdempotency,
 } from '../types/order.types';
 import { ObjectId } from 'mongoose';
 
@@ -29,14 +31,17 @@ export class OrderController {
   }
 
   async createOrder(
-    req: Request,
+    req: Request<unknown, unknown, CreateOrderRequest>,
     res: Response<CreateOrderResponse>,
     next: NextFunction
   ) {
     try {
       // Pass idempotency key from header (if present) into the request body for service handling
       const idempotencyKey = req.header('Idempotency-Key') ?? undefined;
-      const reqWithKey = { ...req.body, idempotencyKey };
+      const reqWithKey: CreateOrderRequestWithIdempotency = { 
+        ...req.body, 
+        idempotencyKey 
+      };
       const result = await this.orderService.createOrder(reqWithKey);
       res.status(201).json(result);
     } catch (error) {

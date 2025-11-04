@@ -183,23 +183,12 @@ export class OrderService {
       );
 
       if (existingReturnJob) {
-        // If return job exists and is still AVAILABLE, allow updating it
-        if (existingReturnJob.status === JobStatus.AVAILABLE) {
-          logger.info(`Updating existing available return job for order ${activeOrder._id.toString()}`);
-          // Continue with the update flow (will update order and recreate job)
-          // First, cancel the old job
-          await jobModel.update(existingReturnJob._id, {
-            status: JobStatus.CANCELLED,
-            updatedAt: new Date(),
-          });
-        } else {
           // Job is already accepted or in progress, cannot modify
           logger.info(`Return job already exists and is ${existingReturnJob.status} for order ${activeOrder._id.toString()}`);
           return {
             success: true,
             message: 'Return job already exists for this order',
           };
-        }
       }
 
       // Calculate adjustment fee based on actual return date vs expected return date
