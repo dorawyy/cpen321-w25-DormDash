@@ -14,7 +14,7 @@ const originalConsole = {
 };
 
 let authToken: string;
-const testUserId = new mongoose.Types.ObjectId('507f1f77bcf86cd799439022');
+const testUserId = new mongoose.Types.ObjectId(); // Generate unique ID
 
 beforeAll(async () => {
   console.log = jest.fn();
@@ -23,20 +23,19 @@ beforeAll(async () => {
   // Connect to test database
   await connectDB();
 
-  // Clean up any existing test user by googleId
+    // Clean up any existing test user by googleId
   const db = mongoose.connection.db;
   if (db) {
-    await db.collection('users').deleteMany({ googleId: 'test-google-id-user' });
+    await db.collection('users').deleteMany({ googleId: `test-google-id-user-${testUserId.toString()}` });
   }
 
   // Create a test user in DB with specific _id
   await (userModel as any).user.create({
     _id: testUserId,
-    googleId: 'test-google-id-user',
-    email: 'testuser@example.com',
+    googleId: `test-google-id-user-${testUserId.toString()}`,
+    email: `user${testUserId.toString()}@example.com`,
     name: 'Test User',
-    userRole: 'STUDENT',
-    phoneNumber: '1234567890'
+    userRole: 'STUDENT'
   });
 
   // Generate a real JWT token for testing
@@ -52,8 +51,8 @@ beforeEach(async () => {
       { _id: testUserId },
       {
         $set: {
-          googleId: 'test-google-id-user',
-          email: 'testuser@example.com',
+          googleId: `test-google-id-user-${testUserId.toString()}`,
+          email: `testuser${testUserId.toString()}@example.com`,
           name: 'Test User',
           userRole: 'STUDENT',
           phoneNumber: '1234567890'
@@ -67,7 +66,7 @@ afterAll(async () => {
   // Clean up test user
   const db = mongoose.connection.db;
   if (db) {
-    await db.collection('users').deleteMany({ googleId: 'test-google-id-user' });
+    await db.collection('users').deleteMany({ googleId: `test-google-id-user-${testUserId.toString()}` });
   }
   
   // Disconnect from test database
@@ -91,7 +90,7 @@ describe('GET /api/user/profile - Get User Profile', () => {
 
     expect(response.body).toHaveProperty('data');
     expect(response.body.data).toHaveProperty('user');
-    expect(response.body.data.user).toHaveProperty('email', 'testuser@example.com');
+    expect(response.body.data.user).toHaveProperty('email', `testuser${testUserId.toString()}@example.com`);
     expect(response.body.data.user).toHaveProperty('name', 'Test User');
     expect(response.body.data.user).toHaveProperty('userRole', 'STUDENT');
   });

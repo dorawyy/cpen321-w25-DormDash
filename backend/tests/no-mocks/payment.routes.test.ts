@@ -16,7 +16,7 @@ const originalConsole = {
 };
 
 let authToken: string;
-const testUserId = new mongoose.Types.ObjectId('507f1f77bcf86cd799439044');
+const testUserId = new mongoose.Types.ObjectId(); // Generate unique ID
 
 beforeAll(async () => {
   // Suppress all console output during tests for clean test output
@@ -31,14 +31,14 @@ beforeAll(async () => {
   // Clean up any existing test user by googleId
   const db = mongoose.connection.db;
   if (db) {
-    await db.collection('users').deleteMany({ googleId: 'test-google-id-payment' });
+    await db.collection('users').deleteMany({ googleId: `test-google-id-payment-${testUserId.toString()}` });
   }
 
   // Create a test user in DB with specific _id
   await (userModel as any).user.create({
     _id: testUserId,
-    googleId: 'test-google-id-payment',
-    email: 'payment@example.com',
+    googleId: `test-google-id-payment-${testUserId.toString()}`,
+    email: `payment${testUserId.toString()}@example.com`,
     name: 'Payment Test User',
     userRole: 'STUDENT'
   });
@@ -56,8 +56,8 @@ beforeEach(async () => {
       { _id: testUserId },
       {
         $set: {
-          googleId: 'test-google-id-payment',
-          email: 'payment@example.com',
+          googleId: `test-google-id-payment-${testUserId.toString()}`,
+          email: `payment${testUserId.toString()}@example.com`,
           name: 'Payment Test User',
           userRole: 'STUDENT'
         }
@@ -70,7 +70,7 @@ afterAll(async () => {
   // Clean up test user
   const db = mongoose.connection.db;
   if (db) {
-    await db.collection('users').deleteMany({ googleId: 'test-google-id-payment' });
+    await db.collection('users').deleteMany({ googleId: `test-google-id-payment-${testUserId.toString()}` });
   }
 
   // Disconnect from test database

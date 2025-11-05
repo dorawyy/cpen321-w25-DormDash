@@ -63,7 +63,7 @@ const originalConsole = {
 };
 
 let authToken: string;
-const testUserId = new mongoose.Types.ObjectId('507f1f77bcf86cd799439055');
+const testUserId = new mongoose.Types.ObjectId(); // Generate unique ID
 
 // Get references to mocked services
 const mockJobService = jobService as jest.Mocked<typeof jobService>;
@@ -84,14 +84,14 @@ beforeAll(async () => {
   // Clean up any existing test user by googleId
   const db = mongoose.connection.db;
   if (db) {
-    await db.collection('users').deleteMany({ googleId: 'test-google-id-order-mock' });
+    await db.collection('users').deleteMany({ googleId: `test-google-id-order-mock-${testUserId.toString()}` });
   }
 
   // Create a test user in DB with specific _id
   await (userModel as any).user.create({
     _id: testUserId,
-    googleId: 'test-google-id-order-mock',
-    email: 'ordermock@example.com',
+    googleId: `test-google-id-order-mock-${testUserId.toString()}`,
+    email: `ordermock${testUserId.toString()}@example.com`,
     name: 'Order Mock Test User',
     userRole: 'STUDENT'
   });
@@ -110,7 +110,7 @@ afterAll(async () => {
   // Clean up test user
   const db = mongoose.connection.db;
   if (db) {
-    await db.collection('users').deleteMany({ googleId: 'test-google-id-order-mock' });
+    await db.collection('users').deleteMany({ googleId: `test-google-id-order-mock-${testUserId.toString()}` });
   }
 
   // Disconnect from test database

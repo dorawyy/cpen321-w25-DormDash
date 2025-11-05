@@ -15,7 +15,7 @@ const originalConsole = {
 };
 
 let authToken: string;
-const testUserId = new mongoose.Types.ObjectId('507f1f77bcf86cd799439033');
+const testUserId = new mongoose.Types.ObjectId(); // Generate unique ID
 
 beforeAll(async () => {
   // Suppress all console output during tests for clean test output
@@ -29,17 +29,16 @@ beforeAll(async () => {
   // Clean up any existing test user by googleId
   const db = mongoose.connection.db;
   if (db) {
-    await db.collection('users').deleteMany({ googleId: 'test-google-id-route-planner' });
+    await db.collection('users').deleteMany({ googleId: `test-google-id-route-planner-${testUserId.toString()}` });
   }
 
-  // Create a test user in DB with specific _id (as MOVER since route planner is for movers)
+  // Create a test user in DB with specific _id
   await (userModel as any).user.create({
     _id: testUserId,
-    googleId: 'test-google-id-route-planner',
-    email: 'routeplanner@example.com',
+    googleId: `test-google-id-route-planner-${testUserId.toString()}`,
+    email: `routeplanner${testUserId.toString()}@example.com`,
     name: 'Route Planner Test User',
-    userRole: 'MOVER',
-    phoneNumber: '1234567890'
+    userRole: 'STUDENT'
   });
 
   // Generate a real JWT token for testing
@@ -55,8 +54,8 @@ beforeEach(async () => {
       { _id: testUserId },
       {
         $set: {
-          googleId: 'test-google-id-route-planner',
-          email: 'routeplanner@example.com',
+          googleId: `test-google-id-route-planner-${testUserId.toString()}`,
+          email: `routeplanner-${testUserId.toString()}@example.com`,
           name: 'Route Planner Test User',
           userRole: 'MOVER',
           phoneNumber: '1234567890'
@@ -70,7 +69,7 @@ afterAll(async () => {
   // Clean up test user
   const db = mongoose.connection.db;
   if (db) {
-    await db.collection('users').deleteMany({ googleId: 'test-google-id-route-planner' });
+    await db.collection('users').deleteMany({ googleId: `test-google-id-route-planner-${testUserId.toString()}` });
   }
 
   // Disconnect from test database

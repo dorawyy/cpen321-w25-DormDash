@@ -15,7 +15,7 @@ const originalConsole = {
 };
 
 let authToken: string;
-const testUserId = new mongoose.Types.ObjectId('507f1f77bcf86cd799439011');
+const testUserId = new mongoose.Types.ObjectId(); // Generate unique ID
 
 beforeAll(async () => {
   // Suppress all console output during tests
@@ -25,18 +25,18 @@ beforeAll(async () => {
   // Connect to test database
   await connectDB();
 
-  // Ensure test user is clean - delete by googleId
+  // Clean up any existing test user by googleId
   const db = mongoose.connection.db;
   if (db) {
-    await db.collection('users').deleteMany({ googleId: 'test-google-id' });
+    await db.collection('users').deleteMany({ googleId: `test-google-id-order-${testUserId.toString()}` });
   }
 
   // Create a test user in DB with specific _id
   await (userModel as any).user.create({
     _id: testUserId,
-    googleId: 'test-google-id',
-    email: 'test@example.com',
-    name: 'Test User',
+    googleId: `test-google-id-order-${testUserId.toString()}`,
+    email: `order${testUserId.toString()}@example.com`,
+    name: 'Order Test User',
     userRole: 'STUDENT'
   });
 
