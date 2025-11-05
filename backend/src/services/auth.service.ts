@@ -42,9 +42,17 @@ export class AuthService {
   }
 
   private generateAccessToken(user: IUser): string {
-    return jwt.sign({ id: user._id }, process.env.JWT_SECRET!, {
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET is not configured');
+    }
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: '19h',
     });
+    // jwt.sign may return a string or Buffer depending on options; ensure we return a string
+    if (typeof token !== 'string') {
+      throw new Error('Failed to generate access token');
+    }
+    return token;
   }
 
   async signUpWithGoogle(idToken: string): Promise<AuthResult> {

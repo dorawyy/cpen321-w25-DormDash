@@ -219,7 +219,7 @@ class AuthViewModel @Inject constructor(
                     // Navigate to appropriate role-specific home screen
                     val needsProfileCompletion = user.bio.isNullOrBlank()
                     val userRole = user.userRole ?: role // Use the role from user or fallback to selected role
-                    navigationStateManager.handleRoleSelectionWithMessage(
+                    navigationStateManager.handleRoleSelection(
                         userRole = userRole,
                         message = "Welcome! Your role has been set to ${userRole.lowercase().replaceFirstChar { it.uppercase() }}",
                         needsProfileCompletion = needsProfileCompletion
@@ -240,8 +240,11 @@ class AuthViewModel @Inject constructor(
                 val fcmService = MyFirebaseMessagingService()
                 fcmService.clearFcmTokenFromBackend()
                 Log.d(TAG, "✅ FCM token cleared successfully on logout")
-            } catch (e: Exception) {
-                Log.e(TAG, "❌ Failed to clear FCM token on logout: ${e.message}", e)
+            } catch (e: java.io.IOException) {
+                Log.e(TAG, "❌ Network error clearing FCM token on logout: ${e.message}", e)
+                // Continue with logout even if FCM token clearing fails
+            } catch (e: retrofit2.HttpException) {
+                Log.e(TAG, "❌ HTTP error clearing FCM token on logout: ${e.code()}", e)
                 // Continue with logout even if FCM token clearing fails
             }
             
@@ -269,8 +272,11 @@ class AuthViewModel @Inject constructor(
                 val fcmService = MyFirebaseMessagingService()
                 fcmService.clearFcmTokenFromBackend()
                 Log.d(TAG, "FCM token cleared on account deletion")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to clear FCM token on account deletion", e)
+            } catch (e: java.io.IOException) {
+                Log.e(TAG, "Network error clearing FCM token on account deletion", e)
+                // Continue with account deletion even if FCM token clearing fails
+            } catch (e: retrofit2.HttpException) {
+                Log.e(TAG, "HTTP error clearing FCM token on account deletion", e)
                 // Continue with account deletion even if FCM token clearing fails
             }
             

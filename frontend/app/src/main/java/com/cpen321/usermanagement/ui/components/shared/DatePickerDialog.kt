@@ -69,7 +69,6 @@ fun DatePickerDialog(
                     datePickerState.selectedDateMillis?.let { selectedMillis ->
                         onDateSelected(selectedMillis)
                     }
-                    onDismiss()
                 }
             ) {
                 Text("OK")

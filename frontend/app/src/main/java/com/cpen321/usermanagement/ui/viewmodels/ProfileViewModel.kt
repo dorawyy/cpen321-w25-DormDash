@@ -78,41 +78,56 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun uploadProfilePicture(pictureUri: Uri) {
+
+        val user = _uiState.value.user
+        if (user == null) {
+            _uiState.value = _uiState.value.copy(
+                errorMessage = "You must be logged in to update your profile picture."
+            )
+            return
+        }
+
         viewModelScope.launch {
-            val currentUser = _uiState.value.user ?: return@launch
             _uiState.value = _uiState.value.copy(
                 isLoadingPhoto = true,
                 errorMessage = null,
                 successMessage = null
             )
-            val updatedUser = currentUser.copy(profilePicture = pictureUri.toString())
-            val result = profileRepository.uploadProfilePicture(pictureUri)
-            if (result.isSuccess) {
-                val newPath = result.getOrThrow()
-                val save = profileRepository.updateProfile(
-                    name = currentUser.name,
-                    bio = currentUser.bio ?: "",
-                    profilePicture = newPath
-                )
-                if (save.isSuccess) {
-                    val savedUser = save.getOrThrow()
-                    _uiState.value = _uiState.value.copy(
-                        isLoadingPhoto = false,
-                        user = savedUser,
-                        successMessage = "Profile picture updated successfully!"
-                    )
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isLoadingPhoto = false,
-                        errorMessage = save.exceptionOrNull()?.message ?: "Failed to save picture"
-                    )
+
+            try {
+                val upload = runCatching { profileRepository.uploadProfilePicture(pictureUri).getOrThrow() }
+                    .onFailure {
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = it.message ?: "Failed to upload picture"
+                        )
+                    }.getOrNull()
+
+                if (upload != null) {
+                    val save = runCatching {
+                        profileRepository.updateProfile(
+                            name = user.name,
+                            bio = user.bio ?: "",
+                            profilePicture = upload
+                        ).getOrThrow()
+                    }
+
+                    save.onSuccess { savedUser ->
+                        _uiState.value = _uiState.value.copy(
+                            user = savedUser,
+                            successMessage = "Profile picture updated successfully!"
+                        )
+                    }.onFailure {
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = it.message ?: "Failed to save picture"
+                        )
+                    }
                 }
-            } else {
-                _uiState.value = _uiState.value.copy(isLoadingPhoto = false, errorMessage = result.exceptionOrNull()?.message ?: "Failed to upload picture")
+            } finally {
+                _uiState.value = _uiState.value.copy(isLoadingPhoto = false)
             }
-            _uiState.value = _uiState.value.copy(isLoadingPhoto = false, user= updatedUser, successMessage = "Profile picture updated successfully!")
         }
     }
+
 
     fun updateProfile(name: String, bio: String, profilePicture: String, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {

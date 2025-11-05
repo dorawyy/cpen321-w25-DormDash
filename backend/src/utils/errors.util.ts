@@ -9,7 +9,7 @@
 export class AppError extends Error {
   constructor(
     message: string,
-    public statusCode: number = 500,
+    public statusCode = 500,
     public code?: string
   ) {
     super(message);
@@ -23,7 +23,7 @@ export class AppError extends Error {
  */
 export class NotFoundError extends AppError {
   constructor(resource: string, id?: string) {
-    const message = id 
+    const message = id
       ? `${resource} with id ${id} not found`
       : `${resource} not found`;
     super(message, 404, 'NOT_FOUND');
@@ -84,7 +84,7 @@ export class InvalidJobStatusError extends AppError {
  * 403 - Authorization errors
  */
 export class UnauthorizedError extends AppError {
-  constructor(message: string = 'Unauthorized access') {
+  constructor(message: 'Unauthorized access') {
     super(message, 403, 'UNAUTHORIZED');
   }
 }
@@ -119,24 +119,20 @@ export class DuplicateOrderError extends ConflictError {
  */
 export class PaymentError extends AppError {
   constructor(message: string, code?: string) {
-    super(message, 402, code || 'PAYMENT_ERROR');
+    super(message, 402, code ?? 'PAYMENT_ERROR');
   }
 }
 
 export class PaymentFailedError extends PaymentError {
   constructor(reason?: string) {
-    const message = reason 
-      ? `Payment failed: ${reason}`
-      : 'Payment failed';
+    const message = reason ? `Payment failed: ${reason}` : 'Payment failed';
     super(message, 'PAYMENT_FAILED');
   }
 }
 
 export class RefundFailedError extends PaymentError {
   constructor(reason?: string) {
-    const message = reason 
-      ? `Refund failed: ${reason}`
-      : 'Refund failed';
+    const message = reason ? `Refund failed: ${reason}` : 'Refund failed';
     super(message, 'REFUND_FAILED');
   }
 }
@@ -145,7 +141,7 @@ export class RefundFailedError extends PaymentError {
  * 500 - Internal server errors
  */
 export class InternalServerError extends AppError {
-  constructor(message: string = 'Internal server error', originalError?: Error) {
+  constructor(message: 'Internal server error', originalError?: Error) {
     super(message, 500, 'INTERNAL_ERROR');
     if (originalError) {
       this.stack = originalError.stack;
@@ -156,6 +152,6 @@ export class InternalServerError extends AppError {
 /**
  * Helper to determine if error is an AppError
  */
-export function isAppError(error: any): error is AppError {
+export function isAppError(error: unknown): error is AppError {
   return error instanceof AppError;
 }

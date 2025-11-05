@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -101,113 +102,104 @@ private fun handleNavigationEvent(
     mainViewModel: MainViewModel
 ) {
     when (navigationEvent) {
-        is NavigationEvent.NavigateToAuth -> {
-            navController.navigate(NavRoutes.AUTH) {
-                popUpTo(0) { inclusive = true }
-            }
-            navigationStateManager.clearNavigationEvent()
-        }
-
-        is NavigationEvent.NavigateToAuthWithMessage -> {
-            authViewModel.setSuccessMessage(navigationEvent.message)
-            navController.navigate(NavRoutes.AUTH) {
-                popUpTo(0) { inclusive = true }
-            }
-            navigationStateManager.clearNavigationEvent()
-        }
-
-        is NavigationEvent.NavigateToMain -> {
-            navController.navigate(NavRoutes.MAIN) {
-                popUpTo(0) { inclusive = true }
-            }
-            navigationStateManager.clearNavigationEvent()
-        }
-
-        is NavigationEvent.NavigateToMainWithMessage -> {
-            mainViewModel.setSuccessMessage(navigationEvent.message)
-            navController.navigate(NavRoutes.MAIN) {
-                popUpTo(0) { inclusive = true }
-            }
-            navigationStateManager.clearNavigationEvent()
-        }
-
-        is NavigationEvent.NavigateToProfileCompletion -> {
-            navController.navigate(NavRoutes.PROFILE_COMPLETION) {
-                popUpTo(0) { inclusive = true }
-            }
-            navigationStateManager.clearNavigationEvent()
-        }
-
-        is NavigationEvent.NavigateToProfile -> {
-            navController.navigate(NavRoutes.PROFILE)
-            navigationStateManager.clearNavigationEvent()
-        }
-
-        is NavigationEvent.NavigateToManageProfile -> {
-            navController.navigate(NavRoutes.MANAGE_PROFILE)
-            navigationStateManager.clearNavigationEvent()
-        }
-
-        is NavigationEvent.NavigateToManageOrders -> {
-            val route = when (navigationStateManager.getCurrentUserRole()?.uppercase()) {
-                "MOVER" -> NavRoutes.JOB_HISTORY
-                else -> NavRoutes.MANAGE_ORDERS
-            }
-            navController.navigate(route)
-            navigationStateManager.clearNavigationEvent()
-        }
-
-        is NavigationEvent.NavigateToRoleSelection -> {
-            navController.navigate(NavRoutes.ROLE_SELECTION) {
-                popUpTo(0) { inclusive = true }
-            }
-            navigationStateManager.clearNavigationEvent()
-        }
-
-        is NavigationEvent.NavigateToStudentMain -> {
-            navController.navigate(NavRoutes.STUDENT) {
-                popUpTo(0) { inclusive = true }
-            }
-            navigationStateManager.clearNavigationEvent()
-        }
-
-        is NavigationEvent.NavigateToStudentMainWithMessage -> {
-            mainViewModel.setSuccessMessage(navigationEvent.message)
-            navController.navigate(NavRoutes.STUDENT) {
-                popUpTo(0) { inclusive = true }
-            }
-            navigationStateManager.clearNavigationEvent()
-        }
-
-        is NavigationEvent.NavigateToMoverMain -> {
-            navController.navigate(NavRoutes.MOVER) {
-                popUpTo(0) { inclusive = true }
-            }
-            navigationStateManager.clearNavigationEvent()
-        }
-
-        is NavigationEvent.NavigateToMoverMainWithMessage -> {
-            mainViewModel.setSuccessMessage(navigationEvent.message)
-            navController.navigate(NavRoutes.MOVER) {
-                popUpTo(0) { inclusive = true }
-            }
-            navigationStateManager.clearNavigationEvent()
-        }
-
+        is NavigationEvent.NavigateToAuth -> 
+            navigateAndClear(NavRoutes.AUTH, navController, navigationStateManager)
+        
+        is NavigationEvent.NavigateToAuthWithMessage -> 
+            navigateWithMessageAndClear(NavRoutes.AUTH, navigationEvent.message, authViewModel::setSuccessMessage, navController, navigationStateManager)
+        
+        is NavigationEvent.NavigateToMain -> 
+            navigateAndClear(NavRoutes.MAIN, navController, navigationStateManager)
+        
+        is NavigationEvent.NavigateToMainWithMessage -> 
+            navigateWithMessageAndClear(NavRoutes.MAIN, navigationEvent.message, mainViewModel::setSuccessMessage, navController, navigationStateManager)
+        
+        is NavigationEvent.NavigateToProfileCompletion -> 
+            navigateAndClear(NavRoutes.PROFILE_COMPLETION, navController, navigationStateManager)
+        
+        is NavigationEvent.NavigateToProfile -> 
+            navigateSimple(NavRoutes.PROFILE, navController, navigationStateManager)
+        
+        is NavigationEvent.NavigateToManageProfile -> 
+            navigateSimple(NavRoutes.MANAGE_PROFILE, navController, navigationStateManager)
+        
+        is NavigationEvent.NavigateToManageOrders -> 
+            handleManageOrdersNavigation(navController, navigationStateManager)
+        
+        is NavigationEvent.NavigateToRoleSelection -> 
+            navigateAndClear(NavRoutes.ROLE_SELECTION, navController, navigationStateManager)
+        
+        is NavigationEvent.NavigateToStudentMain -> 
+            navigateAndClear(NavRoutes.STUDENT, navController, navigationStateManager)
+        
+        is NavigationEvent.NavigateToStudentMainWithMessage -> 
+            navigateWithMessageAndClear(NavRoutes.STUDENT, navigationEvent.message, mainViewModel::setSuccessMessage, navController, navigationStateManager)
+        
+        is NavigationEvent.NavigateToMoverMain -> 
+            navigateAndClear(NavRoutes.MOVER, navController, navigationStateManager)
+        
+        is NavigationEvent.NavigateToMoverMainWithMessage -> 
+            navigateWithMessageAndClear(NavRoutes.MOVER, navigationEvent.message, mainViewModel::setSuccessMessage, navController, navigationStateManager)
+        
         is NavigationEvent.NavigateBack -> {
             navController.popBackStack()
             navigationStateManager.clearNavigationEvent()
         }
-
+        
         is NavigationEvent.ClearBackStack -> {
             navController.popBackStack(navController.graph.startDestinationId, false)
             navigationStateManager.clearNavigationEvent()
         }
-
+        
         is NavigationEvent.NoNavigation -> {
-            // Do nothing
         }
     }
+}
+
+private fun navigateSimple(
+    route: String,
+    navController: NavHostController,
+    navigationStateManager: NavigationStateManager
+) {
+    navController.navigate(route)
+    navigationStateManager.clearNavigationEvent()
+}
+
+private fun navigateAndClear(
+    route: String,
+    navController: NavHostController,
+    navigationStateManager: NavigationStateManager
+) {
+    navController.navigate(route) {
+        popUpTo(0) { inclusive = true }
+    }
+    navigationStateManager.clearNavigationEvent()
+}
+
+private fun navigateWithMessageAndClear(
+    route: String,
+    message: String,
+    setMessage: (String) -> Unit,
+    navController: NavHostController,
+    navigationStateManager: NavigationStateManager
+) {
+    setMessage(message)
+    navController.navigate(route) {
+        popUpTo(0) { inclusive = true }
+    }
+    navigationStateManager.clearNavigationEvent()
+}
+
+private fun handleManageOrdersNavigation(
+    navController: NavHostController,
+    navigationStateManager: NavigationStateManager
+) {
+    val route = when (navigationStateManager.getCurrentUserRole()?.uppercase()) {
+        "MOVER" -> NavRoutes.JOB_HISTORY
+        else -> NavRoutes.MANAGE_ORDERS
+    }
+    navController.navigate(route)
+    navigationStateManager.clearNavigationEvent()
 }
 
 @Composable
@@ -224,106 +216,144 @@ private fun AppNavHost(
         navController = navController,
         startDestination = NavRoutes.LOADING
     ) {
-        composable(NavRoutes.LOADING) {
-            LoadingScreen(message = stringResource(R.string.checking_authentication))
-        }
+        authRoutes(authViewModel, profileViewModel, navigationStateManager)
+        mainRoutes(navController, mainViewModel, orderViewModel, navigationStateManager)
+        profileRoutes(authViewModel, profileViewModel, orderViewModel, jobViewModel, navigationStateManager)
+        roleSelectionRoute(authViewModel)
+        jobRoutes(navController, jobViewModel, profileViewModel)
+    }
+}
 
-        composable(NavRoutes.AUTH) {
-            AuthScreen(authViewModel = authViewModel, profileViewModel = profileViewModel)
-        }
+private fun NavGraphBuilder.authRoutes(
+    authViewModel: AuthViewModel,
+    profileViewModel: ProfileViewModel,
+    navigationStateManager: NavigationStateManager
+) {
+    composable(NavRoutes.LOADING) {
+        LoadingScreen(message = stringResource(R.string.checking_authentication))
+    }
 
-        composable(NavRoutes.PROFILE_COMPLETION) {
-            ProfileCompletionScreen(
-                profileViewModel = profileViewModel,
-                onProfileCompleted = { navigationStateManager.handleProfileCompletion() },
-                onProfileCompletedWithMessage = { message ->
-                    Log.d("AppNavigation", "Profile completed with message: $message")
-                    navigationStateManager.handleProfileCompletionWithMessage(message)
-                }
+    composable(NavRoutes.AUTH) {
+        AuthScreen(authViewModel = authViewModel, profileViewModel = profileViewModel)
+    }
+
+    composable(NavRoutes.PROFILE_COMPLETION) {
+        ProfileCompletionScreen(
+            profileViewModel = profileViewModel,
+            onProfileCompleted = { navigationStateManager.handleProfileCompletion() },
+            onProfileCompletedWithMessage = { message ->
+                Log.d("AppNavigation", "Profile completed with message: $message")
+                navigationStateManager.handleProfileCompletion(message)
+            }
+        )
+    }
+}
+
+private fun NavGraphBuilder.mainRoutes(
+    navController: NavHostController,
+    mainViewModel: MainViewModel,
+    orderViewModel: OrderViewModel,
+    navigationStateManager: NavigationStateManager
+) {
+    composable(NavRoutes.MAIN) {
+        MainScreen(
+            mainViewModel = mainViewModel,
+            onProfileClick = { navigationStateManager.navigateToProfile() }
+        )
+    }
+
+    composable(NavRoutes.STUDENT) {
+        StudentMainScreen(
+            mainViewModel = mainViewModel,
+            orderViewModel = orderViewModel,
+            onProfileClick = { navigationStateManager.navigateToProfile() }
+        )
+    }
+
+    composable(NavRoutes.MOVER) {
+        MoverMainScreen(
+            mainViewModel = mainViewModel,
+            onProfileClick = { navigationStateManager.navigateToProfile() },
+            onJobDetails = { jobId ->
+                navController.navigate("${Screen.JobDetails.route}/${jobId}")
+            }
+        )
+    }
+}
+
+private fun NavGraphBuilder.profileRoutes(
+    authViewModel: AuthViewModel,
+    profileViewModel: ProfileViewModel,
+    orderViewModel: OrderViewModel,
+    jobViewModel: JobViewModel,
+    navigationStateManager: NavigationStateManager
+) {
+    composable(NavRoutes.PROFILE) {
+        ProfileScreen(
+            authViewModel = authViewModel,
+            profileViewModel = profileViewModel,
+            userRole = navigationStateManager.getCurrentUserRole(),
+            actions = ProfileScreenActions(
+                onBackClick = { navigationStateManager.navigateBack() },
+                onManageProfileClick = { navigationStateManager.navigateToManageProfile() },
+                onManageOrdersClick = { navigationStateManager.navigateToManageOrders() },
+                onAccountDeleted = { navigationStateManager.handleAccountDeletion() },
+                onSignOut = { navigationStateManager.handleSignOut() }
             )
-        }
+        )
+    }
 
-        composable(NavRoutes.MAIN) {
-            MainScreen(
-                mainViewModel = mainViewModel,
-                onProfileClick = { navigationStateManager.navigateToProfile() }
-            )
-        }
+    composable(NavRoutes.MANAGE_PROFILE) {
+        ManageProfileScreen(
+            profileViewModel = profileViewModel,
+            onBackClick = { navigationStateManager.navigateBack() }
+        )
+    }
 
-        composable(NavRoutes.PROFILE) {
-            ProfileScreen(
-                authViewModel = authViewModel,
-                profileViewModel = profileViewModel,
-                userRole = navigationStateManager.getCurrentUserRole(),
-                actions = ProfileScreenActions(
-                    onBackClick = { navigationStateManager.navigateBack() },
-                    onManageProfileClick = { navigationStateManager.navigateToManageProfile() },
-                    onManageOrdersClick = {navigationStateManager.navigateToManageOrders()},
-                    onAccountDeleted = { navigationStateManager.handleAccountDeletion() },
-                    onSignOut = {navigationStateManager.handleSignOut()}
-                )
-            )
-        }
+    composable(NavRoutes.MANAGE_ORDERS) {
+        ManageOrdersScreen(
+            profileViewModel = profileViewModel,
+            orderViewModel = orderViewModel,
+            onBackClick = { navigationStateManager.navigateBack() }
+        )
+    }
+}
 
-        composable(NavRoutes.MANAGE_PROFILE) {
-            ManageProfileScreen(
-                profileViewModel = profileViewModel,
-                onBackClick = { navigationStateManager.navigateBack() }
-            )
-        }
+private fun NavGraphBuilder.roleSelectionRoute(authViewModel: AuthViewModel) {
+    composable(NavRoutes.ROLE_SELECTION) {
+        RoleSelectionScreen(
+            onRoleSelected = { role: String ->
+                authViewModel.selectUserRole(role)
+            }
+        )
+    }
+}
 
-        composable (NavRoutes.MANAGE_ORDERS){
-            ManageOrdersScreen(
-                profileViewModel = profileViewModel,
-                orderViewModel = orderViewModel,
-                onBackClick = { navigationStateManager.navigateBack()}
-            )
-        }
+private fun NavGraphBuilder.jobRoutes(
+    navController: NavHostController,
+    jobViewModel: JobViewModel,
+    profileViewModel: ProfileViewModel
+) {
+    composable(NavRoutes.JOB_HISTORY) {
+        MoverJobHistoryScreen(
+            jobViewModel = jobViewModel,
+            profileViewModel = profileViewModel,
+            onBackClick = { navController.popBackStack() }
+        )
+    }
 
-        composable (NavRoutes.JOB_HISTORY){
-            MoverJobHistoryScreen(
-                jobViewModel = jobViewModel,
-                profileViewModel = profileViewModel,
-                onBackClick = { navigationStateManager.navigateBack()}
-            )
-        }
-        composable(NavRoutes.ROLE_SELECTION) {
-            RoleSelectionScreen(
-                onRoleSelected = { role: String ->
-                    authViewModel.selectUserRole(role)
-                }
-            )
-        }
+    composable(NavRoutes.AVAILABLE_JOBS) {
+        AvailableJobsScreen(
+            modifier = Modifier.fillMaxSize()
+        )
+    }
 
-        composable(NavRoutes.STUDENT) {
-            StudentMainScreen(
-                mainViewModel = mainViewModel,
-                orderViewModel = orderViewModel,
-                onProfileClick = { navigationStateManager.navigateToProfile() }
-                )
-        }
-
-        composable(NavRoutes.MOVER) {
-            MoverMainScreen(
-                mainViewModel = mainViewModel,
-                onProfileClick = { navigationStateManager.navigateToProfile() },
-                onJobDetails = { jobId ->
-                    navController.navigate("${Screen.JobDetails.route}/${jobId}")
-                }
-            )
-        }
-
-        composable(NavRoutes.AVAILABLE_JOBS) {
-            AvailableJobsScreen(
-                modifier = Modifier.fillMaxSize()
-            )
-        }
-
-        composable(
-            route = "${Screen.JobDetails.route}/{jobId}",
-            arguments = listOf(navArgument("jobId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val jobId = backStackEntry.arguments?.getString("jobId") ?: return@composable
+    composable(
+        route = "${Screen.JobDetails.route}/{jobId}",
+        arguments = listOf(navArgument("jobId") { type = NavType.StringType })
+    ) { backStackEntry ->
+        val jobId = backStackEntry.arguments?.getString("jobId")
+        if (jobId != null) {
             JobDetailsScreen(
                 jobId = jobId,
                 onNavigateBack = { navController.popBackStack() }

@@ -1,28 +1,53 @@
 import mongoose from 'mongoose';
+import logger from '../utils/logger.util';
+
+let isInitialized = false;
+
+const setupEventListeners = (): void => {
+  if (isInitialized) return;
+  
+  mongoose.connection.on('error', (error) => {
+    logger.error('❌ MongoDB connection error', error);
+  });
+
+  mongoose.connection.on('disconnected', () => {
+    logger.warn('⚠️ MongoDB disconnected');
+  });
+
+  // Handle graceful shutdown
+  process.on('SIGINT', () => {
+    mongoose.connection
+      .close()
+      .then(() => {
+        logger.info('MongoDB connection closed through app termination');
+        process.exitCode = 0;
+      })
+      .catch((err: unknown) => {
+        logger.error(
+          'Error closing MongoDB connection on SIGINT:',
+          String(err)
+        );
+        process.exitCode = 1;
+      });
+  });
+  
+  isInitialized = true;
+};
 
 export const connectDB = async (): Promise<void> => {
   try {
-    const uri = process.env.MONGODB_URI!;
+    const uri = process.env.MONGODB_URI;
+    
+    if (!uri) {
+      throw new Error('MONGODB_URI is not configured in environment variables');
+    }
+
+    setupEventListeners();
 
     await mongoose.connect(uri);
-
-    console.log(`✅ MongoDB connected successfully`);
-
-    mongoose.connection.on('error', error => {
-      console.error('❌ MongoDB connection error:', error);
-    });
-
-    mongoose.connection.on('disconnected', () => {
-      console.log('⚠️ MongoDB disconnected');
-    });
-
-    process.on('SIGINT', async () => {
-      await mongoose.connection.close();
-      console.log('MongoDB connection closed through app termination');
-      process.exitCode = 0;
-    });
+    logger.info('✅ MongoDB connected successfully');
   } catch (error) {
-    console.error('❌ Failed to connect to MongoDB:', error);
+    logger.error('❌ Failed to connect to MongoDB:', String(error));
     process.exitCode = 1;
   }
 };
@@ -30,8 +55,8 @@ export const connectDB = async (): Promise<void> => {
 export const disconnectDB = async (): Promise<void> => {
   try {
     await mongoose.connection.close();
-    console.log('✅ MongoDB disconnected successfully');
+    logger.info('✅ MongoDB disconnected successfully');
   } catch (error) {
-    console.error('❌ Error disconnecting from MongoDB:', error);
+    logger.error('❌ Error disconnecting from MongoDB:', String(error));
   }
 };

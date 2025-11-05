@@ -14,7 +14,7 @@ const userSchema = new Schema<IUser>(
     userRole: {
       type: String,
       enum: ['STUDENT', 'MOVER'],
-      required: false,  // Optional during signup, required after role selection
+      required: false, // Optional during signup, required after role selection
     },
     googleId: {
       type: String,
@@ -31,7 +31,7 @@ const userSchema = new Schema<IUser>(
     },
     fcmToken: {
       type: String,
-      required: false, 
+      required: false,
     },
     name: {
       type: String,
@@ -107,24 +107,26 @@ export class UserModel {
     user: Partial<IUser>
   ): Promise<IUser | null> {
     try {
-      const validatedData = updateProfileSchema.parse(user);
+      const validatedData = updateProfileSchema.parse(user) as Partial<IUser>;
 
       // If updating FCM token, first remove it from any other users
       // FCM tokens are device-specific, so one token can only belong to one user
-      if (validatedData.fcmToken !== undefined && validatedData.fcmToken !== null) {
+      if (validatedData.fcmToken !== undefined) {
         await this.user.updateMany(
-          { 
+          {
             fcmToken: validatedData.fcmToken,
-            _id: { $ne: userId } // Don't update the current user
+            _id: { $ne: userId }, // Don't update the current user
           },
           { $set: { fcmToken: null } }
         );
-        logger.info(`Cleared FCM token ${validatedData.fcmToken} from other users before assigning to user ${userId}`);
+        logger.info(
+          `Cleared FCM token ${validatedData.fcmToken} from other users before assigning to user ${userId.toString()}`
+        );
       }
 
       const updatedUser = await this.user.findByIdAndUpdate(
         userId,
-        validatedData,
+        validatedData as mongoose.UpdateQuery<IUser>,
         {
           new: true,
         }
@@ -174,9 +176,9 @@ export class UserModel {
       throw new Error('Failed to find user');
     }
   }
-  
+
   // TODO: only students have fcmTokens for now, if stays this way, make this function only work for students
-   async getFcmToken(userId: mongoose.Types.ObjectId): Promise<string | null> {
+  async getFcmToken(userId: mongoose.Types.ObjectId): Promise<string | null> {
     try {
       const userDoc = await this.user.findById(userId).select('fcmToken');
       if (!userDoc) {
@@ -199,7 +201,9 @@ export class UserModel {
         { fcmToken: invalidToken },
         { $set: { fcmToken: null } }
       );
-      logger.info(`Cleared invalid FCM token from ${result.modifiedCount} user(s)`);
+      logger.info(
+        `Cleared invalid FCM token from ${result.modifiedCount} user(s)`
+      );
     } catch (error) {
       logger.error('Error clearing invalid FCM token:', error);
       throw new Error('Failed to clear invalid FCM token');

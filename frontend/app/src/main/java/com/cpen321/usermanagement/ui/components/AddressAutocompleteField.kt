@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.cpen321.usermanagement.BuildConfig
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.libraries.places.api.Places
@@ -21,6 +22,7 @@ import com.google.android.libraries.places.api.model.RectangularBounds
 import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
 import com.google.android.libraries.places.api.net.PlacesClient
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -43,9 +45,6 @@ fun AddressAutocompleteField(
     value: String,
     onValueChange: (String) -> Unit,
     onAddressSelected: (SelectedAddress) -> Unit,
-    label: String = "Address",
-    placeholder: String = "e.g. 123 Main St",
-    enabled: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -55,98 +54,218 @@ fun AddressAutocompleteField(
     var isLoading by remember { mutableStateOf(false) }
     var showSuggestions by remember { mutableStateOf(false) }
 
-    // Initialize Places API
-    val placesClient = remember {
+    val placesClient = rememberPlacesClient(context)
+
+    val searchCallbacks = AddressSearchCallbacks(
+        onStart = { isLoading = true },
+        onResult = { preds ->
+            suggestions = preds
+            showSuggestions = preds.isNotEmpty()
+        },
+        onError = {
+            suggestions = emptyList()
+            showSuggestions = false
+        },
+        onFinished = { isLoading = false }
+    )
+
+    DebouncedAddressSearch(
+        query = value,
+        placesClient = placesClient,
+        context = context,
+        callbacks = searchCallbacks,
+        minLength = 3,
+        debounceMs = 500
+    )
+
+    val controller = AutocompleteController(
+        coroutineScope = coroutineScope,
+        placesClient = placesClient,
+        onValueChange = onValueChange,
+        onAddressSelected = onAddressSelected,
+        setShowSuggestions = { showSuggestions = it },
+        setSuggestions = { suggestions = it }
+    )
+
+    AddressAutocompleteContent(
+        value = value,
+        isLoading = isLoading,
+        suggestions = suggestions,
+        showSuggestions = showSuggestions,
+        controller = controller,
+        modifier = modifier
+    )
+}
+
+private data class AutocompleteController(
+    val coroutineScope: CoroutineScope,
+    val placesClient: PlacesClient,
+    val onValueChange: (String) -> Unit,
+    val onAddressSelected: (SelectedAddress) -> Unit,
+    val setShowSuggestions: (Boolean) -> Unit,
+    val setSuggestions: (List<AddressSuggestion>) -> Unit
+)
+
+@Composable
+private fun AddressAutocompleteContent(
+    value: String,
+    isLoading: Boolean,
+    suggestions: List<AddressSuggestion>,
+    showSuggestions: Boolean,
+    controller: AutocompleteController,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        AddressTextField(
+            value = value,
+            onValueChange = controller.onValueChange,
+            isLoading = isLoading,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        if (showSuggestions && suggestions.isNotEmpty()) {
+            SuggestionsDropdown(
+                suggestions = suggestions,
+                onSuggestionClick = { suggestion ->
+                    controller.coroutineScope.launch {
+                        handleSuggestionClick(suggestion, controller)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                maxHeight = 250.dp
+            )
+        }
+    }
+}
+
+@Composable
+private fun rememberPlacesClient(context: Context): PlacesClient {
+    return remember {
         if (!Places.isInitialized()) {
             Places.initialize(context, BuildConfig.MAPS_API_KEY)
         }
         Places.createClient(context)
     }
+}
 
-    // Debounced search
-    LaunchedEffect(value) {
-        if (value.length >= 3) {
-            isLoading = true
-            delay(500) // Debounce delay
+private data class AddressSearchCallbacks(
+    val onStart: () -> Unit,
+    val onResult: (List<AddressSuggestion>) -> Unit,
+    val onError: () -> Unit,
+    val onFinished: () -> Unit
+)
 
-            coroutineScope.launch {
+@Composable
+private fun DebouncedAddressSearch(
+    query: String,
+    placesClient: PlacesClient,
+    context: Context,
+    callbacks: AddressSearchCallbacks,
+    minLength: Int = 3,
+    debounceMs: Long = 500
+) {
+    LaunchedEffect(query) {
+        if (query.length >= minLength) {
+            callbacks.onStart()
+            delay(debounceMs)
                 try {
-                    val predictions = fetchAddressPredictions(
+                    val preds = fetchAddressPredictions(
                         placesClient = placesClient,
-                        query = value,
+                        query = query,
                         context = context
                     )
-                    suggestions = predictions
-                    showSuggestions = predictions.isNotEmpty()
-                } catch (e: Exception) {
+                    callbacks.onResult(preds)
+                } catch (e: com.google.android.gms.common.api.ApiException) {
                     e.printStackTrace()
-                    suggestions = emptyList()
-                    showSuggestions = false
+                    callbacks.onError()
+                } catch (e: java.io.IOException) {
+                    e.printStackTrace()
+                    callbacks.onError()
                 } finally {
-                    isLoading = false
+                    callbacks.onFinished()
                 }
-            }
         } else {
-            suggestions = emptyList()
-            showSuggestions = false
+            callbacks.onResult(emptyList())
+            callbacks.onError()
         }
     }
+}
 
-    Column(modifier = modifier) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            label = { Text(label) },
-            placeholder = { Text(placeholder) },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = enabled,
-            singleLine = true,
-            trailingIcon = {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp
-                    )
-                }
-            }
+private suspend fun handleSuggestionClick(
+    suggestion: AddressSuggestion,
+    controller: AutocompleteController
+) {
+    try {
+        val address = fetchPlaceDetails(
+            placesClient = controller.placesClient,
+            placeId = suggestion.placeId
         )
+        if (address != null) {
+            controller.onValueChange(address.formattedAddress)
+            controller.onAddressSelected(address)
+            controller.setShowSuggestions(false)
+            controller.setSuggestions(emptyList())
+        }
+    } catch (e: com.google.android.gms.common.api.ApiException) {
+        e.printStackTrace()
+    } catch (e: java.io.IOException) {
+        e.printStackTrace()
+    }
+}
 
-        if (showSuggestions && suggestions.isNotEmpty()) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                LazyColumn(
-                    modifier = Modifier.heightIn(max = 250.dp)
-                ) {
-                    items(suggestions) { suggestion ->
-                        AddressSuggestionItem(
-                            suggestion = suggestion,
-                            onClick = {
-                                coroutineScope.launch {
-                                    try {
-                                        val address = fetchPlaceDetails(
-                                            placesClient = placesClient,
-                                            placeId = suggestion.placeId
-                                        )
-                                        if (address != null) {
-                                            onValueChange(address.formattedAddress)
-                                            onAddressSelected(address)
-                                            showSuggestions = false
-                                            suggestions = emptyList()
-                                        }
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    }
-                                }
-                            }
-                        )
-                        if (suggestion != suggestions.last()) {
-                            Divider()
-                        }
-                    }
+@Composable
+fun AddressTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    isLoading: Boolean,
+    label: String = "Address",
+    placeholder: String = "e.g. 123 Main St",
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        placeholder = { Text(placeholder) },
+        modifier = modifier,
+        enabled = enabled,
+        singleLine = true,
+        trailingIcon = {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp
+                )
+            }
+        }
+    )
+}
+
+@Composable
+fun SuggestionsDropdown(
+    suggestions: List<AddressSuggestion>,
+    onSuggestionClick: (AddressSuggestion) -> Unit,
+    modifier: Modifier = Modifier,
+    maxHeight: Dp = 250.dp
+) {
+    if (suggestions.isEmpty()) return
+
+    Card(
+        modifier = modifier
+            .padding(top = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        LazyColumn(
+            modifier = Modifier.heightIn(max = maxHeight)
+        ) {
+            items(suggestions) { suggestion ->
+                AddressSuggestionItem(
+                    suggestion = suggestion,
+                    onClick = { onSuggestionClick(suggestion) }
+                )
+                if (suggestion != suggestions.last()) {
+                    Divider()
                 }
             }
         }
@@ -218,7 +337,10 @@ private suspend fun fetchAddressPredictions(
                 fullText = prediction.getFullText(null).toString()
             )
         }
-    } catch (e: Exception) {
+    } catch (e: com.google.android.gms.common.api.ApiException) {
+        e.printStackTrace()
+        return emptyList()
+    } catch (e: java.io.IOException) {
         e.printStackTrace()
         return emptyList()
     }
@@ -250,7 +372,9 @@ private suspend fun fetchPlaceDetails(
                 longitude = latLng.longitude
             )
         }
-    } catch (e: Exception) {
+    } catch (e: com.google.android.gms.common.api.ApiException) {
+        e.printStackTrace()
+    } catch (e: java.io.IOException) {
         e.printStackTrace()
     }
     return null

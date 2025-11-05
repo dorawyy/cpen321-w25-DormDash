@@ -1,62 +1,45 @@
-import { Job, JobListItem, JobResponse } from "../types/job.type";
+import { JobResponse, Job } from '../types/job.type';
+import { extractObjectIdString } from '../utils/mongoose.util';
 
 /**
  * JobMapper - Centralized data transformation for Job entities
- * Eliminates duplicate mapping logic across services
+ * Produces API DTOs (string IDs and ISO timestamps) consumed by the frontend.
  */
-export class JobMapper {
-  /**
-   * Convert Job to JobListItem (for list views)
-   */
-  static toJobListItem(job: any): JobListItem {
-    // orderId may be either an ObjectId or a populated Order document.
-    // If populated, extract the nested _id; otherwise use the value's toString().
-    const orderId = job.orderId && (job.orderId as any)._id
-      ? (job.orderId as any)._id.toString()
-      : job.orderId?.toString?.();
 
-    return {
-      id: job._id.toString(),
-      orderId: orderId,
-      jobType: job.jobType,
-      volume: job.volume,
-      price: job.price,
-      pickupAddress: job.pickupAddress,
-      dropoffAddress: job.dropoffAddress,
-      scheduledTime: job.scheduledTime,
-      status: job.status,
-    };
-  }
+/**
+ * Convert a single Job document to JobResponse DTO
+ */
+export function toJobResponse(job: Job): JobResponse {
+  const id = job._id.toString();
 
-  /**
-   * Convert Job to JobResponse (for detailed view)
-   */
-  static toJobResponse(job: any): JobResponse {
-    const orderId = job.orderId && (job.orderId as any)._id
-      ? (job.orderId as any)._id.toString()
-      : job.orderId?.toString?.();
+  // Safely extract orderId string (handles populated documents or ObjectId)
+  const orderId = extractObjectIdString(job.orderId);
 
-    return {
-      id: job._id.toString(),
-      orderId: orderId,
-      studentId: job.studentId.toString(),
-      moverId: job.moverId?.toString(),
-      jobType: job.jobType,
-      status: job.status,
-      volume: job.volume,
-      price: job.price,
-      pickupAddress: job.pickupAddress,
-      dropoffAddress: job.dropoffAddress,
-      scheduledTime: job.scheduledTime,
-      createdAt: job.createdAt,
-      updatedAt: job.updatedAt,
-    };
-  }
 
-  /**
-   * Convert array of Jobs to JobListItems
-   */
-  static toJobListItems(jobs: any[]): JobListItem[] {
-    return jobs.map(job => this.toJobListItem(job));
-  }
+  return {
+    id,
+    orderId,
+    studentId: extractObjectIdString(job.studentId),
+    moverId: job.moverId ? extractObjectIdString(job.moverId) : undefined,
+    jobType: job.jobType,
+    status: job.status,
+    volume: job.volume,
+    price: job.price,
+    pickupAddress: job.pickupAddress,
+    dropoffAddress: job.dropoffAddress,
+    scheduledTime:
+      job.scheduledTime instanceof Date
+        ? job.scheduledTime.toISOString()
+        : String(job.scheduledTime),
+    createdAt:
+      job.createdAt instanceof Date
+        ? job.createdAt.toISOString()
+        : String(job.createdAt),
+    updatedAt:
+      job.updatedAt instanceof Date
+        ? job.updatedAt.toISOString()
+        : String(job.updatedAt),
+    calendarEventLink: job.calendarEventLink ?? undefined,
+  } as JobResponse;
 }
+

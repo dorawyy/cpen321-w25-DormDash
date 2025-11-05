@@ -70,8 +70,8 @@ class JobViewModel @Inject constructor(
                         }
                     }
                 }
-            } catch (e: Exception) {
-                android.util.Log.e("JobViewModel", "Error checking for pending confirmations", e)
+            } catch (e: org.json.JSONException) {
+                android.util.Log.e("JobViewModel", "Error parsing job data JSON", e)
             }
         }
     }
@@ -126,9 +126,8 @@ class JobViewModel @Inject constructor(
                 jobId == _uiState.value.pendingConfirmationJobId) {
                 _uiState.value = _uiState.value.copy(pendingConfirmationJobId = null)
             }
-        } catch (e: Exception) {
-            // Log but don't crash
-            android.util.Log.e("JobViewModel", "Error handling job.updated event", e)
+        } catch (e: org.json.JSONException) {
+            android.util.Log.e("JobViewModel", "Error parsing job.updated event JSON", e)
         }
     }
     

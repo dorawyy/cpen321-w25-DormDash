@@ -79,13 +79,8 @@ fun ProfileScreen(
 
     // Prevent ghost clicks by disabling interaction during navigation
     var isNavigating by remember { mutableStateOf(false) }
+    var dialogState by remember { mutableStateOf(ProfileDialogState()) }
 
-    // Dialog state
-    var dialogState by remember {
-        mutableStateOf(ProfileDialogState())
-    }
-
-    // Side effects
     LaunchedEffect(Unit) {
         profileViewModel.clearSuccessMessage()
         profileViewModel.clearError()
@@ -98,56 +93,77 @@ fun ProfileScreen(
         snackBarHostState = snackBarHostState,
         userRole = userRole,
         isInteractive = !isNavigating,
-        callbacks = ProfileScreenCallbacks(
-            onBackClick = {
-                if (!isNavigating) {
-                    isNavigating = true
-                    actions.onBackClick()
-                }
-            },
-            onManageProfileClick = {
-                if (!isNavigating) {
-                    isNavigating = true
-                    actions.onManageProfileClick()
-                }
-            },
-            onManageOrdersClick = {
-                if (!isNavigating) {
-                    isNavigating = true
-                    actions.onManageOrdersClick()
-                }
-            },
-            onDeleteAccountClick = {
-                dialogState = dialogState.copy(showDeleteDialog = true)
-            },
-            onSignOutClick= {
-                if (!isNavigating) {
-                    isNavigating = true
-                    authViewModel.handleSignout()
-                    actions.onSignOut()
-                }
-            },
-            onDeleteDialogDismiss = {
-                dialogState = dialogState.copy(showDeleteDialog = false)
-            },
-            onDeleteDialogConfirm = {
-                dialogState = dialogState.copy(showDeleteDialog = false)
-                profileViewModel.deleteAccount(
-                    onSuccess = {
-                        authViewModel.handleAccountDeletion()
-                        if (!isNavigating) {
-                            isNavigating = true
-                            actions.onAccountDeleted()
-                        }
-                    }
-                )
-            },
-            onSuccessMessageShown = profileViewModel::clearSuccessMessage,
-            onErrorMessageShown = profileViewModel::clearError,
-            onCashOutClick = {
-                profileViewModel.cashOut()
-            }
+        callbacks = createProfileCallbacks(
+            isNavigating = isNavigating,
+            onNavigatingChange = { isNavigating = it },
+            dialogState = dialogState,
+            onDialogStateChange = { dialogState = it },
+            authViewModel = authViewModel,
+            profileViewModel = profileViewModel,
+            actions = actions
         )
+    )
+}
+
+@Composable
+private fun createProfileCallbacks(
+    isNavigating: Boolean,
+    onNavigatingChange: (Boolean) -> Unit,
+    dialogState: ProfileDialogState,
+    onDialogStateChange: (ProfileDialogState) -> Unit,
+    authViewModel: AuthViewModel,
+    profileViewModel: ProfileViewModel,
+    actions: ProfileScreenActions
+): ProfileScreenCallbacks {
+    return ProfileScreenCallbacks(
+        onBackClick = {
+            if (!isNavigating) {
+                onNavigatingChange(true)
+                actions.onBackClick()
+            }
+        },
+        onManageProfileClick = {
+            if (!isNavigating) {
+                onNavigatingChange(true)
+                actions.onManageProfileClick()
+            }
+        },
+        onManageOrdersClick = {
+            if (!isNavigating) {
+                onNavigatingChange(true)
+                actions.onManageOrdersClick()
+            }
+        },
+        onDeleteAccountClick = {
+            onDialogStateChange(dialogState.copy(showDeleteDialog = true))
+        },
+        onSignOutClick = {
+            if (!isNavigating) {
+                onNavigatingChange(true)
+                authViewModel.handleSignout()
+                actions.onSignOut()
+            }
+        },
+        onDeleteDialogDismiss = {
+            onDialogStateChange(dialogState.copy(showDeleteDialog = false))
+        },
+        onDeleteDialogConfirm = {
+            onDialogStateChange(dialogState.copy(showDeleteDialog = false))
+            profileViewModel.deleteAccount(
+                onSuccess = {
+                    authViewModel.handleAccountDeletion()
+                    if (!isNavigating) {
+                        onNavigatingChange(true)
+                        actions.onAccountDeleted()
+                    }
+                }
+            )
+        },
+        onSuccessMessageShown = profileViewModel::clearSuccessMessage,
+        onErrorMessageShown = profileViewModel::clearError,
+        onCashOutClick = {
+            profileViewModel.cashOut()
+        }
     )
 }
 
@@ -182,14 +198,15 @@ private fun ProfileContent(
         ProfileBody(
             paddingValues = paddingValues,
             isLoading = uiState.isLoadingProfile,
-            userRole = userRole,
             user = uiState.user,
             isInteractive = isInteractive,
-            onManageProfileClick = callbacks.onManageProfileClick,
-            onManageOrdersClick = callbacks.onManageOrdersClick,
-            onDeleteAccountClick = callbacks.onDeleteAccountClick,
-            onSignOutClick = callbacks.onSignOutClick,
-            onCashOutClick = callbacks.onCashOutClick
+            ProfileMenuActions(
+                onManageProfileClick = callbacks.onManageProfileClick,
+                onManageOrdersClick = callbacks.onManageOrdersClick,
+                onDeleteAccountClick = callbacks.onDeleteAccountClick,
+                onSignOutClick = callbacks.onSignOutClick,
+                onCashOutClick = callbacks.onCashOutClick
+            )
         )
     }
 
@@ -228,18 +245,21 @@ private fun ProfileTopBar(
     )
 }
 
+data class ProfileMenuActions(
+    val onManageProfileClick: () -> Unit,
+    val onManageOrdersClick: () -> Unit,
+    val onDeleteAccountClick: () -> Unit,
+    val onSignOutClick: () -> Unit,
+    val onCashOutClick: () -> Unit
+)
+
 @Composable
 private fun ProfileBody(
     paddingValues: PaddingValues,
     isLoading: Boolean,
-    userRole: String?,
     user: User?,
     isInteractive: Boolean = true,
-    onManageProfileClick: () -> Unit,
-    onManageOrdersClick: () -> Unit,
-    onDeleteAccountClick: () -> Unit,
-    onSignOutClick: () -> Unit,
-    onCashOutClick: () -> Unit,
+    actions: ProfileMenuActions,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -256,34 +276,39 @@ private fun ProfileBody(
 
             else -> {
                 ProfileMenuItems(
-                    userRole = userRole,
                     user = user,
                     isInteractive = isInteractive,
-                    onManageProfileClick = onManageProfileClick,
-                    onManageOrdersClick  = onManageOrdersClick,
-                    onSignOutClick = onSignOutClick,
-                    onDeleteAccountClick = onDeleteAccountClick,
-                    onCashOutClick = onCashOutClick
+                    ProfileMenuItemActions(
+                        onManageProfileClick = actions.onManageProfileClick,
+                        onManageOrdersClick = actions.onManageOrdersClick,
+                        onSignOutClick = actions.onSignOutClick,
+                        onDeleteAccountClick = actions.onDeleteAccountClick,
+                        onCashOutClick = actions.onCashOutClick
+                    )
                 )
             }
         }
     }
 }
 
+data class ProfileMenuItemActions(
+    val onManageProfileClick: () -> Unit,
+    val onManageOrdersClick: () -> Unit,
+    val onSignOutClick: () -> Unit,
+    val onDeleteAccountClick: () -> Unit,
+    val onCashOutClick: () -> Unit
+)
+
 @Composable
 private fun ProfileMenuItems(
-    userRole: String?,
     user: User?,
     isInteractive: Boolean = true,
-    onManageProfileClick: () -> Unit,
-    onManageOrdersClick:  () -> Unit,
-    onSignOutClick: () -> Unit,
-    onDeleteAccountClick: () -> Unit,
-    onCashOutClick: () -> Unit,
+    actions: ProfileMenuItemActions,
     modifier: Modifier = Modifier
 ) {
     val spacing = LocalSpacing.current
     val scrollState = rememberScrollState()
+    val userRole = user?.userRole
 
     Column(
         modifier = modifier
@@ -296,21 +321,21 @@ private fun ProfileMenuItems(
         if (userRole?.uppercase() == "MOVER") {
             CreditsSection(
                 credits = user?.credits ?: 0f,
-                onCashOutClick = onCashOutClick
+                onCashOutClick = actions.onCashOutClick
             )
         }
 
         ProfileSection(
             userRole = userRole,
             isInteractive = isInteractive,
-            onManageProfileClick = onManageProfileClick,
-            onManageOrdersClick  = onManageOrdersClick
+            onManageProfileClick = actions.onManageProfileClick,
+            onManageOrdersClick  = actions.onManageOrdersClick
         )
 
         AccountSection(
             isInteractive = isInteractive,
-            onSignOutClick =  onSignOutClick,
-            onDeleteAccountClick = onDeleteAccountClick
+            onSignOutClick =  actions.onSignOutClick,
+            onDeleteAccountClick = actions.onDeleteAccountClick
         )
     }
 }
@@ -327,11 +352,26 @@ private fun ProfileSection(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(LocalSpacing.current.medium)
     ) {
-        ManageProfileButton(onClick = onManageProfileClick, enabled = isInteractive)
+        MenuButtonItem(
+            text = stringResource(R.string.manage_profile),
+            iconRes = R.drawable.ic_manage_profile,
+            onClick = onManageProfileClick,
+            enabled = isInteractive,
+        )
         if (userRole?.uppercase() == "MOVER") {
-            JobHistoryButton(onClick = onManageOrdersClick, enabled = isInteractive)
+            MenuButtonItem(
+                text = stringResource(R.string.job_history),
+                iconRes = R.drawable.ic_edit,
+                onClick = onManageOrdersClick,
+                enabled = isInteractive,
+            )
         } else {
-            ManageOrdersButton(onClick = onManageOrdersClick, enabled = isInteractive)
+            MenuButtonItem(
+                text = stringResource(R.string.manage_orders),
+                iconRes = R.drawable.ic_edit,
+                onClick = onManageOrdersClick,
+                enabled = isInteractive,
+            )
         }
     }
 }
@@ -347,8 +387,18 @@ private fun AccountSection(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(LocalSpacing.current.medium)
     ) {
-        SignOutButton (onClick = onSignOutClick, enabled = isInteractive)
-        DeleteAccountButton(onClick = onDeleteAccountClick, enabled = isInteractive)
+        MenuButtonItem(
+            text = stringResource(R.string.sign_out),
+            iconRes = R.drawable.ic_sign_out,
+            onClick = onSignOutClick,
+            enabled = isInteractive,
+        )
+        MenuButtonItem(
+            text = stringResource(R.string.delete_account),
+            iconRes = R.drawable.ic_delete_forever,
+            onClick = onDeleteAccountClick,
+            enabled = isInteractive,
+        )
     }
 }
 
@@ -397,70 +447,6 @@ private fun CreditsSection(
             Text("Cash Out")
         }
     }
-}
-
-@Composable
-private fun ManageProfileButton(
-    onClick: () -> Unit,
-    enabled: Boolean = true
-) {
-    MenuButtonItem(
-        text = stringResource(R.string.manage_profile),
-        iconRes = R.drawable.ic_manage_profile,
-        onClick = onClick,
-        enabled = enabled,
-    )
-}
-
-@Composable
-private fun JobHistoryButton(
-    onClick: () -> Unit,
-    enabled: Boolean = true
-) {
-    MenuButtonItem(
-        text = stringResource(R.string.job_history),
-        iconRes = R.drawable.ic_edit,
-        onClick = onClick,
-        enabled = enabled,
-    )
-}
-
-@Composable
-private fun ManageOrdersButton(
-    onClick: () -> Unit,
-    enabled: Boolean = true
-) {
-    MenuButtonItem(
-        text = stringResource(R.string.manage_orders),
-        iconRes = R.drawable.ic_edit,
-        onClick = onClick,
-        enabled = enabled,
-    )
-}
-
-@Composable
-private fun SignOutButton(
-    onClick: () -> Unit,
-    enabled: Boolean = true
-){
-    MenuButtonItem(
-        text = stringResource(R.string.sign_out),
-        iconRes = R.drawable.ic_sign_out,
-        onClick = onClick,
-        enabled = enabled,
-    )
-}
-@Composable
-private fun DeleteAccountButton(
-    onClick: () -> Unit,
-    enabled: Boolean = true
-) {
-    MenuButtonItem(
-        text = stringResource(R.string.delete_account),
-        iconRes = R.drawable.ic_delete_forever,
-        onClick = onClick,
-        enabled = enabled,
-    )
 }
 
 @Composable
