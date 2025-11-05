@@ -134,14 +134,6 @@ export class OrderModel {
     }
   }
 
-  async delete(orderId: mongoose.Types.ObjectId) {
-    try {
-      await this.order.findByIdAndDelete(orderId);
-    } catch (error) {
-      logger.error("Error deleting order:", error);
-      throw new Error("Failed to delete order");
-    }
-  }
 
 
 }
