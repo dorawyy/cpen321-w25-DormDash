@@ -2,6 +2,7 @@ package com.cpen321.usermanagement
 
 import androidx.compose.ui.test.*
 import org.junit.Test
+import org.junit.Assert.assertTrue
 
 /**
  * UC-3: Browse and Filter Jobs
