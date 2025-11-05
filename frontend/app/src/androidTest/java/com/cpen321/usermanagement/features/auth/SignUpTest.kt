@@ -12,7 +12,7 @@ import org.junit.runner.RunWith
 
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
-class SignInTest : AuthTestBase() {
+class SignUpTest: AuthTestBase() {
 
     @Test
     fun authScreen_showsBothButtons() {
@@ -20,15 +20,15 @@ class SignInTest : AuthTestBase() {
 
         // Both buttons should be visible simultaneously
         composeTestRule.onNodeWithText("Sign in with Google", useUnmergedTree = true)
-            .assertExists("Sign in button should exist")
+            .assertExists()
         composeTestRule.onNodeWithText("Sign up with Google", useUnmergedTree = true)
-            .assertExists("Sign up button should exist")
+            .assertExists()
     }
 
     @Test
-    fun test_SignIn(){
+    fun test_SignUp_NavigateToMainScreen(){
         // Click the sign-in button
-        composeTestRule.onNodeWithText("Sign in with Google", useUnmergedTree = true)
+        composeTestRule.onNodeWithText("Sign up with Google", useUnmergedTree = true)
             .performClick()
 
         // Wait for Google account picker dialog to appear (timeout: 10 seconds)
@@ -46,15 +46,31 @@ class SignInTest : AuthTestBase() {
             firstClickable?.click()
         }
 
-        // Wait for sign-in flow to complete
+        // Wait for sign-up flow to complete
+        // Wait for sign-in flow to complete and main screen to appear
         composeTestRule.waitUntil(timeoutMillis = 10_000) {
             composeTestRule
-                .onAllNodesWithText("DormDash", useUnmergedTree = true)
+                .onAllNodesWithText("I'm a Student", useUnmergedTree = true)
                 .fetchSemanticsNodes()
                 .isNotEmpty()
         }
 
+        // choose student role for first account
+        composeTestRule.onNodeWithText("I'm a Student", useUnmergedTree = true).assertExists("Role button should exist").performClick()
+
+        // skip bio
+        composeTestRule.waitUntil(timeoutMillis = 10_000) {
+            composeTestRule
+                .onAllNodesWithText("Skip", useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+        composeTestRule.onNodeWithText("Skip", useUnmergedTree = true).assertExists("Skip button should exist").performClick()
+
         // title is rendered as two Text nodes (app name + role). Assert both parts separately:
-        composeTestRule.onNodeWithText("DormDash", useUnmergedTree = true).assertExists("Title Should Exist")
+        composeTestRule.onNodeWithText("DormDash", useUnmergedTree = true).assertExists("Title should exist")
     }
+
+
+
 }
