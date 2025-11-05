@@ -31,8 +31,8 @@ class SocketDebugLogger(
                     } else {
                         Log.d(TAG, "Socket event: ${ev.name} payload=${payload?.toString()}")
                     }
-                } catch (t: Throwable) {
-                    Log.w(TAG, "Failed to log socket event ${ev.name}", t)
+                } catch (e: org.json.JSONException) {
+                    Log.w(TAG, "Failed to parse socket event payload ${ev.name}", e)
                 }
             }
             .launchIn(scope)

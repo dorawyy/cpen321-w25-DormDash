@@ -76,7 +76,11 @@ class OrderViewModel @Inject constructor(
         return try {
             val result = repository.submitOrder(orderRequest, paymentIntentId)
             result
-        } catch (e: Exception) {
+        } catch (e: java.io.IOException) {
+            android.util.Log.e("OrderViewModel", "Network error submitting order", e)
+            Result.failure(e)
+        } catch (e: retrofit2.HttpException) {
+            android.util.Log.e("OrderViewModel", "HTTP error submitting order: ${e.code()}", e)
             Result.failure(e)
         } finally {
             _isSubmitting.value = false
@@ -87,7 +91,11 @@ class OrderViewModel @Inject constructor(
         return try {
             val result = repository.getQuote(address)
             result
-        } catch (e: Exception) {
+        } catch (e: java.io.IOException) {
+            android.util.Log.e("OrderViewModel", "Network error getting quote", e)
+            Result.failure(e)
+        } catch (e: retrofit2.HttpException) {
+            android.util.Log.e("OrderViewModel", "HTTP error getting quote: ${e.code()}", e)
             Result.failure(e)
         }
     }
@@ -145,8 +153,12 @@ class OrderViewModel @Inject constructor(
                 repository.cancelOrder()   // suspend
                 // Update UI state if needed
                 onDone(null)
-            } catch (t: Throwable) {
-                onDone(t)
+            } catch (e: java.io.IOException) {
+                android.util.Log.e("OrderViewModel", "Network error cancelling order", e)
+                onDone(e)
+            } catch (e: retrofit2.HttpException) {
+                android.util.Log.e("OrderViewModel", "HTTP error cancelling order: ${e.code()}", e)
+                onDone(e)
             }
         }
     }

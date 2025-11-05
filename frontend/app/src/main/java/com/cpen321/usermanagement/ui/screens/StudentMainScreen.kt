@@ -53,6 +53,8 @@ import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cpen321.usermanagement.ui.viewmodels.JobViewModel
 import dagger.hilt.android.EntryPointAccessors
+import retrofit2.HttpException
+import java.io.IOException
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.rememberCoroutineScope
@@ -82,151 +84,19 @@ fun StudentMainScreen(
     val jobUiState by jobViewModel.uiState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
-    // Observe pending confirmation from JobViewModel (which survives navigation)
-    val pendingConfirmJobId = jobUiState.pendingConfirmationJobId
-
     // Initial load of active order and check for pending confirmations
-    // (OrderViewModel handles socket events automatically)
-    LaunchedEffect(Unit) {
-        orderViewModel.refreshActiveOrder()
-        // Check if there's already a job awaiting confirmation (in case event was emitted while logged out)
-        jobViewModel.checkForPendingConfirmations()
-        // Load student jobs to check if return job already exists
-        jobViewModel.loadStudentJobs()
-    }
+    InitialDataLoad(orderViewModel, jobViewModel)
 
-    // Subscribe to job socket events for snackbar notifications only
-    // (JobViewModel already handles job.updated for state management)
-    LaunchedEffect(true) {
-        val entry = EntryPointAccessors.fromApplication(appCtx, SocketClientEntryPoint::class.java)
-        val socketClient = entry.socketClient()
+    // Subscribe to socket events for snackbar notifications
+    SocketEventHandler(appCtx, snackBarHostState)
 
-        // Only collect events for UI feedback (snackbars)
-        socketClient.events.collect { ev ->
-            when (ev.name) {
-                "job.updated" -> {
-                    // Show snackbar notifications for job status changes
-                    val jobData = when {
-                        ev.payload == null -> null
-                        ev.payload.has("job") -> ev.payload.optJSONObject("job")
-                        else -> ev.payload
-                    }
-
-                    val status = jobData?.optString("status")
-                    val jobType = jobData?.optString("jobType")
-
-                    val message = when (status) {
-                        "AWAITING_STUDENT_CONFIRMATION" -> {
-                            when (jobType) {
-                                "STORAGE" -> "Mover is requesting confirmation that they've picked up your items"
-                                "RETURN" -> "Mover is requesting confirmation that they've delivered your items"
-                                else -> "Mover is requesting confirmation"
-                            }
-                        }
-
-                        "PICKED_UP" -> {
-                            when (jobType) {
-                                "STORAGE" -> "Mover has picked up your items"
-                                "RETURN" -> "Items picked up from storage"
-                                else -> "Mover has picked up items"
-                            }
-                        }
-                        "COMPLETED" -> {
-                            when (jobType) {
-                                "STORAGE" -> "Your items have been delivered to the storage facility!"
-                                "RETURN" -> "Your items have been returned to you!"
-                                else -> "Job completed successfully!"
-                            }
-                        }
-                        else -> null
-                    }
-
-                    message?.let {
-                        launch {
-                            snackBarHostState.showSnackbar(
-                                message = it,
-                                duration = SnackbarDuration.Long
-                            )
-                        }
-                    }
-                }
-                "order.updated" -> {
-                    // Show snackbar notification when order status changes
-                    val orderData = when {
-                        ev.payload == null -> null
-                        ev.payload.has("order") -> ev.payload.optJSONObject("order")
-                        else -> ev.payload
-                    }
-
-                    val orderStatus = orderData?.optString("status")
-                    
-                    val message = when (orderStatus) {
-                        "COMPLETED" -> "🎉 Order completed! Thank you for using our service."
-                        "CANCELLED" -> "Order cancelled successfully. Refund has been processed."
-                        else -> null
-                    }
-                    
-                    message?.let {
-                        launch {
-                            snackBarHostState.showSnackbar(
-                                message = it,
-                                duration = SnackbarDuration.Long
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Student confirmation modal (composed in UI, driven by JobViewModel state)
-    if (pendingConfirmJobId != null) {
-        val jobId = pendingConfirmJobId!!
-        // Find the job in studentJobs to determine if it's STORAGE or RETURN
-        val pendingJob = jobUiState.studentJobs.find { it.id == jobId }
-        val isReturnJob = pendingJob?.jobType == com.cpen321.usermanagement.data.local.models.JobType.RETURN
-        
-        // show a simple bottom sheet asking student to confirm
-        ModalBottomSheet(
-            onDismissRequest = { jobViewModel.clearPendingConfirmation() },
-            sheetState = rememberModalBottomSheetState()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    if (isReturnJob) "Confirm delivery" else "Confirm pickup", 
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    if (isReturnJob) 
-                        "A mover is requesting confirmation that they've delivered your items. Confirm?" 
-                    else 
-                        "A mover is requesting confirmation that they've collected your items. Confirm?", 
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    androidx.compose.material3.Button(onClick = {
-                        // Call appropriate confirmation method based on job type
-                        coroutineScope.launch {
-                            if (isReturnJob) {
-                                jobViewModel.confirmDelivery(jobId)
-                            } else {
-                                jobViewModel.confirmPickup(jobId)
-                            }
-                        }
-                    }) {
-                        Text("Confirm")
-                    }
-                    // androidx.compose.material3.OutlinedButton(onClick = { jobViewModel.clearPendingConfirmation() }) {
-                    //     Text("Cancel")
-                    // }
-                }
-            }
-        }
-    }
+    // Student confirmation modal
+    StudentConfirmationModal(
+        pendingConfirmJobId = jobUiState.pendingConfirmationJobId,
+        studentJobs = jobUiState.studentJobs,
+        jobViewModel = jobViewModel,
+        coroutineScope = coroutineScope
+    )
 
     MainContent(
         uiState = uiState,
@@ -234,12 +104,183 @@ fun StudentMainScreen(
         studentJobs = jobUiState.studentJobs,
         orderViewModel = orderViewModel,
         snackBarHostState = snackBarHostState,
-        onProfileClick = onProfileClick,
-        onSuccessMessageShown = mainViewModel::clearSuccessMessage
+        StudentMainContentActions(
+            onProfileClick = onProfileClick,
+            onSuccessMessageShown = mainViewModel::clearSuccessMessage
+        )   
     )
 }
 
+@Composable
+private fun InitialDataLoad(
+    orderViewModel: OrderViewModel,
+    jobViewModel: JobViewModel
+) {
+    LaunchedEffect(Unit) {
+        orderViewModel.refreshActiveOrder()
+        jobViewModel.checkForPendingConfirmations()
+        jobViewModel.loadStudentJobs()
+    }
+}
+
+@Composable
+private fun SocketEventHandler(
+    appContext: android.content.Context,
+    snackBarHostState: SnackbarHostState
+) {
+    LaunchedEffect(true) {
+        val entry = EntryPointAccessors.fromApplication(appContext, SocketClientEntryPoint::class.java)
+        val socketClient = entry.socketClient()
+
+        socketClient.events.collect { ev ->
+            when (ev.name) {
+                "job.updated" -> handleJobUpdatedEvent(ev, snackBarHostState)
+                "order.updated" -> handleOrderUpdatedEvent(ev, snackBarHostState)
+            }
+        }
+    }
+}
+
+private suspend fun handleJobUpdatedEvent(
+    event: com.cpen321.usermanagement.network.SocketEvent,
+    snackBarHostState: SnackbarHostState
+) {
+    val jobData = when {
+        event.payload == null -> null
+        event.payload.has("job") -> event.payload.optJSONObject("job")
+        else -> event.payload
+    }
+
+    val status = jobData?.optString("status")
+    val jobType = jobData?.optString("jobType")
+
+    val message = when (status) {
+        "AWAITING_STUDENT_CONFIRMATION" -> {
+            when (jobType) {
+                "STORAGE" -> "Mover is requesting confirmation that they've picked up your items"
+                "RETURN" -> "Mover is requesting confirmation that they've delivered your items"
+                else -> "Mover is requesting confirmation"
+            }
+        }
+        "PICKED_UP" -> {
+            when (jobType) {
+                "STORAGE" -> "Mover has picked up your items"
+                "RETURN" -> "Items picked up from storage"
+                else -> "Mover has picked up items"
+            }
+        }
+        "COMPLETED" -> {
+            when (jobType) {
+                "STORAGE" -> "Your items have been delivered to the storage facility!"
+                "RETURN" -> "Your items have been returned to you!"
+                else -> "Job completed successfully!"
+            }
+        }
+        else -> null
+    }
+
+    message?.let {
+        snackBarHostState.showSnackbar(
+            message = it,
+            duration = SnackbarDuration.Long
+        )
+    }
+}
+
+private suspend fun handleOrderUpdatedEvent(
+    event: com.cpen321.usermanagement.network.SocketEvent,
+    snackBarHostState: SnackbarHostState
+) {
+    val orderData = when {
+        event.payload == null -> null
+        event.payload.has("order") -> event.payload.optJSONObject("order")
+        else -> event.payload
+    }
+
+    val orderStatus = orderData?.optString("status")
+    
+    val message = when (orderStatus) {
+        "COMPLETED" -> "🎉 Order completed! Thank you for using our service."
+        "CANCELLED" -> "Order cancelled successfully. Refund has been processed."
+        else -> null
+    }
+    
+    message?.let {
+        snackBarHostState.showSnackbar(
+            message = it,
+            duration = SnackbarDuration.Long
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StudentConfirmationModal(
+    pendingConfirmJobId: String?,
+    studentJobs: List<Job>,
+    jobViewModel: JobViewModel,
+    coroutineScope: kotlinx.coroutines.CoroutineScope
+) {
+    if (pendingConfirmJobId != null) {
+        val jobId = pendingConfirmJobId
+        val pendingJob = studentJobs.find { it.id == jobId }
+        val isReturnJob = pendingJob?.jobType == com.cpen321.usermanagement.data.local.models.JobType.RETURN
+        
+        ModalBottomSheet(
+            onDismissRequest = { jobViewModel.clearPendingConfirmation() },
+            sheetState = rememberModalBottomSheetState()
+        ) {
+            ConfirmationModalContent(
+                isReturnJob = isReturnJob,
+                onConfirm = {
+                    coroutineScope.launch {
+                        if (isReturnJob) {
+                            jobViewModel.confirmDelivery(jobId)
+                        } else {
+                            jobViewModel.confirmPickup(jobId)
+                        }
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun ConfirmationModalContent(
+    isReturnJob: Boolean,
+    onConfirm: () -> Unit
+) {
+    Column(
+        modifier = Modifier.padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            if (isReturnJob) "Confirm delivery" else "Confirm pickup", 
+            style = MaterialTheme.typography.titleMedium
+        )
+        Text(
+            if (isReturnJob) 
+                "A mover is requesting confirmation that they've delivered your items. Confirm?" 
+            else 
+                "A mover is requesting confirmation that they've collected your items. Confirm?", 
+            style = MaterialTheme.typography.bodyMedium
+        )
+        androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            androidx.compose.material3.Button(onClick = onConfirm) {
+                Text("Confirm")
+            }
+        }
+    }
+}
+
 // use shared SocketClientEntryPoint in com.cpen321.usermanagement.di
+
+data class StudentMainContentActions(
+    val onProfileClick: () -> Unit,
+    val onSuccessMessageShown: () -> Unit
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -249,25 +290,22 @@ private fun MainContent(
     studentJobs: List<Job>,
     orderViewModel: OrderViewModel,
     snackBarHostState: SnackbarHostState,
-    onProfileClick: () -> Unit,
-    onSuccessMessageShown: () -> Unit,
+    actions: StudentMainContentActions,
     modifier: Modifier = Modifier
 ) {
     var showCreateOrderSheet by remember { mutableStateOf(false) }
     var showCreateReturnJobSheet by remember { mutableStateOf(false) }
-    val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val coroutineScope = rememberCoroutineScope()
     
     Scaffold(
         modifier = modifier,
         topBar = {
-            MainTopBar(onProfileClick = onProfileClick)
+            MainTopBar(onProfileClick = actions.onProfileClick)
         },
         snackbarHost = {
             MainSnackbarHost(
                 hostState = snackBarHostState,
                 successMessage = uiState.successMessage,
-                onSuccessMessageShown = onSuccessMessageShown
+                onSuccessMessageShown = actions.onSuccessMessageShown
             )
         }
     ) { paddingValues ->
@@ -276,80 +314,117 @@ private fun MainContent(
             activeOrder = activeOrder,
             studentJobs = studentJobs,
             onCreateOrderClick = { showCreateOrderSheet = true },
-            onCreateReturnJobClick = {
-                showCreateReturnJobSheet = true
-            }
+            onCreateReturnJobClick = { showCreateReturnJobSheet = true }
         )
     }
     
-    // Create Order Bottom Sheet
-    if (showCreateOrderSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showCreateOrderSheet = false },
-            sheetState = bottomSheetState
-        ) {
-            CreateOrderBottomSheet(
-                onDismiss = { showCreateOrderSheet = false },
-                orderViewModel = orderViewModel,
-                paymentRepository = PaymentRepository(RetrofitClient.paymentInterface),
-                onSubmitOrder = { orderRequest, paymentIntentId ->
-                    // Handle order submission with repository
-                    coroutineScope.launch {
-                        val result = orderViewModel.submitOrder(orderRequest, paymentIntentId)
-                        result.onSuccess { order ->
-                            println("Order submitted successfully: $order")
-                            // Order is now set in repository._activeOrder, StatusPanel will show it
-                        }.onFailure { exception ->
-                            println("Order submission failed: $exception")
-                        }
-                        // Close sheet after async operation completes
-                        showCreateOrderSheet = false
-                    }
-                }
-            )
-        }
-    }
+    CreateOrderBottomSheetHandler(
+        showSheet = showCreateOrderSheet,
+        onDismiss = { showCreateOrderSheet = false },
+        orderViewModel = orderViewModel
+    )
     
-    // Create Return Job Bottom Sheet
-    if (showCreateReturnJobSheet && activeOrder != null) {
-        CreateReturnJobBottomSheet(
-            activeOrder = activeOrder,
+    CreateReturnJobBottomSheetHandler(
+        showSheet = showCreateReturnJobSheet,
+        activeOrder = activeOrder,
+        onDismiss = { showCreateReturnJobSheet = false },
+        orderViewModel = orderViewModel,
+        snackBarHostState = snackBarHostState
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CreateOrderBottomSheetHandler(
+    showSheet: Boolean,
+    onDismiss: () -> Unit,
+    orderViewModel: OrderViewModel
+) {
+    if (!showSheet) return
+    
+    val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val coroutineScope = rememberCoroutineScope()
+    
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = bottomSheetState
+    ) {
+        CreateOrderBottomSheet(
+            onDismiss = onDismiss,
+            orderViewModel = orderViewModel,
             paymentRepository = PaymentRepository(RetrofitClient.paymentInterface),
-            onDismiss = { showCreateReturnJobSheet = false },
-            onSubmit = { request, paymentIntentId ->
+            onSubmitOrder = { orderRequest, paymentIntentId ->
                 coroutineScope.launch {
-                    try {
-                        val response = orderViewModel.createReturnJob(request)
-                        showCreateReturnJobSheet = false
-                        
-                        // Show appropriate message based on response
-                        val message = when {
-                            response.refundAmount != null && response.refundAmount > 0 -> {
-                                "Return job created! Refund of $${String.format("%.2f", response.refundAmount)} has been processed for early return."
-                            }
-                            response.lateFee != null && response.lateFee > 0 -> {
-                                "Return job created with late fee of $${String.format("%.2f", response.lateFee)}."
-                            }
-                            else -> "Return job created successfully!"
-                        }
-                        
-                        snackBarHostState.showSnackbar(
-                            message = message,
-                            duration = SnackbarDuration.Long
-                        )
-                        
-                        // Refresh active order
-                        orderViewModel.refreshActiveOrder()
-                    } catch (e: Exception) {
-                        snackBarHostState.showSnackbar(
-                            message = "Failed to create return job: ${e.message}",
-                            duration = SnackbarDuration.Long
-                        )
+                    val result = orderViewModel.submitOrder(orderRequest, paymentIntentId)
+                    result.onSuccess { order ->
+                        println("Order submitted successfully: $order")
+                    }.onFailure { exception ->
+                        println("Order submission failed: $exception")
                     }
+                    onDismiss()
                 }
             }
         )
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CreateReturnJobBottomSheetHandler(
+    showSheet: Boolean,
+    activeOrder: Order?,
+    onDismiss: () -> Unit,
+    orderViewModel: OrderViewModel,
+    snackBarHostState: SnackbarHostState
+) {
+    if (!showSheet || activeOrder == null) return
+    
+    val coroutineScope = rememberCoroutineScope()
+    
+    CreateReturnJobBottomSheet(
+        activeOrder = activeOrder,
+        paymentRepository = PaymentRepository(RetrofitClient.paymentInterface),
+        onDismiss = onDismiss,
+        onSubmit = { request, paymentIntentId ->
+            coroutineScope.launch {
+                try {
+                    val response = orderViewModel.createReturnJob(request)
+
+                    // Refresh order data before dismissing to ensure UI shows updated info
+                    orderViewModel.refreshActiveOrder()
+
+                    onDismiss()
+                    
+                    val message = when {
+                        response.refundAmount != null && response.refundAmount > 0 -> {
+                            "Return job created! Refund of $${String.format("%.2f", response.refundAmount)} has been processed for early return."
+                        }
+                        response.lateFee != null && response.lateFee > 0 -> {
+                            "Return job created with late fee of $${String.format("%.2f", response.lateFee)}."
+                        }
+                        else -> "Return job created successfully!"
+                    }
+                    
+                    snackBarHostState.showSnackbar(message = message, duration = SnackbarDuration.Long)
+                } catch (e: HttpException) {
+                    snackBarHostState.showSnackbar(
+                        message = "Failed to create return job: Server error (${e.code()})",
+                        duration = SnackbarDuration.Long
+                    )
+                } catch (e: IOException) {
+                    snackBarHostState.showSnackbar(
+                        message = "Failed to create return job: Network error",
+                        duration = SnackbarDuration.Long
+                    )
+                } catch (e: IllegalStateException) {
+                    snackBarHostState.showSnackbar(
+                        message = "Failed to create return job: ${e.message}",
+                        duration = SnackbarDuration.Long
+                    )
+                }
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

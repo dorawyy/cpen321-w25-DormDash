@@ -2,6 +2,7 @@ import { Express, Request } from 'express';
 import fs from 'fs';
 import multer from 'multer';
 import path from 'path';
+import crypto from 'crypto';
 
 const IMAGES_DIR = path.join(__dirname, '../../uploads/images');
 
@@ -14,8 +15,10 @@ const storage = multer.diskStorage({
     cb(null, IMAGES_DIR);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, `${uniqueSuffix}${path.extname(file.originalname)}`);
+    // Use a cryptographically strong UUID for filenames to avoid predictable names
+    const uniqueSuffix = crypto.randomUUID();
+    const originalName: string = file.originalname || 'file';
+    cb(null, `${uniqueSuffix}${path.extname(originalName)}`);
   },
 });
 

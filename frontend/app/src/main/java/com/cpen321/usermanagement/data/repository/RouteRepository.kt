@@ -26,8 +26,14 @@ class RouteRepository @Inject constructor(
                 Log.e("RouteRepository", "Error: $errorMessage")
                 Result.failure(Exception(errorMessage))
             }
-        } catch (e: Exception) {
-            Log.e("RouteRepository", "Exception fetching smart route", e)
+        } catch (e: java.io.IOException) {
+            Log.e("RouteRepository", "Network error fetching smart route", e)
+            Result.failure(e)
+        } catch (e: retrofit2.HttpException) {
+            Log.e("RouteRepository", "HTTP error fetching smart route: ${e.code()}", e)
+            Result.failure(e)
+        } catch (e: com.google.gson.JsonSyntaxException) {
+            Log.e("RouteRepository", "JSON parsing error in route response", e)
             Result.failure(e)
         }
     }

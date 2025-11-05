@@ -1,9 +1,9 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 // Payment Intent Schema
 export const createPaymentIntentSchema = z.object({
   amount: z.number().positive(),
-  currency: z.literal("CAD").default("CAD"),
+  currency: z.literal('CAD').default('CAD'),
   orderId: z.string().optional(),
 });
 
@@ -12,10 +12,17 @@ export const processPaymentSchema = z.object({
   paymentMethodId: z.string(),
 });
 
-// Payment Types
-export type CreatePaymentIntentRequest = z.infer<typeof createPaymentIntentSchema>;
+// Payment Types - explicitly typed to avoid 'any' inference
+export interface CreatePaymentIntentRequest {
+  amount: number;
+  currency: 'CAD';
+  orderId?: string;
+}
 
-export type ProcessPaymentRequest = z.infer<typeof processPaymentSchema>;
+export interface ProcessPaymentRequest {
+  paymentIntentId: string;
+  paymentMethodId: string;
+}
 
 export interface PaymentIntent {
   id: string;
@@ -38,12 +45,12 @@ export enum PaymentIntentStatus {
   REQUIRES_CONFIRMATION = 'requires_confirmation',
   SUCCEEDED = 'succeeded',
   FAILED = 'failed',
-  CANCELED = 'canceled'
+  CANCELED = 'canceled',
 }
 
 export enum PaymentStatus {
   PENDING = 'PENDING',
   SUCCEEDED = 'SUCCEEDED',
   FAILED = 'FAILED',
-  CANCELED = 'CANCELED'
+  CANCELED = 'CANCELED',
 }

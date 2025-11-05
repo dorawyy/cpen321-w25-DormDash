@@ -1,21 +1,25 @@
 import { NextFunction, Request, Response } from 'express';
 
-import { GetProfileResponse, UpdateProfileRequest } from '../types/user.types';
+import { GetProfileResponse, UpdateProfileRequest, IUser } from '../types/user.types';
 import logger from '../utils/logger.util';
-import { MediaService } from '../services/media.service';
+import { deleteAllUserImages } from '../services/media.service';
 import { userModel } from '../models/user.model';
-import { Console } from 'console';
 
 export class UserController {
   getProfile(req: Request, res: Response<GetProfileResponse>) {
-    const user = req.user!;
+    if (!req.user) {
+      return res.status(401).json({
+        message: 'User not authenticated',
+      });
+    }
+    const user = req.user;
 
     res.status(200).json({
       message: 'Profile fetched successfully',
       data: { user },
     });
   }
-  // TODO: logic should be in service layer, for now I update the fcm token through this to avoid potential risk but 
+  // TODO: logic should be in service layer, for now I update the fcm token through this to avoid potential risk but
   // eventually fcm should have its own endpoint and controller
   async updateProfile(
     req: Request<unknown, unknown, UpdateProfileRequest>,
@@ -23,12 +27,15 @@ export class UserController {
     next: NextFunction
   ) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        return res.status(401).json({
+          message: 'User not authenticated',
+        } );
+      }
+      const user = req.user;
 
-      // TODO: remove this
-      console.log("debug-fcmToken:", user);
-
-      const updatedUser = await userModel.update(user._id, req.body);
+      // Explicitly type req.body as Partial<IUser>
+      const updatedUser = await userModel.update(user._id, req.body as Partial<IUser>);
 
       if (!updatedUser) {
         return res.status(404).json({
@@ -55,9 +62,14 @@ export class UserController {
 
   async deleteProfile(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        return res.status(401).json({
+          message: 'User not authenticated',
+        });
+      }
+      const user = req.user;
 
-      await MediaService.deleteAllUserImages(user._id.toString());
+      await deleteAllUserImages(user._id.toString());
 
       await userModel.delete(user._id);
 
@@ -79,7 +91,12 @@ export class UserController {
 
   async cashOut(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = req.user!;
+      if (!req.user) {
+        return res.status(401).json({
+          message: 'User not authenticated',
+        });
+      }
+      const user = req.user;
 
       // Only movers can cash out
       if (user.userRole !== 'MOVER') {

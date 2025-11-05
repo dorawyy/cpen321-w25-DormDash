@@ -25,10 +25,12 @@ object TimeUtils {
         return try {
             val zoned: ZonedDateTime = try {
                 ZonedDateTime.parse(isoString)
-            } catch (e1: Exception) {
+            } catch (e1: java.time.format.DateTimeParseException) {
+                android.util.Log.e("TimeUtils", "Failed to parse as ZonedDateTime", e1)
                 try {
                     OffsetDateTime.parse(isoString).toZonedDateTime()
-                } catch (e2: Exception) {
+                } catch (e2: java.time.format.DateTimeParseException) {
+                    android.util.Log.e("TimeUtils", "Failed to parse as OffsetDateTime", e2)
                     val ldt = LocalDateTime.parse(isoString)
                     ldt.atZone(ZoneId.of("UTC"))
                 }
@@ -36,7 +38,8 @@ object TimeUtils {
             // Convert to Pacific Time
             val pacific = zoned.withZoneSameInstant(ZoneId.of("America/Los_Angeles"))
             pacific.format(DateTimeFormatter.ofPattern("MMM d, yyyy h:mm a"))
-        } catch (e: Exception) {
+        } catch (e: java.time.format.DateTimeParseException) {
+            android.util.Log.e("TimeUtils", "Failed to parse datetime: $isoString", e)
             isoString // fallback to raw string if parsing fails
         }
     }
@@ -56,7 +59,8 @@ object TimeUtils {
             val zonedUtc = localDateTime.atZone(utcZone)
             val pacific = zonedUtc.withZoneSameInstant(pacificZone)
             pacific.format(DateTimeFormatter.ofPattern("MMM d, yyyy h:mm a"))
-        } catch (e: Exception) {
+        } catch (e: java.time.format.DateTimeParseException) {
+            android.util.Log.e("TimeUtils", "Failed to format LocalDateTime", e)
             localDateTime.toString()
         }
     }
@@ -87,7 +91,8 @@ object TimeUtils {
             // Must use UTC to display the date the user selected in the picker
             sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
             sdf.format(java.util.Date(utcMillis))
-        } catch (e: Exception) {
+        } catch (e: IllegalArgumentException) {
+            android.util.Log.e("TimeUtils", "Invalid date millis: $utcMillis", e)
             "Invalid date"
         }
     }
@@ -109,7 +114,7 @@ object TimeUtils {
     fun parseTime24(timeString: String): LocalTime? {
         return try {
             LocalTime.parse(timeString, DateTimeFormatter.ofPattern("HH:mm"))
-        } catch (e: Exception) {
+        } catch (e: java.time.format.DateTimeParseException) {
             null
         }
     }

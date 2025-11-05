@@ -1,14 +1,22 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 // Request types
 // ------------------------------------------------------------
 export const smartRouteRequestSchema = z.object({
-  moverId: z.string().min(1, "Mover ID is required"),
+  moverId: z.string().min(1, 'Mover ID is required'),
   currentLocation: z.object({
     lat: z.number().min(-90).max(90),
     lon: z.number().min(-180).max(180),
   }),
 });
+
+export interface SmartRouteRequestValidated {
+  moverId: string;
+  currentLocation: {
+    lat: number;
+    lon: number;
+  };
+}
 
 export interface SmartRouteRequest {
   currentLat: number;
@@ -18,11 +26,11 @@ export interface SmartRouteRequest {
 
 // Response types
 // ------------------------------------------------------------
-export type JobInRoute = {
+export interface JobInRoute {
   jobId: string;
   orderId: string;
   studentId: string;
-  jobType: "STORAGE" | "RETURN";
+  jobType: 'STORAGE' | 'RETURN';
   volume: number;
   price: number;
   pickupAddress: {
@@ -40,17 +48,17 @@ export type JobInRoute = {
   estimatedDuration: number; // in minutes
   distanceFromPrevious: number; // in km
   travelTimeFromPrevious: number; // in minutes
-};
+}
 
-export type RouteMetrics = {
+export interface RouteMetrics {
   totalEarnings: number;
   totalJobs: number;
   totalDistance: number; // in km
   totalDuration: number; // in minutes (including job duration + travel)
   earningsPerHour: number;
-};
+}
 
-export type SmartRouteResponse = {
+export interface SmartRouteResponse {
   message: string;
   data?: {
     route: JobInRoute[];
@@ -60,4 +68,4 @@ export type SmartRouteResponse = {
       lon: number;
     };
   };
-};
+}
