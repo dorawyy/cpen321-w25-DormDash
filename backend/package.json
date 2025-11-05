@@ -80,9 +80,19 @@
     "collectCoverageFrom": [
       "src/**/*.{ts,js}",
       "!src/**/*.d.ts",
+<<<<<<< HEAD
       "!src/index.ts",
       "!src/socket.ts"
     ],
+=======
+      "!src/**/*.d.ts",
+      "!src/index.ts",
+      "!src/socket.ts"
+    ],
+    "collectCoverage": true,
+    "coverageDirectory": "coverage",
+
+>>>>>>> main
     "coverageReporters": [
       "text",
       "text-summary",
