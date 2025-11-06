@@ -454,20 +454,18 @@ private fun RouteMetricsCard(metrics: RouteMetrics) {
     val spacing = LocalSpacing.current
     Card(
         modifier = Modifier.fillMaxWidth().testTag("route_summary"),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
     ) {
-        Column(
-            modifier = Modifier.padding(spacing.medium)
-        ) {
+        Column(modifier = Modifier.padding(spacing.medium)) {
             Text(
                 text = "Route Summary",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
+
             Spacer(modifier = Modifier.height(spacing.small))
+            
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -491,7 +489,9 @@ private fun RouteMetricsCard(metrics: RouteMetrics) {
                     testTag = "route_total_distance"
                 )
             }
+
             Spacer(modifier = Modifier.height(spacing.small))
+            
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
