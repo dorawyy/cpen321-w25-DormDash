@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import java.time.DayOfWeek
@@ -155,10 +156,12 @@ private fun AvailabilityList(
     modifier: Modifier
 ) {
     LazyColumn(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag("availability_list"),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(DayOfWeek.values()) { day ->
+        items(DayOfWeek.entries.toList()) { day ->
             DayAvailabilityItem(
                 day = day,
                 timeSlots = availability[day] ?: emptyList(),
@@ -178,7 +181,8 @@ private fun SaveAvailabilityButton(
         onClick = onSave,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 16.dp),
+            .padding(vertical = 16.dp)
+            .testTag("save_availability_button"),
         enabled = !isSaving
     ) {
         if (isSaving) {
@@ -201,7 +205,9 @@ private fun DayAvailabilityItem(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag("day_card_${day.name}"),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -218,25 +224,32 @@ private fun DayAvailabilityItem(
                     text = day.name,
                     style = MaterialTheme.typography.titleMedium
                 )
-                IconButton(onClick = onAddTimeSlot) {
+                IconButton(
+                    onClick = onAddTimeSlot,
+                    modifier = Modifier.testTag("add_time_slot_${day.name}")
+                ) {
                     Icon(Icons.Default.Add, "Add time slot")
                 }
             }
 
             timeSlots.forEach { slot ->
+                val timeSlotText = "${TimeUtils.formatTime24(slot.first)} - ${TimeUtils.formatTime24(slot.second)}"
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp),
+                        .padding(vertical = 4.dp)
+                        .testTag("time_slot_${day.name}_${TimeUtils.formatTime24(slot.first)}"),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "${TimeUtils.formatTime24(slot.first)} - ${TimeUtils.formatTime24(slot.second)}",
-                        style = MaterialTheme.typography.bodyMedium
+                        text = timeSlotText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.testTag("time_slot_text_${day.name}_${TimeUtils.formatTime24(slot.first)}")
                     )
                     IconButton(
-                        onClick = { onRemoveTimeSlot(slot) }
+                        onClick = { onRemoveTimeSlot(slot) },
+                        modifier = Modifier.testTag("delete_time_slot_${day.name}_${TimeUtils.formatTime24(slot.first)}")
                     ) {
                         Icon(Icons.Default.Delete, "Remove time slot")
                     }
@@ -295,6 +308,12 @@ private fun TimePickerRow(
     var textValue by remember(time) { mutableStateOf(TimeUtils.formatTime24(time)) }
     var isError by remember { mutableStateOf(false) }
 
+    val testTag = when (label) {
+        "Start Time:" -> "start_time_input"
+        "End Time:" -> "end_time_input"
+        else -> "time_input"
+    }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -316,7 +335,9 @@ private fun TimePickerRow(
                     isError = input.isNotEmpty()
                 }
             },
-            modifier = Modifier.width(120.dp),
+            modifier = Modifier
+                .width(120.dp)
+                .testTag(testTag),
             singleLine = true,
             isError = isError,
             placeholder = { Text("HH:mm") },

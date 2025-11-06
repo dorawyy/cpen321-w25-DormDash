@@ -1,0 +1,146 @@
+import { describe, expect, test, beforeAll, afterAll, beforeEach, jest } from '@jest/globals';
+import request from 'supertest';
+import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
+import app from '../../src/app';
+import { connectDB, disconnectDB } from '../../src/config/database';
+import { userModel } from '../../src/models/user.model';
+
+// Suppress socket-related warnings
+const originalWarn = console.warn;
+let authToken: string;
+const testUserId = new mongoose.Types.ObjectId('507f1f77bcf86cd799439011');
+
+beforeAll(async () => {
+  console.warn = jest.fn(); // Suppress warnings
+  // Connect to test database
+  await connectDB();
+
+  // Ensure test user is clean - delete by googleId
+  const db = mongoose.connection.db;
+  if (db) {
+    await db.collection('users').deleteMany({ googleId: 'test-google-id' });
+  }
+
+  // Create a test user in DB with specific _id
+  await (userModel as any).user.create({
+    _id: testUserId,
+    googleId: 'test-google-id',
+    email: 'test@example.com',
+    name: 'Test User',
+    userRole: 'STUDENT'
+  });
+
+  // Generate a real JWT token for testing
+  const payload = { id: testUserId };
+  authToken = jwt.sign(payload, process.env.JWT_SECRET || 'default-secret');
+});
+
+beforeEach(async () => {
+  // Clear orders and jobs collections before each test to ensure isolation
+  const db = mongoose.connection.db;
+  if (db) {
+    await db.collection('orders').deleteMany({ studentId: testUserId });
+    await db.collection('jobs').deleteMany({ studentId: testUserId });
+  }
+});
+
+afterAll(async () => {
+  // Clean up test user
+  await userModel.delete(testUserId);
+  // Disconnect from test database
+  await disconnectDB();
+  console.warn = originalWarn; // Restore warnings
+});
+
+describe('POST /api/order/quote - No Mocks', () => {
+  test('should return a quote for valid input', async () => {
+    const response = await request(app)
+      .post('/api/order/quote')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        studentId: '507f1f77bcf86cd799439011',
+        studentAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Test Address' }
+      })
+      .expect(200);
+
+    expect(response.body).toHaveProperty('distancePrice');
+    expect(response.body).toHaveProperty('warehouseAddress');
+    expect(response.body).toHaveProperty('dailyStorageRate');
+  });
+
+  // Add more tests for invalid inputs, etc.
+});
+
+describe('POST /api/order - No Mocks', () => {
+  test('should create an order for valid input', async () => {
+    const response = await request(app)
+      .post('/api/order')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        studentId: '507f1f77bcf86cd799439011',
+        volume: 10,
+        totalPrice: 50,
+        studentAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Test Address' },
+        warehouseAddress: { lat: 49.2606, lon: -123.1133, formattedAddress: 'Warehouse Address' },
+        pickupTime: new Date().toISOString(),
+        returnTime: new Date(Date.now() + 86400000).toISOString(), // 1 day later
+        returnAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' }
+      })
+      .expect(201);
+
+    expect(response.body).toHaveProperty('_id');
+    expect(response.body).toHaveProperty('studentId');
+  });
+});
+
+describe('POST /api/order/create-return-Job - No Mocks', () => {
+  test('should return 500 if no active order', async () => {
+    await request(app)
+      .post('/api/order/create-return-Job')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        returnAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
+        actualReturnDate: new Date().toISOString()
+      })
+      .expect(500);
+  });
+});
+
+// Add similar describe blocks for other order endpoints: GET /api/order/all-orders, GET /api/order/active-order, DELETE /api/order/cancel-order
+
+describe('GET /api/order/all-orders - No Mocks', () => {
+  test('should return all orders for authenticated user', async () => {
+    const response = await request(app)
+      .get('/api/order/all-orders')
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
+
+    expect(response.body).toHaveProperty('success');
+    expect(response.body).toHaveProperty('orders');
+    expect(Array.isArray(response.body.orders)).toBe(true);
+  });
+});
+
+describe('GET /api/order/active-order - No Mocks', () => {
+  test('should return 404 if no active order', async () => {
+    const response = await request(app)
+      .get('/api/order/active-order')
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(404);
+
+    expect(response.body).toBe(null);
+  });
+});
+
+describe('DELETE /api/order/cancel-order - No Mocks', () => {
+  test('should cancel the active order for authenticated user', async () => {
+    const response = await request(app)
+      .delete('/api/order/cancel-order')
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
+
+    expect(response.body).toHaveProperty('success');
+    expect(response.body).toHaveProperty('message');
+  });
+});

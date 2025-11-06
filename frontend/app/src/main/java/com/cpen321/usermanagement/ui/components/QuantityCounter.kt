@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -43,7 +44,9 @@ fun QuantityCounter(
         
         OutlinedIconButton(
             onClick = { onQuantityChange(quantity + 1) },
-            modifier = Modifier.size(36.dp),
+            modifier = Modifier
+                .size(36.dp)
+                .testTag("add_box_button"),
             shape = CircleShape
         ) {
             Icon(
