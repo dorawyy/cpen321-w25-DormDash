@@ -14,7 +14,6 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import com.cpen321.usermanagement.MainActivity
 import com.cpen321.usermanagement.data.repository.AuthRepository
-import com.cpen321.usermanagement.fakes.FakeAuthRepository
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import kotlinx.coroutines.runBlocking
@@ -45,13 +44,6 @@ abstract class AuthTestBase {
     fun baseSetup() {
         hiltRule.inject()
         device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-
-        // Set auth state BEFORE launching the activity
-        if (!startSignedOut && authRepository is FakeAuthRepository) {
-            runBlocking {
-                (authRepository as FakeAuthRepository).resetToSignedIn()
-            }
-        }
 
         // Wait for the app to settle after launching
         composeTestRule.waitForIdle()

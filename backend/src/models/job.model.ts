@@ -13,7 +13,7 @@ const addressSubSchema = new Schema(
 );
 
 // Mongoose Job schema
-const jobSchema = new Schema<Job>(
+export const jobSchema = new Schema<Job>(
   {
     _id: { type: Schema.Types.ObjectId, required: true },
     orderId: {
@@ -170,6 +170,15 @@ export class JobModel {
     } catch (error) {
       logger.error('Error in tryAcceptJob:', error);
       throw new Error('Failed to accept job');
+    }
+  }
+
+  async delete(filter: Partial<Job>) {
+    try {
+      return await this.job.deleteMany(filter);
+    } catch (error) {
+      logger.error("Error deleting jobs:", error);
+      throw new Error("Failed to delete jobs");
     }
   }
 }
