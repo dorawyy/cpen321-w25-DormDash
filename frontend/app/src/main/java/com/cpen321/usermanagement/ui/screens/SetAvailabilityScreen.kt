@@ -205,7 +205,9 @@ private fun DayAvailabilityItem(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag("day_card_${day.name}"),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -231,16 +233,19 @@ private fun DayAvailabilityItem(
             }
 
             timeSlots.forEach { slot ->
+                val timeSlotText = "${TimeUtils.formatTime24(slot.first)} - ${TimeUtils.formatTime24(slot.second)}"
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp),
+                        .padding(vertical = 4.dp)
+                        .testTag("time_slot_${day.name}_${TimeUtils.formatTime24(slot.first)}"),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "${TimeUtils.formatTime24(slot.first)} - ${TimeUtils.formatTime24(slot.second)}",
-                        style = MaterialTheme.typography.bodyMedium
+                        text = timeSlotText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.testTag("time_slot_text_${day.name}_${TimeUtils.formatTime24(slot.first)}")
                     )
                     IconButton(
                         onClick = { onRemoveTimeSlot(slot) },

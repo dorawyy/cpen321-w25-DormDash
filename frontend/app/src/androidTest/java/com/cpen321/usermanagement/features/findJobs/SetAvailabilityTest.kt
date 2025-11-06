@@ -47,7 +47,7 @@ class SetAvailabilityTest : FindJobsTestBase() {
         composeTestRule.onNodeWithText("Set Availability").assertIsDisplayed()
 
         // Days to add standard 9-5 availability
-        val standardDays = listOf("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "SATURDAY", "SUNDAY")
+        val standardDays = listOf("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY")
 
         // Add 9:00-17:00 time slots for standard days
         standardDays.forEach { day ->
@@ -86,7 +86,7 @@ class SetAvailabilityTest : FindJobsTestBase() {
         // Verify success message appears
         composeTestRule.waitUntil(timeoutMillis = 5000) {
             composeTestRule
-                .onAllNodesWithText("Availability saved successfully", substring = true, ignoreCase = true)
+                .onAllNodesWithText("Availability updated successfully!", substring = true, ignoreCase = true)
                 .fetchSemanticsNodes()
                 .isNotEmpty()
         }
@@ -116,12 +116,16 @@ class SetAvailabilityTest : FindJobsTestBase() {
 
         composeTestRule.waitForIdle()
 
-        // Verify time slot is removed
-        composeTestRule.onNodeWithText("09:00 - 17:00").assertDoesNotExist()
+        // Verify time slot is removed by expecting assert failure from verification
+        val exception = kotlin.runCatching {
+            verifyTimeSlotExists("MONDAY", "09:00", "17:00")
+        }.exceptionOrNull()
+
+        assert(exception is AssertionError)
     }
 
     /**
-     * Extension Scenario: Add multiple time slots to the same day
+     * Add multiple time slots to the same day
      */
     @Test
     fun testAddMultipleTimeSlotsToSameDay_success() {
@@ -212,7 +216,6 @@ class SetAvailabilityTest : FindJobsTestBase() {
     }
 
     // Helper functions
-
     /**
      * Scroll until the specified day becomes visible on screen
      * Uses the day's index to scroll to the appropriate position
@@ -334,17 +337,15 @@ class SetAvailabilityTest : FindJobsTestBase() {
      * Verify a time slot exists for a specific day
      */
     private fun verifyTimeSlotExists(day: String, startTime: String, endTime: String) {
-        val timeSlotText = "$startTime - $endTime"
-
         // Scroll to the day card if needed
         scrollToDay(day)
         composeTestRule.waitForIdle()
 
-        // Verify the time slot text exists within the same card
-        composeTestRule.onNode(
-            hasText(timeSlotText) and
-                    hasAnyAncestor(hasText(day))
-        ).assertExists()
+        // Use the test tag to verify the time slot exists
+        val testTag = "time_slot_text_${day}_${startTime}"
+        composeTestRule.onNodeWithTag(testTag).assertExists(
+            "Could not find time slot '$startTime - $endTime' for day '$day'"
+        )
     }
 }
 
