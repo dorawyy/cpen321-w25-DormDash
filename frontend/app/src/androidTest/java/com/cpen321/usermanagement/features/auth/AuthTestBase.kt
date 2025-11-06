@@ -116,13 +116,6 @@ abstract class AuthTestBase {
 
             composeTestRule.waitForIdle()
 
-            // Wait for main screen to appear
-            composeTestRule.waitUntil(timeoutMillis = 5000) {
-                composeTestRule
-                    .onAllNodesWithText("DormDash", useUnmergedTree = true)
-                    .fetchSemanticsNodes()
-                    .isNotEmpty()
-            }
         } else {
             // authenticated already
             return

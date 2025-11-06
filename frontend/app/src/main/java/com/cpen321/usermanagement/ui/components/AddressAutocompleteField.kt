@@ -283,6 +283,7 @@ private fun AddressSuggestionItem(
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp)
+            .testTag("address_suggestion_item")
     ) {
         Icon(
             imageVector = Icons.Default.LocationOn,
@@ -294,13 +295,15 @@ private fun AddressSuggestionItem(
             Text(
                 text = suggestion.primaryText,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.testTag("suggestion_primary_text")
             )
             if (suggestion.secondaryText.isNotEmpty()) {
                 Text(
                     text = suggestion.secondaryText,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.testTag("suggestion_secondary_text")
                 )
             }
         }

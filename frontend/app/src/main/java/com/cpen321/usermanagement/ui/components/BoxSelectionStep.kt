@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.cpen321.usermanagement.business.DynamicPriceCalculator
@@ -459,7 +460,9 @@ private fun ProceedToPaymentButton(
     Button(
         onClick = onProceed,
         enabled = enabled,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("proceed_to_payment_button")
     ) {
         Text("Proceed to Payment - $${String.format("%.2f", totalPrice)}")
     }

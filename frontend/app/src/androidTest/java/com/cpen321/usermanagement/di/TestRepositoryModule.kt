@@ -12,32 +12,32 @@ import dagger.hilt.components.SingletonComponent
 import dagger.hilt.testing.TestInstallIn
 import javax.inject.Singleton
 
-/**
- * Test module to replace RepositoryModule during instrumented tests.
- * Provides fake implementations with pre-configured mover account.
- */
-@Module
-@TestInstallIn(
-    components = [SingletonComponent::class],
-    replaces = [RepositoryModule::class]
-)
-object TestRepositoryModule {
-
-    @Provides
-    @Singleton
-    fun provideAuthRepository(): AuthRepository {
-        return FakeAuthRepository()
-    }
-
-    @Provides
-    @Singleton
-    fun provideProfileRepository(): ProfileRepository {
-        return FakeProfileRepository()
-    }
-
-    @Provides
-    @Singleton
-    fun provideJobRepository(): JobRepository {
-        return FakeJobRepository()
-    }
-}
+///**
+// * Test module to replace RepositoryModule during instrumented tests.
+// * Provides fake implementations with pre-configured mover account.
+// */
+//@Module
+//@TestInstallIn(
+//    components = [SingletonComponent::class],
+//    replaces = [RepositoryModule::class]
+//)
+//object TestRepositoryModule {
+//
+//    @Provides
+//    @Singleton
+//    fun provideAuthRepository(): AuthRepository {
+//        return FakeAuthRepository()
+//    }
+//
+//    @Provides
+//    @Singleton
+//    fun provideProfileRepository(): ProfileRepository {
+//        return FakeProfileRepository()
+//    }
+//
+//    @Provides
+//    @Singleton
+//    fun provideJobRepository(): JobRepository {
+//        return FakeJobRepository()
+//    }
+//}

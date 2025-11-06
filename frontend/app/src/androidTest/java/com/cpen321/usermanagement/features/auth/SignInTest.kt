@@ -64,14 +64,6 @@ class SignInTest : AuthTestBase() {
 
         composeTestRule.waitForIdle()
 
-        // Wait for sign-in flow to complete
-        composeTestRule.waitUntil(timeoutMillis = 3000) {
-            composeTestRule
-                .onAllNodesWithText("DormDash", useUnmergedTree = true)
-                .fetchSemanticsNodes()
-                .isNotEmpty()
-        }
-
         // title is rendered as two Text nodes (app name + role). Assert both parts separately:
         composeTestRule.onNodeWithText("DormDash", useUnmergedTree = true).assertExists("Title Should Exist")
     }

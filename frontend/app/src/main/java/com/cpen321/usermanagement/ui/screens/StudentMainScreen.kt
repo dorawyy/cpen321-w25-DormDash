@@ -271,7 +271,7 @@ private fun ConfirmationModalContent(
         )
         androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            androidx.compose.material3.Button(onClick = onConfirm) {
+            androidx.compose.material3.Button(onClick = onConfirm, modifier = Modifier.testTag("confirm arrival button")) {
                 Text("Confirm")
             }
         }

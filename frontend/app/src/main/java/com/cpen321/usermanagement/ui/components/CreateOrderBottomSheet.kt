@@ -457,7 +457,7 @@ private fun AddressValidationButton(
     Button(
         onClick = onValidate,
         enabled = !isValidating && hasSelectedAddress,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().testTag("charge button")
     ) {
         if (isValidating) {
             Row(verticalAlignment = Alignment.CenterVertically) {

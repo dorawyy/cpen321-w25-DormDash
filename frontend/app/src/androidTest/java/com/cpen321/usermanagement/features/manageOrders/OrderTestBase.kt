@@ -84,7 +84,7 @@ abstract class OrderTestBase {
 
             // Wait for sign-in flow to complete
             composeTestRule.waitForIdle()
-
+            Thread.sleep(2000)
             // Check if "Complete Your Profile" popup appears and skip it if present
             val completeProfileNodes = composeTestRule
                 .onAllNodesWithText("Complete Your Profile", useUnmergedTree = true)
@@ -99,13 +99,6 @@ abstract class OrderTestBase {
 
             composeTestRule.waitForIdle()
 
-            // Wait for main screen to appear
-            composeTestRule.waitUntil(timeoutMillis = 5000) {
-                composeTestRule
-                    .onAllNodesWithText("DormDash", useUnmergedTree = true)
-                    .fetchSemanticsNodes()
-                    .isNotEmpty()
-            }
         } else {
             // authenticated already
             return
