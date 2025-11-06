@@ -10,10 +10,14 @@
     "test:nomock": "node test-runner.js",
     "test:mock:coverage": "node test-runner.js",
     "test:nomock:coverage": "node test-runner.js",
+    "test:mock:jobs": "node test-runner.js",
+    "test:mock:jobs:coverage": "node test-runner.js",
     "test:mock:order": "node test-runner.js",
     "test:mock:order:coverage": "node test-runner.js",
     "test:mock:payment": "node test-runner.js",
     "test:mock:payment:coverage": "node test-runner.js",
+    "test:nomock:jobs": "node test-runner.js",
+    "test:nomock:jobs:coverage": "node test-runner.js",
     "test:nomock:order": "node test-runner.js",
     "test:nomock:order:coverage": "node test-runner.js",
     "test:nomock:payment": "node test-runner.js",
@@ -75,24 +79,16 @@
     "preset": "ts-jest",
     "testEnvironment": "node",
     "verbose": true,
+    "maxWorkers": 1,
+    "testTimeout": 30000,
     "collectCoverage": false,
     "coverageDirectory": "coverage",
     "collectCoverageFrom": [
       "src/**/*.{ts,js}",
       "!src/**/*.d.ts",
-<<<<<<< HEAD
       "!src/index.ts",
       "!src/socket.ts"
     ],
-=======
-      "!src/**/*.d.ts",
-      "!src/index.ts",
-      "!src/socket.ts"
-    ],
-    "collectCoverage": true,
-    "coverageDirectory": "coverage",
-
->>>>>>> main
     "coverageReporters": [
       "text",
       "text-summary",
