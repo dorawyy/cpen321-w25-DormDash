@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 
 import logger from '../utils/logger.util';
 
@@ -15,10 +15,9 @@ export const notFoundHandler = (req: Request, res: Response) => {
 export const errorHandler = (
   error: unknown,
   res: Response,
-  _next: NextFunction,
 ) => {
   // Log the raw error for diagnostics
-  logger.error('Error:', error as any);
+  logger.error('Error:', error);
 
   // Default values
   const defaultStatus = 500;
