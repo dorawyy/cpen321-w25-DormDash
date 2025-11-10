@@ -27,7 +27,6 @@ jest.mock('../../src/services/stripe.service', () => ({
 // Import app after mocks are set up
 import app from '../../src/app';
 import { stripeService } from '../../src/services/stripe.service';
-import admin from '../../src/config/firebase';
 
 // Suppress console logs during tests
 const originalConsole = {
