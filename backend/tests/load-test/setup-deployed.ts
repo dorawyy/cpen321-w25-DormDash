@@ -11,6 +11,8 @@
  * No database access required! Works entirely through API endpoints.
  */
 
+// comment for deployment
+
 import dotenv from 'dotenv';
 import path from 'path';
 
