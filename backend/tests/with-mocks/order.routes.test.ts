@@ -919,12 +919,71 @@ describe('DELETE /api/order/cancel-order - Cancel Order (Mocked)', () => {
     expect(response.body).toHaveProperty('message', 'Order cancelled successfully');
   });
 
+  // Input: pending order exists, database throws during update
+  // Expected status code: 500
+  // Expected behavior: controller handles error path via orderModel.update catch
+  // Mocked behavior: underlying mongoose findByIdAndUpdate rejects
+  test('should surface database errors when cancellation update fails', async () => {
+    const mockPendingOrder = {
+      _id: new mongoose.Types.ObjectId(),
+      studentId: testUserId.toString(),
+      status: OrderStatus.PENDING,
+      volume: 2.5,
+      price: 150.0,
+      studentAddress: {
+        lat: 49.2606,
+        lon: -123.1133,
+        formattedAddress: '123 Student Ave, Vancouver, BC'
+      },
+      warehouseAddress: {
+        lat: 49.2827,
+        lon: -123.1207,
+        formattedAddress: '123 Warehouse St, Vancouver, BC'
+      },
+      pickupTime: '2025-11-10T10:00:00.000Z',
+      returnTime: '2025-11-15T10:00:00.000Z',
+      paymentIntentId: 'pi_mock_123'
+    } as unknown as Order;
+
+    mockOrderModel.findActiveOrder.mockResolvedValue(mockPendingOrder);
+
+    const actualOrderModule = jest.requireActual('../../src/models/order.model') as {
+      orderModel: {
+        update: (orderId: mongoose.Types.ObjectId, update: Partial<Order>) => Promise<Order | null>;
+        order: mongoose.Model<Order>;
+      };
+    };
+
+    const actualOrderInstance = actualOrderModule.orderModel;
+    const findByIdAndUpdateSpy = jest
+      .spyOn((actualOrderInstance as any).order, 'findByIdAndUpdate')
+      .mockRejectedValue(new Error('Database update failed'));
+
+    mockOrderModel.update.mockImplementationOnce(async (orderId, updatePayload) => {
+      return actualOrderInstance.update(orderId as mongoose.Types.ObjectId, updatePayload as Partial<Order>);
+    });
+
+    try {
+      await request(app)
+        .delete('/api/order/cancel-order')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(500);
+
+      expect(findByIdAndUpdateSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      findByIdAndUpdateSpy.mockRestore();
+      mockOrderModel.update.mockReset();
+    }
+  });
+
   test('should call next(err) when controller promise rejects', async () => {
     const { OrderController } = require('../../src/controllers/order.controller');
     const controllerProto = OrderController.prototype;
     const originalMethod = controllerProto.cancelOrder;
 
-    controllerProto.cancelOrder = jest.fn().mockRejectedValue(new Error('Controller error'));
+    controllerProto.cancelOrder = jest
+      .fn()
+      .mockImplementation(() => Promise.reject(new Error('Controller error')));
 
     const response = await request(app)
       .delete('/api/order/cancel-order')
