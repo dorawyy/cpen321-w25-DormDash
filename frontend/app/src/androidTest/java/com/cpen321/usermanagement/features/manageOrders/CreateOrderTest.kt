@@ -127,6 +127,11 @@ class CreateOrderTest : OrderTestBase() {
         composeTestRule.onNodeWithTag("customer_email_field", useUnmergedTree = true)
             .performTextInput("john.doe@example.com")
 
+        //close keyboard if needed
+        val uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        uiDevice.waitForIdle()
+        uiDevice.pressBack()
+
         composeTestRule.waitForIdle()
 
         // Click Process Payment button

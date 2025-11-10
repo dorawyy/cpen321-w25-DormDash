@@ -178,7 +178,8 @@ abstract class FindJobsTestBase {
                             if (passwordField != null) {
                                 passwordField.click()
                                 Thread.sleep(1000)
-                                passwordField.setText(FindJobsTestBase.Companion.getTestPassword())
+                                val password = getTestPassword().replace(" ", "%s") // Escape spaces
+                                device.executeShellCommand("input text $password")
                                 Thread.sleep(5000)
 
                                 // Try to find and click Next button for password

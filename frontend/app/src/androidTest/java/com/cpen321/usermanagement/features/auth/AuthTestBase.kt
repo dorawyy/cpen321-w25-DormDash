@@ -1,13 +1,9 @@
 package com.cpen321.usermanagement.features.auth
 
-import android.content.Intent
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.test.core.app.ActivityScenario
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
@@ -16,7 +12,6 @@ import com.cpen321.usermanagement.MainActivity
 import com.cpen321.usermanagement.data.repository.AuthRepository
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
-import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
 import java.util.Properties
@@ -192,7 +187,8 @@ abstract class AuthTestBase {
                             if (passwordField != null) {
                                 passwordField.click()
                                 Thread.sleep(300)
-                                passwordField.setText(getTestPassword())
+                                val password = getTestPassword().replace(" ", "%s") // Escape spaces
+                                device.executeShellCommand("input text $password")
                                 Thread.sleep(1000)
                                 
                                 // Try to find and click Next button for password

@@ -9,7 +9,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
+import com.cpen321.usermanagement.FindJobsTestBase
 import com.cpen321.usermanagement.MainActivity
+import com.cpen321.usermanagement.features.auth.AuthTestBase
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before
@@ -202,7 +204,9 @@ abstract class OrderTestBase {
                             if (passwordField != null) {
                                 passwordField.click()
                                 Thread.sleep(1000)
-                                passwordField.setText(OrderTestBase.Companion.getTestPassword())
+                                val password = getTestPassword()
+                                    .replace(" ", "%s") // Escape spaces
+                                device.executeShellCommand("input text $password")
                                 Thread.sleep(3000)
 
                                 // Try to find and click Next button for password
