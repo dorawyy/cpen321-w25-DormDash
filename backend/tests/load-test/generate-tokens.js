@@ -85,24 +85,28 @@ async function main() {
     const moverIds = await getMovers(300);
 
     if (studentIds.length === 0) {
-      console.error('\n✗ No students found in database!');
-      console.error('Please run: npm run load-test:seed-users');
-      process.exit(1);
+      console.warn('\n⚠ No students found in database!');
+      console.warn('Please run: npm run load-test:seed-users');
+      console.warn('Creating empty tokens.js file...');
     }
 
     if (moverIds.length === 0) {
-      console.error('\n✗ No movers found in database!');
-      console.error('Please run: npm run load-test:seed-users');
-      process.exit(1);
+      console.warn('\n⚠ No movers found in database!');
+      console.warn('Please run: npm run load-test:seed-users');
+      console.warn('Creating empty tokens.js file...');
     }
 
-    console.log(`✓ Found ${studentIds.length} students`);
-    console.log(`✓ Found ${moverIds.length} movers`);
+    if (studentIds.length > 0) {
+      console.log(`✓ Found ${studentIds.length} students`);
+    }
+    if (moverIds.length > 0) {
+      console.log(`✓ Found ${moverIds.length} movers`);
+    }
 
-    // Generate tokens
+    // Generate tokens (empty arrays if no users found)
     console.log('\nGenerating JWT tokens...');
-    const studentTokens = generateTokens(studentIds, JWT_SECRET);
-    const moverTokens = generateTokens(moverIds, JWT_SECRET);
+    const studentTokens = studentIds.length > 0 ? generateTokens(studentIds, JWT_SECRET) : [];
+    const moverTokens = moverIds.length > 0 ? generateTokens(moverIds, JWT_SECRET) : [];
 
     // Create JavaScript file with tokens
     const tokensFile = `// Auto-generated token file for k6 load testing
@@ -128,7 +132,14 @@ export const moverIds = ${JSON.stringify(moverIds, null, 2)};
     console.log('\n✓ Generated tokens file:', outputPath);
     console.log(`✓ Generated ${studentTokens.length} student tokens`);
     console.log(`✓ Generated ${moverTokens.length} mover tokens`);
-    console.log('\nTokens are ready for use in load-test.js');
+    
+    if (studentTokens.length === 0 && moverTokens.length === 0) {
+      console.warn('\n⚠ WARNING: No tokens generated!');
+      console.warn('The load test will fail without tokens.');
+      console.warn('Please run: npm run load-test:seed-users');
+    } else {
+      console.log('\nTokens are ready for use in load-test.js');
+    }
 
   } catch (error) {
     console.error('Error generating tokens:', error);

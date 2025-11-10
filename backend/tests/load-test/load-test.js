@@ -31,7 +31,6 @@ export const options = {
   },
 };
 
-
 // const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
 const BASE_URL = 'http://localhost:3000';
 
@@ -188,7 +187,6 @@ export default function () {
 export function handleSummary(data) {
   return {
     stdout: textSummary(data, { indent: ' ', enableColors: true }),
-    'load-test-summary.json': JSON.stringify(data, null, 2),
   };
 }
 

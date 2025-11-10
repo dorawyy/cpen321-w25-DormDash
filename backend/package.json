@@ -40,10 +40,13 @@
     "format:fix": "prettier --write \"src/**/*.{ts,js,json}\"",
     "test:file": "jest $npm_config_file",
     "test:file:coverage": "jest $npm_config_file --coverage",
+
     "load-test:seed-users": "ts-node tests/load-test/seed-load-test-users.ts",
     "load-test:generate-tokens": "node tests/load-test/generate-tokens.js",
     "load-test:setup": "npm run load-test:seed-users && npm run load-test:generate-tokens",
-    "load-test": "npm run load-test:generate-tokens && k6 run tests/load-test/load-test.js",
+    "load-test:cleanup": "ts-node tests/load-test/cleanup-load-test-data.ts",
+    "load-test": "npm run load-test:setup && k6 run tests/load-test/load-test.js && npm run load-test:cleanup",
+    "load-test:no-cleanup": "npm run load-test:setup && k6 run tests/load-test/load-test.js",
     "load-test:direct": "k6 run tests/load-test/load-test.js"
   },
   "author": "",
