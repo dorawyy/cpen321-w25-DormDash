@@ -219,6 +219,32 @@ describe('POST /api/order/quote - Get Quote (Mocked)', () => {
     // Restore original method
     controllerProto.getQuote = originalMethod;
   });
+
+  test('should trigger next(err) when orderService.getQuote throws error', async () => {
+    // Mock the warehouse config to throw an error during getQuote
+    const warehouseModule = require('../../src/constants/warehouses');
+    const originalWarehouses = warehouseModule.WAREHOUSES;
+    
+    // Set warehouses to undefined to cause an error in getQuote
+    (warehouseModule as any).WAREHOUSES = undefined;
+
+    const response = await request(app)
+      .post('/api/order/quote')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        studentId: testUserId.toString(),
+        studentAddress: {
+          lat: 49.2606,
+          lon: -123.1133,
+          formattedAddress: '123 Student Ave, Vancouver, BC'
+        }
+      });
+
+    expect(response.status).toBe(500);
+
+    // Restore original warehouses
+    (warehouseModule as any).WAREHOUSES = originalWarehouses;
+  });
 });
 
 describe('POST /api/order - Create Order (Mocked)', () => {
@@ -805,6 +831,74 @@ describe('POST /api/order/create-return-Job - Create Return Job (Mocked)', () =>
 
     // Restore original method
     controllerProto.createReturnJob = originalMethod;
+  });
+
+  test('should return 401 when user is not authenticated in createReturnJob', async () => {
+    // Directly test the controller with no user
+    const { OrderController } = require('../../src/controllers/order.controller');
+    const orderService = require('../../src/services/order.service').OrderService;
+    const controller = new OrderController(new orderService());
+
+    const mockReq: any = {
+      user: undefined, // No user
+      body: {
+        returnAddress: {
+          lat: 49.2606,
+          lon: -123.1133,
+          formattedAddress: '123 Return St, Vancouver, BC'
+        }
+      }
+    };
+
+    const mockRes: any = {
+      status: (jest.fn() as any).mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    const mockNext = jest.fn();
+
+    await controller.createReturnJob(mockReq, mockRes, mockNext);
+
+    expect(mockRes.status).toHaveBeenCalledWith(401);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      success: false,
+      message: 'Authentication required. Please log in.',
+    });
+    expect(mockNext).not.toHaveBeenCalled();
+  });
+
+  test('should return 401 when user._id is missing in createReturnJob', async () => {
+    // Directly test the controller with user but no _id
+    const { OrderController } = require('../../src/controllers/order.controller');
+    const orderService = require('../../src/services/order.service').OrderService;
+    const controller = new OrderController(new orderService());
+
+    const mockReq: any = {
+      user: {}, // User exists but no _id
+      body: {
+        returnAddress: {
+          lat: 49.2606,
+          lon: -123.1133,
+          formattedAddress: '123 Return St, Vancouver, BC'
+        }
+      }
+    };
+
+    const mockRes: any = {
+      status: (jest.fn() as any).mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    const mockNext = jest.fn();
+
+    await controller.createReturnJob(mockReq, mockRes, mockNext);
+
+    expect(mockRes.status).toHaveBeenCalledWith(401);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      success: false,
+      message: 'Authentication required. Please log in.',
+    });
+    expect(mockNext).not.toHaveBeenCalled();
   });
 });
 
