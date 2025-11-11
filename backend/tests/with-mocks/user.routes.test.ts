@@ -1046,91 +1046,202 @@ describe('UserModel - Database Error Handling', () => {
   });
 
   describe('create', () => {
-    test('should handle database error when creating user', async () => {
+    test('should handle database error when creating user via signup endpoint', async () => {
+      // Mock Google verification to return valid data first
+      const { AuthService } = require('../../src/services/auth.service');
+      const serviceProto = AuthService.prototype;
+      const originalVerify = serviceProto.verifyGoogleToken;
+      
+      serviceProto.verifyGoogleToken = (jest.fn() as any).mockResolvedValue({
+        googleId: 'test-google-id-for-db-error',
+        email: 'dbtest@example.com',
+        name: 'DB Error Test User',
+      });
+
+      // Mock the create method to throw an error
       const actualUserModel = (userModel as any).user;
       const createSpy = jest.spyOn(actualUserModel, 'create').mockImplementation(() => {
         throw new Error('Database creation error');
       });
 
       try {
-        await expect(userModel.create({
-          googleId: 'test-google-id',
-          email: 'test@example.com',
-          name: 'Test User',
-        })).rejects.toThrow('Failed to update user');
+        const response = await request(app)
+          .post('/api/auth/signup')
+          .send({
+            idToken: 'mock-id-token-for-create-test'
+          });
+
+        // Verify the create function was called
+        expect(createSpy).toHaveBeenCalled();
+        // The response should be 500 with an error message
+        expect(response.status).toBe(500);
       } finally {
         createSpy.mockRestore();
+        serviceProto.verifyGoogleToken = originalVerify;
       }
     });
 
-    test('should handle validation error when creating user with invalid data', async () => {
-      await expect(userModel.create({
+    test('should handle validation error when creating user with invalid data via signup', async () => {
+      // Mock the Google verification to return invalid data
+      const { AuthService } = require('../../src/services/auth.service');
+      const serviceProto = AuthService.prototype;
+      const originalVerify = serviceProto.verifyGoogleToken;
+      
+      serviceProto.verifyGoogleToken = (jest.fn() as any).mockResolvedValue({
         googleId: '', // Invalid: empty googleId
         email: 'invalid-email', // Invalid: not a proper email
         name: '',
-      } as any)).rejects.toThrow('Invalid update data');
+      });
+
+      try {
+        const response = await request(app)
+          .post('/api/auth/signup')
+          .send({
+            idToken: 'mock-id-token-invalid-data'
+          });
+
+        // Should return 500 status code
+        expect(response.status).toBe(500);
+      } finally {
+        serviceProto.verifyGoogleToken = originalVerify;
+      }
     });
 
-    test('should successfully create user with valid data', async () => {
+    test('should successfully create user via signup endpoint', async () => {
+      // Mock Google verification to return valid data
+      const { AuthService } = require('../../src/services/auth.service');
+      const serviceProto = AuthService.prototype;
+      const originalVerify = serviceProto.verifyGoogleToken;
+      
       const newUserId = new mongoose.Types.ObjectId();
-      const userData = {
-        googleId: `create-test-${newUserId.toString()}`,
-        email: `createtest${newUserId.toString()}@example.com`,
-        name: 'Create Test User',
+      const mockUserData = {
+        googleId: `signup-test-${newUserId.toString()}`,
+        email: `signuptest${newUserId.toString()}@example.com`,
+        name: 'Signup Test User',
       };
 
-      const createdUser = await userModel.create(userData);
-      expect(createdUser).toBeDefined();
-      expect(createdUser.googleId).toBe(userData.googleId);
-      expect(createdUser.email).toBe(userData.email);
-      expect(createdUser.name).toBe(userData.name);
+      serviceProto.verifyGoogleToken = (jest.fn() as any).mockResolvedValue(mockUserData);
 
-      // Clean up
-      await (userModel as any).user.findByIdAndDelete(createdUser._id);
+      try {
+        const response = await request(app)
+          .post('/api/auth/signup')
+          .send({
+            idToken: 'mock-valid-id-token'
+          })
+          .expect(201);
+
+        expect(response.body).toHaveProperty('message', 'User signed up successfully');
+        expect(response.body.data.user).toHaveProperty('email', mockUserData.email);
+        expect(response.body.data.user).toHaveProperty('name', mockUserData.name);
+        expect(response.body.data).toHaveProperty('token');
+
+        // Clean up - find and delete the created user
+        const createdUser = await (userModel as any).user.findOne({ googleId: mockUserData.googleId });
+        if (createdUser) {
+          await (userModel as any).user.findByIdAndDelete(createdUser._id);
+        }
+      } finally {
+        serviceProto.verifyGoogleToken = originalVerify;
+      }
     });
   });
 
   describe('delete', () => {
-    test('should handle database error when deleting user', async () => {
+    test('should handle database error when deleting user via endpoint', async () => {
+      // Create a temporary user for this test
+      const tempUserId = new mongoose.Types.ObjectId();
+      await (userModel as any).user.create({
+        _id: tempUserId,
+        googleId: `delete-error-test-${tempUserId.toString()}`,
+        email: `deleteerror${tempUserId.toString()}@example.com`,
+        name: 'Delete Error Test User',
+        userRole: 'STUDENT'
+      });
+
+      const tempToken = jwt.sign({ id: tempUserId }, process.env.JWT_SECRET || 'default-secret');
+
+      // Mock the delete method to throw an error
       const actualUserModel = (userModel as any).user;
       const deleteSpy = jest.spyOn(actualUserModel, 'findByIdAndDelete').mockImplementation(() => {
         throw new Error('Database deletion error');
       });
 
       try {
-        await expect(userModel.delete(testUserId)).rejects.toThrow('Failed to delete user');
+        const response = await request(app)
+          .delete('/api/user/profile')
+          .set('Authorization', `Bearer ${tempToken}`)
+          .expect(500);
+
+        // Verify the delete function was called
+        expect(deleteSpy).toHaveBeenCalled();
+        expect(response.body).toHaveProperty('message');
       } finally {
         deleteSpy.mockRestore();
+        // Clean up - manually delete the user
+        await (userModel as any).user.findByIdAndDelete(tempUserId);
       }
     });
 
-    test('should successfully delete user', async () => {
+    test('should successfully delete user via endpoint', async () => {
       // Create a temporary user to delete
       const tempUserId = new mongoose.Types.ObjectId();
       await (userModel as any).user.create({
         _id: tempUserId,
-        googleId: `delete-test-${tempUserId.toString()}`,
-        email: `deletetest${tempUserId.toString()}@example.com`,
-        name: 'Delete Test User',
+        googleId: `delete-success-test-${tempUserId.toString()}`,
+        email: `deletesuccess${tempUserId.toString()}@example.com`,
+        name: 'Delete Success Test User',
+        userRole: 'STUDENT'
       });
 
-      // Verify user exists
+      const tempToken = jwt.sign({ id: tempUserId }, process.env.JWT_SECRET || 'default-secret');
+
+      // Verify user exists before deletion
       const userBefore = await userModel.findById(tempUserId);
       expect(userBefore).not.toBeNull();
 
-      // Delete the user
-      await userModel.delete(tempUserId);
+      // Delete the user via endpoint
+      const response = await request(app)
+        .delete('/api/user/profile')
+        .set('Authorization', `Bearer ${tempToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('message', 'User deleted successfully');
 
       // Verify user is deleted
       const userAfter = await userModel.findById(tempUserId);
       expect(userAfter).toBeNull();
     });
 
-    test('should handle deleting non-existent user gracefully', async () => {
-      const nonExistentId = new mongoose.Types.ObjectId();
-      
-      // Should not throw an error even if user doesn't exist
-      await expect(userModel.delete(nonExistentId)).resolves.not.toThrow();
+    test('should handle deleting user gracefully via endpoint', async () => {
+      // Create a temporary user
+      const tempUserId = new mongoose.Types.ObjectId();
+      await (userModel as any).user.create({
+        _id: tempUserId,
+        googleId: `delete-graceful-test-${tempUserId.toString()}`,
+        email: `deletegraceful${tempUserId.toString()}@example.com`,
+        name: 'Delete Graceful Test User',
+        userRole: 'STUDENT'
+      });
+
+      const tempToken = jwt.sign({ id: tempUserId }, process.env.JWT_SECRET || 'default-secret');
+
+      // Mock findByIdAndDelete to return null (simulating user not found, but not throwing)
+      const actualUserModel = (userModel as any).user;
+      const deleteSpy = jest.spyOn(actualUserModel, 'findByIdAndDelete').mockResolvedValue(null);
+
+      try {
+        const response = await request(app)
+          .delete('/api/user/profile')
+          .set('Authorization', `Bearer ${tempToken}`)
+          .expect(200);
+
+        expect(deleteSpy).toHaveBeenCalled();
+        expect(response.body).toHaveProperty('message', 'User deleted successfully');
+      } finally {
+        deleteSpy.mockRestore();
+        // Clean up
+        await (userModel as any).user.findByIdAndDelete(tempUserId);
+      }
     });
   });
 });
