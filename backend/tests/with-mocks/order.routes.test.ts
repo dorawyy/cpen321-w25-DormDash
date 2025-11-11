@@ -632,6 +632,146 @@ describe('POST /api/order - Create Order (Mocked)', () => {
       mockOrderModel.findByIdempotencyKey.mockReset();
     }
   });
+
+  // Test OrderMapper moverId branches through POST /api/order endpoint
+  test('should create order without moverId initially', async () => {
+    const mockOrderId = new mongoose.Types.ObjectId();
+    
+    // Mock order creation without moverId
+    const mockCreatedOrder: Order = {
+      _id: mockOrderId,
+      studentId: testUserIdString,
+      moverId: undefined, // No mover assigned yet
+      status: OrderStatus.PENDING,
+      volume: 2.5,
+      price: 150.0,
+      studentAddress: {
+        lat: 49.2606,
+        lon: -123.1133,
+        formattedAddress: '123 Student Ave, Vancouver, BC'
+      },
+      warehouseAddress: {
+        lat: 49.2827,
+        lon: -123.1207,
+        formattedAddress: '123 Warehouse St, Vancouver, BC'
+      },
+      returnAddress: {
+        lat: 49.2606,
+        lon: -123.1133,
+        formattedAddress: '123 Student Ave, Vancouver, BC'
+      },
+      pickupTime: '2025-11-10T10:00:00.000Z',
+      returnTime: '2025-11-15T10:00:00.000Z',
+      paymentIntentId: 'pi_mock_456'
+    };
+
+    mockOrderModel.findByIdempotencyKey.mockResolvedValue(null);
+    mockOrderModel.create.mockResolvedValue(mockCreatedOrder);
+    mockJobService.createJob.mockResolvedValue({
+      success: true,
+      id: 'job_mock_123',
+      message: 'Job created successfully'
+    });
+    mockEventEmitter.emitOrderCreated.mockImplementation(() => {});
+
+    const response = await request(app)
+      .post('/api/order')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        studentId: testUserId.toString(),
+        volume: 2.5,
+        totalPrice: 150.0,
+        studentAddress: {
+          lat: 49.2606,
+          lon: -123.1133,
+          formattedAddress: '123 Student Ave, Vancouver, BC'
+        },
+        warehouseAddress: {
+          lat: 49.2827,
+          lon: -123.1207,
+          formattedAddress: '123 Warehouse St, Vancouver, BC'
+        },
+        pickupTime: '2025-11-10T10:00:00.000Z',
+        returnTime: '2025-11-15T10:00:00.000Z',
+        paymentIntentId: 'pi_mock_456'
+      })
+      .expect(201);
+
+    expect(response.body).toHaveProperty('id');
+    expect(response.body).toHaveProperty('status', OrderStatus.PENDING);
+    // Verify moverId is undefined when mapper processes order without mover
+    expect(response.body.moverId).toBeUndefined();
+  });
+
+  test('should create order with moverId when mover is pre-assigned', async () => {
+    const mockOrderId = new mongoose.Types.ObjectId();
+    const moverId = new mongoose.Types.ObjectId();
+    
+    // Mock order creation with moverId
+    const mockCreatedOrder: Order = {
+      _id: mockOrderId,
+      studentId: testUserIdString,
+      moverId: moverId.toString(), // Mover is assigned
+      status: OrderStatus.ACCEPTED,
+      volume: 3.0,
+      price: 200.0,
+      studentAddress: {
+        lat: 49.2606,
+        lon: -123.1133,
+        formattedAddress: '456 Student Rd, Vancouver, BC'
+      },
+      warehouseAddress: {
+        lat: 49.2827,
+        lon: -123.1207,
+        formattedAddress: '123 Warehouse St, Vancouver, BC'
+      },
+      returnAddress: {
+        lat: 49.2606,
+        lon: -123.1133,
+        formattedAddress: '456 Student Rd, Vancouver, BC'
+      },
+      pickupTime: '2025-11-12T10:00:00.000Z',
+      returnTime: '2025-11-18T10:00:00.000Z',
+      paymentIntentId: 'pi_mock_789'
+    };
+
+    mockOrderModel.findByIdempotencyKey.mockResolvedValue(null);
+    mockOrderModel.create.mockResolvedValue(mockCreatedOrder);
+    mockJobService.createJob.mockResolvedValue({
+      success: true,
+      id: 'job_mock_456',
+      message: 'Job created successfully'
+    });
+    mockEventEmitter.emitOrderCreated.mockImplementation(() => {});
+
+    const response = await request(app)
+      .post('/api/order')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        studentId: testUserId.toString(),
+        volume: 3.0,
+        totalPrice: 200.0,
+        studentAddress: {
+          lat: 49.2606,
+          lon: -123.1133,
+          formattedAddress: '456 Student Rd, Vancouver, BC'
+        },
+        warehouseAddress: {
+          lat: 49.2827,
+          lon: -123.1207,
+          formattedAddress: '123 Warehouse St, Vancouver, BC'
+        },
+        pickupTime: '2025-11-12T10:00:00.000Z',
+        returnTime: '2025-11-18T10:00:00.000Z',
+        paymentIntentId: 'pi_mock_789'
+      })
+      .expect(201);
+
+    expect(response.body).toHaveProperty('id');
+    expect(response.body).toHaveProperty('status', OrderStatus.ACCEPTED);
+    // Verify moverId is mapped correctly when present
+    expect(response.body).toHaveProperty('moverId', moverId.toString());
+  });
 });
 
 describe('POST /api/order/create-return-Job - Create Return Job (Mocked)', () => {
@@ -995,6 +1135,173 @@ describe('GET /api/order/all-orders - Get All Orders (Mocked)', () => {
     // Restore original method
     controllerProto.getAllOrders = originalMethod;
   });
+
+  // Test OrderMapper moverId branches through GET /api/order/all-orders endpoint
+  test('should return orders with moverId when mover is assigned', async () => {
+    const moverId = new mongoose.Types.ObjectId();
+    
+    // Mock orders with moverId present
+    const mockOrders: Order[] = [
+      {
+        _id: new mongoose.Types.ObjectId(),
+        studentId: testUserIdString,
+        moverId: moverId.toString(), // moverId is present
+        status: OrderStatus.ACCEPTED,
+        volume: 3.0,
+        price: 200.0,
+        studentAddress: {
+          lat: 49.2606,
+          lon: -123.1133,
+          formattedAddress: '123 Student Ave, Vancouver, BC'
+        },
+        warehouseAddress: {
+          lat: 49.2827,
+          lon: -123.1207,
+          formattedAddress: '123 Warehouse St, Vancouver, BC'
+        },
+        returnAddress: {
+          lat: 49.2606,
+          lon: -123.1133,
+          formattedAddress: '123 Student Ave, Vancouver, BC'
+        },
+        pickupTime: '2025-11-10T10:00:00.000Z',
+        returnTime: '2025-11-15T10:00:00.000Z'
+      }
+    ];
+
+    mockOrderModel.getAllOrders.mockResolvedValue(mockOrders);
+
+    const response = await request(app)
+      .get('/api/order/all-orders')
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
+
+    expect(response.body).toHaveProperty('success', true);
+    expect(response.body.orders).toHaveLength(1);
+    // Verify moverId is mapped correctly (not undefined)
+    expect(response.body.orders[0]).toHaveProperty('moverId', moverId.toString());
+    expect(response.body.orders[0].status).toBe(OrderStatus.ACCEPTED);
+  });
+
+  test('should return orders without moverId when mover is not assigned', async () => {
+    // Mock orders without moverId (undefined or null)
+    const mockOrders: Order[] = [
+      {
+        _id: new mongoose.Types.ObjectId(),
+        studentId: testUserIdString,
+        moverId: undefined, // moverId is undefined - triggers false branch
+        status: OrderStatus.PENDING,
+        volume: 2.0,
+        price: 100.0,
+        studentAddress: {
+          lat: 49.2606,
+          lon: -123.1133,
+          formattedAddress: '456 Student Blvd, Vancouver, BC'
+        },
+        warehouseAddress: {
+          lat: 49.2827,
+          lon: -123.1207,
+          formattedAddress: '123 Warehouse St, Vancouver, BC'
+        },
+        returnAddress: {
+          lat: 49.2606,
+          lon: -123.1133,
+          formattedAddress: '456 Student Blvd, Vancouver, BC'
+        },
+        pickupTime: '2025-11-12T10:00:00.000Z',
+        returnTime: '2025-11-20T10:00:00.000Z'
+      }
+    ];
+
+    mockOrderModel.getAllOrders.mockResolvedValue(mockOrders);
+
+    const response = await request(app)
+      .get('/api/order/all-orders')
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
+
+    expect(response.body).toHaveProperty('success', true);
+    expect(response.body.orders).toHaveLength(1);
+    // Verify moverId is undefined when not assigned
+    expect(response.body.orders[0].moverId).toBeUndefined();
+    expect(response.body.orders[0].status).toBe(OrderStatus.PENDING);
+  });
+
+  test('should return mixed orders with and without moverId', async () => {
+    const moverId1 = new mongoose.Types.ObjectId();
+    
+    // Mock mixed orders - some with moverId, some without
+    const mockOrders: Order[] = [
+      {
+        _id: new mongoose.Types.ObjectId(),
+        studentId: testUserIdString,
+        moverId: moverId1.toString(), // Has moverId
+        status: OrderStatus.PICKED_UP,
+        volume: 3.5,
+        price: 220.0,
+        studentAddress: {
+          lat: 49.2606,
+          lon: -123.1133,
+          formattedAddress: '111 Student St, Vancouver, BC'
+        },
+        warehouseAddress: {
+          lat: 49.2827,
+          lon: -123.1207,
+          formattedAddress: '123 Warehouse St, Vancouver, BC'
+        },
+        returnAddress: {
+          lat: 49.2606,
+          lon: -123.1133,
+          formattedAddress: '111 Student St, Vancouver, BC'
+        },
+        pickupTime: '2025-11-10T10:00:00.000Z',
+        returnTime: '2025-11-15T10:00:00.000Z'
+      },
+      {
+        _id: new mongoose.Types.ObjectId(),
+        studentId: testUserIdString,
+        moverId: undefined, // No moverId
+        status: OrderStatus.PENDING,
+        volume: 1.5,
+        price: 80.0,
+        studentAddress: {
+          lat: 49.2606,
+          lon: -123.1133,
+          formattedAddress: '222 Student Ave, Vancouver, BC'
+        },
+        warehouseAddress: {
+          lat: 49.2827,
+          lon: -123.1207,
+          formattedAddress: '123 Warehouse St, Vancouver, BC'
+        },
+        returnAddress: {
+          lat: 49.2606,
+          lon: -123.1133,
+          formattedAddress: '222 Student Ave, Vancouver, BC'
+        },
+        pickupTime: '2025-11-11T10:00:00.000Z',
+        returnTime: '2025-11-16T10:00:00.000Z'
+      }
+    ];
+
+    mockOrderModel.getAllOrders.mockResolvedValue(mockOrders);
+
+    const response = await request(app)
+      .get('/api/order/all-orders')
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
+
+    expect(response.body).toHaveProperty('success', true);
+    expect(response.body.orders).toHaveLength(2);
+    
+    // First order should have moverId
+    expect(response.body.orders[0]).toHaveProperty('moverId', moverId1.toString());
+    expect(response.body.orders[0].status).toBe(OrderStatus.PICKED_UP);
+    
+    // Second order should not have moverId (undefined)
+    expect(response.body.orders[1].moverId).toBeUndefined();
+    expect(response.body.orders[1].status).toBe(OrderStatus.PENDING);
+  });
 });
 
 describe('GET /api/order/active-order - Get Active Order (Mocked)', () => {
@@ -1130,6 +1437,8 @@ describe('GET /api/order/active-order - Get Active Order (Mocked)', () => {
       mockOrderModel.findActiveOrder.mockReset();
     }
   });
+
+  
 });
 
 describe('DELETE /api/order/cancel-order - Cancel Order (Mocked)', () => {
