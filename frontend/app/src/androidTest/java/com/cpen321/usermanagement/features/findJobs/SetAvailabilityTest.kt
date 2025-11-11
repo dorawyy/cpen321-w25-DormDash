@@ -6,7 +6,6 @@ import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Test
 
 /**
- * Integration tests for Set Availability feature.
  *
  * Use Case: The mover defines daily time periods for each day of the week where they are
  * available to complete pick up orders. The system uses these slots to determine which jobs
@@ -47,7 +46,7 @@ class SetAvailabilityTest : FindJobsTestBase() {
         composeTestRule.onNodeWithText("Set Availability").assertIsDisplayed()
 
         // Days to add standard 9-5 availability
-        val standardDays = listOf("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY")
+        val standardDays = listOf("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY")
 
         // Add 9:00-17:00 time slots for standard days
         standardDays.forEach { day ->
@@ -57,13 +56,6 @@ class SetAvailabilityTest : FindJobsTestBase() {
                 endTime = "17:00"
             )
         }
-
-        // Add custom 8:00-18:00 time slot for Friday (test typing)
-        addTimeSlot(
-            day = "FRIDAY",
-            startTime = "08:00",
-            endTime = "18:00"
-        )
 
         // scroll to to top to ensure we verify starting from monday
         composeTestRule.onNodeWithTag("availability_list").performTouchInput {
@@ -90,6 +82,12 @@ class SetAvailabilityTest : FindJobsTestBase() {
                 .fetchSemanticsNodes()
                 .isNotEmpty()
         }
+
+        // Remove time slots to clean up test
+        standardDays.forEach { day ->
+            composeTestRule.onNodeWithTag("delete_time_slot_${day}_09:00").performClick()
+        }
+        composeTestRule.onNodeWithText("Save Availability").performClick()
     }
 
     /**
@@ -146,6 +144,12 @@ class SetAvailabilityTest : FindJobsTestBase() {
             startTime = "14:00",
             endTime = "18:00"
         )
+
+        composeTestRule.onNodeWithText("Save Availability").performClick()
+
+        composeTestRule.onNodeWithText("Available Jobs").performClick()
+
+        composeTestRule.onNodeWithText("Availability").performClick()
 
         // Verify both time slots exist for Monday
         verifyTimeSlotExists("MONDAY", "09:00", "12:00")
