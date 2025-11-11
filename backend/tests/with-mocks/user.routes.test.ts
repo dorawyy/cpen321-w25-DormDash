@@ -499,6 +499,28 @@ describe('POST /api/user/profile - Update User Profile (Mocked)', () => {
     // Restore original method
     userModel.update = originalUpdate;
   });
+
+  test('should use fallback message when Error has no message during update', async () => {
+    const originalUpdate = userModel.update;
+    const errorWithoutMessage = new Error();
+    errorWithoutMessage.message = ''; // Empty message
+    userModel.update = (jest.fn() as any).mockRejectedValue(errorWithoutMessage);
+
+    const updateData = {
+      name: 'Should Use Fallback'
+    };
+
+    const response = await request(app)
+      .post('/api/user/profile')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send(updateData)
+      .expect(500);
+
+    expect(response.body).toHaveProperty('message', 'Failed to update user info');
+
+    // Restore original method
+    userModel.update = originalUpdate;
+  });
 });
 
 describe('POST /api/user/cash-out - Cash Out (Mocked)', () => {
@@ -649,6 +671,23 @@ describe('POST /api/user/cash-out - Cash Out (Mocked)', () => {
     controllerProto.cashOut = originalMethod;
   });
 
+  test('should use fallback message when Error has no message during cash out', async () => {
+    const originalUpdate = (userModel as any).update;
+    const errorWithoutMessage = new Error();
+    errorWithoutMessage.message = ''; // Empty message
+    (userModel as any).update = (jest.fn() as any).mockRejectedValue(errorWithoutMessage);
+
+    const response = await request(app)
+      .post('/api/user/cash-out')
+      .set('Authorization', `Bearer ${moverAuthToken}`)
+      .expect(500);
+
+    expect(response.body).toHaveProperty('message', 'Failed to cash out credits');
+
+    // Restore original method
+    (userModel as any).update = originalUpdate;
+  });
+
 });
 
 describe('DELETE /api/user/profile - Delete User Profile (Mocked)', () => {
@@ -792,6 +831,23 @@ describe('DELETE /api/user/profile - Delete User Profile (Mocked)', () => {
 
     // Should be caught by the error handler middleware
     expect(response.status).toBe(500);
+
+    // Restore original method
+    userModel.delete = originalDelete;
+  });
+
+  test('should use fallback message when Error has no message during delete', async () => {
+    const originalDelete = userModel.delete;
+    const errorWithoutMessage = new Error();
+    errorWithoutMessage.message = ''; // Empty message
+    userModel.delete = (jest.fn() as any).mockRejectedValue(errorWithoutMessage);
+
+    const response = await request(app)
+      .delete('/api/user/profile')
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(500);
+
+    expect(response.body).toHaveProperty('message', 'Failed to delete user');
 
     // Restore original method
     userModel.delete = originalDelete;
