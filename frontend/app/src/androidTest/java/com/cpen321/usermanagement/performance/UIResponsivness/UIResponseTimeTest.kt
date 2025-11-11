@@ -3,19 +3,11 @@
 package com.cpen321.usermanagement.performance.UIResponsivness
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.uiautomator.By
-import androidx.test.uiautomator.Until
-import androidx.compose.ui.test.junit4.ComposeTestRule
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.assertHasClickAction
-import androidx.compose.ui.test.assertIsDisplayed
-import com.cpen321.usermanagement.performance.UIResponsivness.UIResponsivnessTestBase
 import dagger.hilt.android.testing.HiltAndroidTest
-import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
 
