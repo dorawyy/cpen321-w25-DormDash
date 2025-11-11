@@ -1,9 +1,16 @@
 package com.cpen321.usermanagement
 
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
@@ -384,5 +391,122 @@ abstract class FindJobsTestBase {
                 ),
                 5000
             )?.click()
+    }
+
+    /**
+     * Scroll until the specified day becomes visible on screen
+     * Uses the day's index to scroll to the appropriate position
+     */
+    protected fun scrollToDay(dayName: String) {
+        // First check if already visible
+        if (composeTestRule.onAllNodesWithText(dayName).fetchSemanticsNodes().isNotEmpty()) {
+            return
+        }
+
+        // Get the index of the day (MONDAY=0, TUESDAY=1, etc.)
+        val dayIndex = when(dayName) {
+            "MONDAY" -> 0
+            "TUESDAY" -> 1
+            "WEDNESDAY" -> 2
+            "THURSDAY" -> 3
+            "FRIDAY" -> 4
+            "SATURDAY" -> 5
+            "SUNDAY" -> 6
+            else -> 0
+        }
+
+        // Scroll down gradually until the day is visible
+        // Each swipe should move approximately 2-3 items
+        val swipesNeeded = (dayIndex / 2).coerceAtLeast(1)
+
+        repeat(swipesNeeded) {
+            if (composeTestRule.onAllNodesWithText(dayName).fetchSemanticsNodes().isEmpty()) {
+                try {
+                    composeTestRule.onNodeWithTag("availability_list")
+                        .performTouchInput {
+                            swipeUp(
+                                startY = bottom * 0.7f,
+                                endY = top * 1.3f
+                            )
+                        }
+                    composeTestRule.waitForIdle()
+                    Thread.sleep(150) // Give time for recomposition
+                } catch (_: Exception) {
+                    // If that fails, try a different approach
+                    composeTestRule.onRoot().performTouchInput {
+                        swipeUp(
+                            startY = centerY + (height * 0.3f),
+                            endY = centerY - (height * 0.3f)
+                        )
+                    }
+                    composeTestRule.waitForIdle()
+                    Thread.sleep(150)
+                }
+            }
+        }
+
+        // Final verification with more swipes if needed
+        var attempts = 0
+        while (composeTestRule.onAllNodesWithText(dayName).fetchSemanticsNodes().isEmpty() && attempts < 5) {
+            try {
+                composeTestRule.onNodeWithTag("availability_list")
+                    .performTouchInput {
+                        swipeUp(
+                            startY = bottom * 0.7f,
+                            endY = top * 1.3f
+                        )
+                    }
+            } catch (_: Exception) {
+                composeTestRule.onRoot().performTouchInput {
+                    swipeUp()
+                }
+            }
+            composeTestRule.waitForIdle()
+            Thread.sleep(150)
+            attempts++
+        }
+
+        // Assert that the day is now visible
+        composeTestRule.onNodeWithText(dayName).assertExists(
+            "Could not find day '$dayName' after scrolling"
+        )
+    }
+
+    /**
+     * Add a time slot to a specific day
+     */
+    protected fun addTimeSlot(day: String, startTime: String, endTime: String) {
+        // Scroll until the day is visible
+        scrollToDay(day)
+        composeTestRule.waitForIdle()
+
+        // Click add button for the specific day using test tag
+        composeTestRule.onNodeWithTag("add_time_slot_$day").performClick()
+
+        composeTestRule.waitForIdle()
+
+        // Verify dialog is shown
+        composeTestRule.onNodeWithText("Add Time Slot").assertIsDisplayed()
+
+        // Update start time using test tag
+        composeTestRule.onNodeWithTag("start_time_input").apply {
+            performTextClearance()
+            performTextInput(startTime)
+        }
+
+        composeTestRule.waitForIdle()
+
+        // Update end time using test tag
+        composeTestRule.onNodeWithTag("end_time_input").apply {
+            performTextClearance()
+            performTextInput(endTime)
+        }
+
+        composeTestRule.waitForIdle()
+
+        // Click Add button
+        composeTestRule.onNodeWithText("Add").performClick()
+
+        composeTestRule.waitForIdle()
     }
 }

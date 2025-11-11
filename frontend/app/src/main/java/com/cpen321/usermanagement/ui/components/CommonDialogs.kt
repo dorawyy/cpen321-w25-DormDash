@@ -85,7 +85,7 @@ fun TimePickerDialog(
 ) {
     var selectedHour by remember { mutableStateOf(initialHour) }
     var selectedMinute by remember { mutableStateOf(initialMinute) }
-
+    
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Select Time") },
@@ -96,13 +96,13 @@ fun TimePickerDialog(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 HourSelector(selectedHour = selectedHour, onHourChange = { selectedHour = it })
-
+                
                 Text(
                     text = ":",
                     style = MaterialTheme.typography.headlineMedium,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
-
+                
                 MinuteSelector(selectedMinute = selectedMinute, onMinuteChange = { selectedMinute = it })
             }
         },
