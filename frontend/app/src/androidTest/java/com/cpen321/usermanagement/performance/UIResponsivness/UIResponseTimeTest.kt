@@ -23,7 +23,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class UIResponseTimeTest : UIResponsivnessTestBase() {
 
-    private val timeout = 100L // 0.1 seconds for "Enter Address" to appear
+    private val timeout = 100L // 0.1 seconds time out for elements to appear
 
     @Test
     fun clickCreateNewOrderButton_opensBottomSheetWithEnterAddress() {
@@ -54,13 +54,9 @@ class UIResponseTimeTest : UIResponsivnessTestBase() {
             .assertExists("Profile button should exist")
             .performClick()
 
-        composeTestRule
-            .onNodeWithText("Manage Orders", useUnmergedTree = true)
-            .assertExists("Manage Orders button should exist on profile screen")
-            .performClick()
-
         composeTestRule.waitForIdle()
 
+        // Assert "Manage Profile" button appears within timeout
         composeTestRule.waitUntil(timeoutMillis = timeout) {
             composeTestRule
                 .onAllNodesWithText("Manage Profile", useUnmergedTree = true)
@@ -68,9 +64,19 @@ class UIResponseTimeTest : UIResponsivnessTestBase() {
                 .isNotEmpty()
         }
 
+        // Click on "Manage Profile" button
+        composeTestRule
+            .onNodeWithText("Manage Profile", useUnmergedTree = true)
+            .performClick()
+
+        composeTestRule.waitForIdle()
+
+        // Assert "Name" text appears within timeout
         composeTestRule.waitUntil(timeoutMillis = timeout) {
-            composeTestRule.onAllNodesWithText("Order History", useUnmergedTree = true)
-                .fetchSemanticsNodes().isNotEmpty()
+            composeTestRule
+                .onAllNodesWithText("Name", useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
         }
     }
 }
