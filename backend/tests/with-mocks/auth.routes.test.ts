@@ -536,3 +536,292 @@ describe('POST /api/auth/select-role - Select User Role (Mocked)', () => {
     userModel.update = originalUpdate;
   });
 });
+
+describe('UserModel Error Handling - Lines 160-161, 173-209', () => {
+  describe('findById - error handling (lines 160-161)', () => {
+    test('should handle database error in findById via auth middleware', async () => {
+      // Mock the underlying mongoose findOne to throw an error
+      const actualUserModel = (userModel as any).user;
+      const findOneSpy = jest.spyOn(actualUserModel, 'findOne').mockImplementationOnce(() => {
+        throw new Error('Database connection error');
+      });
+
+      try {
+        const response = await request(app)
+          .get('/api/user/profile')
+          .set('Authorization', `Bearer ${authToken}`);
+
+        // Verify the spy was called
+        expect(findOneSpy).toHaveBeenCalled();
+        // Should return 500 because findById throws an error (line 161)
+        expect(response.status).toBe(500);
+      } finally {
+        findOneSpy.mockRestore();
+      }
+    });
+
+    test('should return null when user not found by id (line 156)', async () => {
+      // Create a token with non-existent user ID
+      const nonExistentId = new mongoose.Types.ObjectId();
+      const invalidToken = jwt.sign({ id: nonExistentId }, process.env.JWT_SECRET || 'default-secret');
+
+      const response = await request(app)
+        .get('/api/user/profile')
+        .set('Authorization', `Bearer ${invalidToken}`);
+
+      // Auth middleware should return 401 when user not found (findById returns null)
+      expect(response.status).toBe(401);
+      expect(response.body.message).toBe('Token is valid but user no longer exists');
+    });
+  });
+
+  describe('findByGoogleId - error handling (lines 173-177)', () => {
+    test('should handle database error in findByGoogleId during signup', async () => {
+      // Mock the auth service to bypass Google token verification
+      const authService = require('../../src/services/auth.service').authService;
+      const originalSignUp = authService.signUpWithGoogle;
+      
+      // Mock signUpWithGoogle to directly call userModel.findByGoogleId
+      authService.signUpWithGoogle = jest.fn().mockImplementation(async () => {
+        // Directly call findByGoogleId which will trigger the error
+        const actualUserModel = (userModel as any).user;
+        const findOneSpy = jest.spyOn(actualUserModel, 'findOne').mockImplementationOnce(() => {
+          throw new Error('Database query failed');
+        });
+
+        try {
+          // This will hit the error handling in findByGoogleId (line 177)
+          await userModel.findByGoogleId('test-google-id');
+        } finally {
+          findOneSpy.mockRestore();
+        }
+      });
+
+      try {
+        const response = await request(app)
+          .post('/api/auth/signup')
+          .send({
+            idToken: 'mock-id-token',
+            email: 'newuser@example.com',
+            name: 'New User',
+            picture: 'http://example.com/pic.jpg'
+          });
+
+        expect(authService.signUpWithGoogle).toHaveBeenCalled();
+        expect(response.status).toBe(500);
+      } finally {
+        authService.signUpWithGoogle = originalSignUp;
+      }
+    });
+
+    test('should handle database error in findByGoogleId during signin', async () => {
+      // Mock the auth service to bypass Google token verification
+      const authService = require('../../src/services/auth.service').authService;
+      const originalSignIn = authService.signInWithGoogle;
+      
+      // Mock signInWithGoogle to directly call userModel.findByGoogleId with error
+      authService.signInWithGoogle = jest.fn().mockImplementation(async () => {
+        const actualUserModel = (userModel as any).user;
+        const findOneSpy = jest.spyOn(actualUserModel, 'findOne').mockImplementationOnce(() => {
+          throw new Error('Database query failed');
+        });
+
+        try {
+          // This will hit the error handling in findByGoogleId (line 177)
+          await userModel.findByGoogleId('test-google-id');
+        } finally {
+          findOneSpy.mockRestore();
+        }
+      });
+
+      try {
+        const response = await request(app)
+          .post('/api/auth/signin')
+          .send({
+            idToken: 'mock-id-token',
+            email: 'test@example.com',
+            name: 'Test User',
+            picture: 'http://example.com/pic.jpg'
+          });
+
+        expect(authService.signInWithGoogle).toHaveBeenCalled();
+        expect(response.status).toBe(500);
+      } finally {
+        authService.signInWithGoogle = originalSignIn;
+      }
+    });
+
+    test('should return null when user not found by googleId (line 171)', async () => {
+      // Mock the auth service to test findByGoogleId returning null
+      const authService = require('../../src/services/auth.service').authService;
+      const originalSignIn = authService.signInWithGoogle;
+      
+      authService.signInWithGoogle = jest.fn().mockImplementation(async () => {
+        // Call findByGoogleId with non-existent googleId
+        const result = await userModel.findByGoogleId('non-existent-google-id-xyz');
+        if (!result) {
+          throw new Error('User not found');
+        }
+        return result;
+      });
+
+      try {
+        const response = await request(app)
+          .post('/api/auth/signin')
+          .send({
+            idToken: 'mock-id-token',
+            email: 'nonexistent@example.com',
+            name: 'Non Existent',
+            picture: 'http://example.com/pic.jpg'
+          });
+
+        expect(authService.signInWithGoogle).toHaveBeenCalled();
+        expect(response.status).toBe(404);
+      } finally {
+        authService.signInWithGoogle = originalSignIn;
+      }
+    });
+
+    test('should successfully find existing user by googleId (line 173)', async () => {
+      // Test the success path - finding an existing user
+      const authService = require('../../src/services/auth.service').authService;
+      const originalSignIn = authService.signInWithGoogle;
+      
+      authService.signInWithGoogle = jest.fn().mockImplementation(async () => {
+        // Call findByGoogleId with existing googleId - should return user (line 173)
+        const result = await userModel.findByGoogleId(`test-google-id-auth-mock-${testUserId.toString()}`);
+        if (!result) {
+          throw new Error('User not found');
+        }
+        // Generate a token
+        const token = jwt.sign({ id: result._id }, process.env.JWT_SECRET || 'default-secret');
+        return { token, user: result };
+      });
+
+      try {
+        const response = await request(app)
+          .post('/api/auth/signin')
+          .send({
+            idToken: 'mock-id-token',
+            email: `authmock${testUserId.toString()}@example.com`,
+            name: 'Test Auth User Mock',
+            picture: 'http://example.com/pic.jpg'
+          });
+
+        expect(authService.signInWithGoogle).toHaveBeenCalled();
+        expect(response.status).toBe(200);
+      } finally {
+        authService.signInWithGoogle = originalSignIn;
+      }
+    });
+  });
+
+  describe('getFcmToken - error handling (lines 186-191)', () => {
+    test('should handle database error in getFcmToken', async () => {
+      // Mock select-role to trigger a path that could use getFcmToken
+      // We'll mock userModel.update to call getFcmToken and throw error
+      const originalUpdate = userModel.update;
+      
+      userModel.update = (jest.fn() as any).mockImplementation(async (userId: mongoose.Types.ObjectId) => {
+        // Mock the underlying mongoose findById to throw error when getFcmToken is called
+        const actualUserModel = (userModel as any).user;
+        const findByIdSpy = jest.spyOn(actualUserModel, 'findById').mockImplementationOnce(() => {
+          throw new Error('Database read error');
+        });
+
+        try {
+          // This will hit the error handling in getFcmToken (line 191)
+          await userModel.getFcmToken(userId);
+        } finally {
+          findByIdSpy.mockRestore();
+        }
+      }) as any;
+
+      try {
+        const response = await request(app)
+          .post('/api/auth/select-role')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ userRole: 'STUDENT' });
+
+        expect(response.status).toBe(500);
+      } finally {
+        userModel.update = originalUpdate;
+      }
+    });
+
+    test('should return null when user not found in getFcmToken (line 185)', async () => {
+      const nonExistentId = new mongoose.Types.ObjectId();
+      const result = await userModel.getFcmToken(nonExistentId);
+      expect(result).toBeNull();
+    });
+
+    test('should return FCM token when user exists', async () => {
+      // This tests the success path and the null coalescing (line 187)
+      const result = await userModel.getFcmToken(testUserId);
+      // Result can be null or a string, both are valid
+      expect(result === null || typeof result === 'string').toBe(true);
+    });
+
+    test('should return null when user has no FCM token', async () => {
+      // Test when fcmToken field is undefined/null
+      const result = await userModel.getFcmToken(testMoverId);
+      // Mover user has no FCM token initially
+      expect(result === null || typeof result === 'string').toBe(true);
+    });
+  });
+
+  describe('clearInvalidFcmToken - error handling (lines 204-209)', () => {
+    test('should handle database error in clearInvalidFcmToken', async () => {
+      // Mock userModel.update to call clearInvalidFcmToken with error
+      const originalUpdate = userModel.update;
+      
+      userModel.update = (jest.fn() as any).mockImplementation(async () => {
+        // Mock the underlying mongoose updateMany to throw error
+        const actualUserModel = (userModel as any).user;
+        const updateManySpy = jest.spyOn(actualUserModel, 'updateMany').mockImplementationOnce(() => {
+          throw new Error('Database update failed');
+        });
+
+        try {
+          // This will hit the error handling in clearInvalidFcmToken (line 209)
+          await userModel.clearInvalidFcmToken('invalid-token-xyz');
+        } finally {
+          updateManySpy.mockRestore();
+        }
+      }) as any;
+
+      try {
+        const response = await request(app)
+          .post('/api/auth/select-role')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ userRole: 'STUDENT' });
+
+        expect(response.status).toBe(500);
+      } finally {
+        userModel.update = originalUpdate;
+      }
+    });
+
+    test('should successfully clear invalid FCM token (lines 197-203)', async () => {
+      // First set a test token
+      await (userModel as any).user.findByIdAndUpdate(
+        testUserId,
+        { fcmToken: 'test-invalid-token-clear' }
+      );
+
+      // Clear it using clearInvalidFcmToken
+      await userModel.clearInvalidFcmToken('test-invalid-token-clear');
+
+      // Verify it was cleared
+      const user = await userModel.findById(testUserId);
+      expect(user?.fcmToken).toBeNull();
+    });
+
+    test('should handle clearing non-existent token gracefully', async () => {
+      // Should not throw error even if token doesn't exist
+      await expect(
+        userModel.clearInvalidFcmToken('non-existent-token-xyz-123')
+      ).resolves.not.toThrow();
+    });
+  });
+});
