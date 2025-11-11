@@ -100,7 +100,7 @@ describe('POST /api/auth/signup - Sign Up with Google (Mocked)', () => {
     const controllerProto = AuthController.prototype;
     const originalMethod = controllerProto.signUp;
 
-    controllerProto.signUp = jest.fn().mockRejectedValue(new Error('Controller error'));
+    controllerProto.signUp = (jest.fn() as any).mockRejectedValue(new Error('Controller error'));
 
     const response = await request(app)
       .post('/api/auth/signup')
@@ -113,12 +113,44 @@ describe('POST /api/auth/signup - Sign Up with Google (Mocked)', () => {
     controllerProto.signUp = originalMethod;
   });
 
+  test('should trigger next(err) for unknown Error types', async () => {
+    const authService = require('../../src/services/auth.service').authService;
+    const originalSignUp = authService.signUpWithGoogle;
+    
+    authService.signUpWithGoogle = (jest.fn() as any).mockRejectedValue(new Error('Unknown service error'));
+
+    const response = await request(app)
+      .post('/api/auth/signup')
+      .send({ idToken: 'test-token' });
+
+    expect(response.status).toBe(500);
+
+    // Restore original method
+    authService.signUpWithGoogle = originalSignUp;
+  });
+
+  test('should trigger next(err) for non-Error exceptions', async () => {
+    const authService = require('../../src/services/auth.service').authService;
+    const originalSignUp = authService.signUpWithGoogle;
+    
+    authService.signUpWithGoogle = (jest.fn() as any).mockRejectedValue('String error');
+
+    const response = await request(app)
+      .post('/api/auth/signup')
+      .send({ idToken: 'test-token' });
+
+    expect(response.status).toBe(500);
+
+    // Restore original method
+    authService.signUpWithGoogle = originalSignUp;
+  });
+
   test('should return 401 for invalid Google token', async () => {
     // Mock the authService to throw invalid token error
     const authService = require('../../src/services/auth.service').authService;
     const originalSignUp = authService.signUpWithGoogle;
     
-    authService.signUpWithGoogle = jest.fn().mockRejectedValue(new Error('Invalid Google token'));
+    authService.signUpWithGoogle = (jest.fn() as any).mockRejectedValue(new Error('Invalid Google token'));
 
     const response = await request(app)
       .post('/api/auth/signup')
@@ -135,7 +167,7 @@ describe('POST /api/auth/signup - Sign Up with Google (Mocked)', () => {
     const authService = require('../../src/services/auth.service').authService;
     const originalSignUp = authService.signUpWithGoogle;
     
-    authService.signUpWithGoogle = jest.fn().mockRejectedValue(new Error('User already exists'));
+    authService.signUpWithGoogle = (jest.fn() as any).mockRejectedValue(new Error('User already exists'));
 
     const response = await request(app)
       .post('/api/auth/signup')
@@ -152,7 +184,7 @@ describe('POST /api/auth/signup - Sign Up with Google (Mocked)', () => {
     const authService = require('../../src/services/auth.service').authService;
     const originalSignUp = authService.signUpWithGoogle;
     
-    authService.signUpWithGoogle = jest.fn().mockRejectedValue(new Error('Failed to process user'));
+    authService.signUpWithGoogle = (jest.fn() as any).mockRejectedValue(new Error('Failed to process user'));
 
     const response = await request(app)
       .post('/api/auth/signup')
@@ -194,10 +226,10 @@ describe('POST /api/auth/signup - Sign Up with Google (Mocked)', () => {
       userRole: undefined
     };
 
-    authService.signUpWithGoogle = jest.fn().mockResolvedValue({
+    authService.signUpWithGoogle = (jest.fn() as any).mockResolvedValue({
       token: 'mock-jwt-token',
       user: mockUser
-    });
+    }) as any;
 
     const response = await request(app)
       .post('/api/auth/signup')
@@ -220,7 +252,7 @@ describe('POST /api/auth/signin - Sign In with Google (Mocked)', () => {
     const controllerProto = AuthController.prototype;
     const originalMethod = controllerProto.signIn;
 
-    controllerProto.signIn = jest.fn().mockRejectedValue(new Error('Controller error'));
+    controllerProto.signIn = (jest.fn() as any).mockRejectedValue(new Error('Controller error'));
 
     const response = await request(app)
       .post('/api/auth/signin')
@@ -233,11 +265,43 @@ describe('POST /api/auth/signin - Sign In with Google (Mocked)', () => {
     controllerProto.signIn = originalMethod;
   });
 
+  test('should trigger next(err) for unknown Error types', async () => {
+    const authService = require('../../src/services/auth.service').authService;
+    const originalSignIn = authService.signInWithGoogle;
+    
+    authService.signInWithGoogle = (jest.fn() as any).mockRejectedValue(new Error('Unknown service error')) as any;
+
+    const response = await request(app)
+      .post('/api/auth/signin')
+      .send({ idToken: 'test-token' });
+
+    expect(response.status).toBe(500);
+
+    // Restore original method
+    authService.signInWithGoogle = originalSignIn;
+  });
+
+  test('should trigger next(err) for non-Error exceptions', async () => {
+    const authService = require('../../src/services/auth.service').authService;
+    const originalSignIn = authService.signInWithGoogle;
+    
+    authService.signInWithGoogle = (jest.fn() as any).mockRejectedValue('String error') as any;
+
+    const response = await request(app)
+      .post('/api/auth/signin')
+      .send({ idToken: 'test-token' });
+
+    expect(response.status).toBe(500);
+
+    // Restore original method
+    authService.signInWithGoogle = originalSignIn;
+  });
+
   test('should return 401 for invalid Google token', async () => {
     const authService = require('../../src/services/auth.service').authService;
     const originalSignIn = authService.signInWithGoogle;
     
-    authService.signInWithGoogle = jest.fn().mockRejectedValue(new Error('Invalid Google token'));
+    authService.signInWithGoogle = (jest.fn() as any).mockRejectedValue(new Error('Invalid Google token')) as any;
 
     const response = await request(app)
       .post('/api/auth/signin')
@@ -250,11 +314,13 @@ describe('POST /api/auth/signin - Sign In with Google (Mocked)', () => {
     authService.signInWithGoogle = originalSignIn;
   });
 
+
+
   test('should return 404 if user not found', async () => {
     const authService = require('../../src/services/auth.service').authService;
     const originalSignIn = authService.signInWithGoogle;
     
-    authService.signInWithGoogle = jest.fn().mockRejectedValue(new Error('User not found'));
+    authService.signInWithGoogle = (jest.fn() as any).mockRejectedValue(new Error('User not found')) as any;
 
     const response = await request(app)
       .post('/api/auth/signin')
@@ -271,7 +337,7 @@ describe('POST /api/auth/signin - Sign In with Google (Mocked)', () => {
     const authService = require('../../src/services/auth.service').authService;
     const originalSignIn = authService.signInWithGoogle;
     
-    authService.signInWithGoogle = jest.fn().mockRejectedValue(new Error('Failed to process user'));
+    authService.signInWithGoogle = (jest.fn() as any).mockRejectedValue(new Error('Failed to process user')) as any;
 
     const response = await request(app)
       .post('/api/auth/signin')
@@ -304,10 +370,10 @@ describe('POST /api/auth/signin - Sign In with Google (Mocked)', () => {
       userRole: 'MOVER'
     };
 
-    authService.signInWithGoogle = jest.fn().mockResolvedValue({
+    authService.signInWithGoogle = (jest.fn() as any).mockResolvedValue({
       token: 'mock-jwt-token',
       user: mockUser
-    });
+    }) as any;
 
     const response = await request(app)
       .post('/api/auth/signin')
@@ -330,7 +396,7 @@ describe('POST /api/auth/select-role - Select User Role (Mocked)', () => {
     const controllerProto = AuthController.prototype;
     const originalMethod = controllerProto.selectRole;
 
-    controllerProto.selectRole = jest.fn().mockRejectedValue(new Error('Controller error'));
+    controllerProto.selectRole = (jest.fn() as any).mockRejectedValue(new Error('Controller error'));
 
     const response = await request(app)
       .post('/api/auth/select-role')
@@ -342,6 +408,40 @@ describe('POST /api/auth/select-role - Select User Role (Mocked)', () => {
 
     // Restore original method
     controllerProto.selectRole = originalMethod;
+  });
+
+  test('should trigger next(err) for unknown Error types', async () => {
+    const userModel = require('../../src/models/user.model').userModel;
+    const originalUpdate = userModel.update;
+    
+    userModel.update = (jest.fn() as any).mockRejectedValue(new Error('Unknown database error')) as any;
+
+    const response = await request(app)
+      .post('/api/auth/select-role')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({ userRole: 'STUDENT' });
+
+    expect(response.status).toBe(500);
+
+    // Restore original method
+    userModel.update = originalUpdate;
+  });
+
+  test('should trigger next(err) for non-Error exceptions', async () => {
+    const userModel = require('../../src/models/user.model').userModel;
+    const originalUpdate = userModel.update;
+    
+    userModel.update = (jest.fn() as any).mockRejectedValue('String error') as any;
+
+    const response = await request(app)
+      .post('/api/auth/select-role')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({ userRole: 'STUDENT' });
+
+    expect(response.status).toBe(500);
+
+    // Restore original method
+    userModel.update = originalUpdate;
   });
 
   test('should successfully select STUDENT role', async () => {
@@ -405,7 +505,7 @@ describe('POST /api/auth/select-role - Select User Role (Mocked)', () => {
   test('should return 404 when userModel.update returns null', async () => {
     // Mock userModel.update to return null (simulating user not found)
     const originalUpdate = userModel.update;
-    userModel.update = jest.fn().mockResolvedValue(null);
+    userModel.update = (jest.fn() as any).mockResolvedValue(null) as any;
 
     const response = await request(app)
       .post('/api/auth/select-role')
@@ -422,7 +522,7 @@ describe('POST /api/auth/select-role - Select User Role (Mocked)', () => {
   test('should handle database error during role update', async () => {
     // Mock userModel.update to throw error
     const originalUpdate = userModel.update;
-    userModel.update = jest.fn().mockRejectedValue(new Error('Database error'));
+    userModel.update = (jest.fn() as any).mockRejectedValue(new Error('Database error')) as any;
 
     const response = await request(app)
       .post('/api/auth/select-role')
