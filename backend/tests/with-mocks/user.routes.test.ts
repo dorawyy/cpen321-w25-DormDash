@@ -853,3 +853,195 @@ describe('DELETE /api/user/profile - Delete User Profile (Mocked)', () => {
     userModel.delete = originalDelete;
   });
 });
+
+describe('UserModel - Database Error Handling', () => {
+  describe('findById', () => {
+    test('should handle findOne throwing an error in findById', async () => {
+      // Get access to the actual mongoose model
+      const actualUserModel = (userModel as any).user;
+      const findOneSpy = jest.spyOn(actualUserModel, 'findOne').mockImplementation(() => {
+        throw new Error('Database connection error');
+      });
+
+      try {
+        await userModel.findById(testUserId);
+        // Should not reach here
+        expect(true).toBe(false);
+      } catch (error: any) {
+        expect(error).toBeInstanceOf(Error);
+        expect(error.message).toBe('Failed to find user');
+      } finally {
+        findOneSpy.mockRestore();
+      }
+    });
+
+    test('should return null when user not found by id', async () => {
+      const nonExistentId = new mongoose.Types.ObjectId();
+      const result = await userModel.findById(nonExistentId);
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findByGoogleId', () => {
+    test('should handle findOne throwing an error in findByGoogleId', async () => {
+      const actualUserModel = (userModel as any).user;
+      const findOneSpy = jest.spyOn(actualUserModel, 'findOne').mockImplementation(() => {
+        throw new Error('Database query failed');
+      });
+
+      try {
+        await userModel.findByGoogleId('test-google-id');
+        // Should not reach here
+        expect(true).toBe(false);
+      } catch (error: any) {
+        expect(error).toBeInstanceOf(Error);
+        expect(error.message).toBe('Failed to find user');
+      } finally {
+        findOneSpy.mockRestore();
+      }
+    });
+
+    test('should return null when user not found by googleId', async () => {
+      const result = await userModel.findByGoogleId('non-existent-google-id');
+      expect(result).toBeNull();
+    });
+
+    test('should successfully find user by googleId', async () => {
+      const result = await userModel.findByGoogleId(`test-google-id-user-mock-${testUserId.toString()}`);
+      expect(result).not.toBeNull();
+      expect(result?.googleId).toBe(`test-google-id-user-mock-${testUserId.toString()}`);
+    });
+  });
+
+  describe('getFcmToken', () => {
+    test('should handle database error when getting FCM token', async () => {
+      const actualUserModel = (userModel as any).user;
+      const findByIdSpy = jest.spyOn(actualUserModel, 'findById').mockImplementation(() => {
+        throw new Error('Database read error');
+      });
+
+      try {
+        await userModel.getFcmToken(testUserId);
+        // Should not reach here
+        expect(true).toBe(false);
+      } catch (error: any) {
+        expect(error).toBeInstanceOf(Error);
+        expect(error.message).toBe('Failed to get FCM token');
+      } finally {
+        findByIdSpy.mockRestore();
+      }
+    });
+
+    test('should return null when user not found for FCM token', async () => {
+      const nonExistentId = new mongoose.Types.ObjectId();
+      const result = await userModel.getFcmToken(nonExistentId);
+      expect(result).toBeNull();
+    });
+
+    test('should return FCM token when user exists', async () => {
+      // Reset the user's FCM token to ensure test isolation
+      await (userModel as any).user.findByIdAndUpdate(testUserId, { fcmToken: 'initial-fcm-token' });
+      const result = await userModel.getFcmToken(testUserId);
+      expect(result).toBe('initial-fcm-token');
+    });
+
+    test('should return null when user has no FCM token', async () => {
+      const result = await userModel.getFcmToken(testMoverId);
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('clearInvalidFcmToken', () => {
+    test('should handle database error when clearing invalid FCM token', async () => {
+      const actualUserModel = (userModel as any).user;
+      const updateManySpy = jest.spyOn(actualUserModel, 'updateMany').mockImplementation(() => {
+        throw new Error('Database update failed');
+      });
+
+      try {
+        await userModel.clearInvalidFcmToken('invalid-token');
+        // Should not reach here
+        expect(true).toBe(false);
+      } catch (error: any) {
+        expect(error).toBeInstanceOf(Error);
+        expect(error.message).toBe('Failed to clear invalid FCM token');
+      } finally {
+        updateManySpy.mockRestore();
+      }
+    });
+
+    test('should successfully clear invalid FCM token', async () => {
+      // First set a test token
+      await (userModel as any).user.findByIdAndUpdate(
+        testUserId,
+        { fcmToken: 'test-invalid-token' }
+      );
+
+      // Clear it
+      await userModel.clearInvalidFcmToken('test-invalid-token');
+
+      // Verify it was cleared
+      const user = await userModel.findById(testUserId);
+      expect(user?.fcmToken).toBeNull();
+
+      // Restore original token
+      await (userModel as any).user.findByIdAndUpdate(
+        testUserId,
+        { fcmToken: 'initial-fcm-token' }
+      );
+    });
+
+    test('should handle clearing non-existent token gracefully', async () => {
+      // Should not throw error even if token doesn't exist
+      await expect(
+        userModel.clearInvalidFcmToken('non-existent-token-xyz')
+      ).resolves.not.toThrow();
+    });
+  });
+
+  describe('update - FCM token handling', () => {
+    test('should handle database error during FCM token update', async () => {
+      const actualUserModel = (userModel as any).user;
+      const updateManySpy = jest.spyOn(actualUserModel, 'updateMany').mockImplementation(() => {
+        throw new Error('Database error during token cleanup');
+      });
+
+      try {
+        await userModel.update(testUserId, { fcmToken: 'new-token' });
+        // Should not reach here
+        expect(true).toBe(false);
+      } catch (error: any) {
+        expect(error).toBeInstanceOf(Error);
+        expect(error.message).toBe('Failed to update user');
+      } finally {
+        updateManySpy.mockRestore();
+      }
+    });
+
+    test('should clear FCM token from other users when assigning to new user', async () => {
+      const sharedToken = 'shared-fcm-token-123';
+      
+      // Assign token to mover first
+      await userModel.update(testMoverId, { fcmToken: sharedToken });
+      let mover = await userModel.findById(testMoverId);
+      expect(mover?.fcmToken).toBe(sharedToken);
+
+      // Now assign same token to student - should clear from mover
+      await userModel.update(testUserId, { fcmToken: sharedToken });
+      
+      // Verify mover's token was cleared
+      mover = await userModel.findById(testMoverId);
+      expect(mover?.fcmToken).toBeNull();
+
+      // Verify student has the token
+      const student = await userModel.findById(testUserId);
+      expect(student?.fcmToken).toBe(sharedToken);
+
+      // Restore original token
+      await (userModel as any).user.findByIdAndUpdate(
+        testUserId,
+        { fcmToken: 'initial-fcm-token' }
+      );
+    });
+  });
+});
