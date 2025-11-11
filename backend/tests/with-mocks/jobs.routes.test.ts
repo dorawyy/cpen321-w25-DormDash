@@ -449,6 +449,133 @@ describe('GET /api/jobs/:id', () => {
         // Restore original method
         controllerProto.getJobById = originalMethod;
     });
+
+    // Test toJobResponse mapper coverage 
+    test('should successfully get job by id and map response using toJobResponse', async () => {
+        // Import actual mapper to test it
+        const actualMapper = jest.requireActual('../../src/mappers/job.mapper') as typeof import('../../src/mappers/job.mapper');
+        
+        const jobId = new mongoose.Types.ObjectId();
+        const orderId = new mongoose.Types.ObjectId();
+        const studentId = new mongoose.Types.ObjectId();
+        const moverId = new mongoose.Types.ObjectId();
+
+        const mockJob = {
+            _id: jobId,
+            orderId: orderId, 
+            studentId: studentId,
+            moverId: moverId,
+            jobType: JobType.STORAGE,
+            status: JobStatus.ACCEPTED,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date('2025-11-15T10:00:00Z'),
+            createdAt: new Date('2025-11-10T08:00:00Z'),
+            updatedAt: new Date('2025-11-11T09:00:00Z'),
+            calendarEventLink: 'https://calendar.example.com/event/123',
+        };
+
+        mockJobModel.findById.mockResolvedValue(mockJob as any);
+
+        // Mock the job mapper to use the actual implementation
+        const jobMapperModule = require('../../src/mappers/job.mapper');
+        jobMapperModule.toJobResponse = actualMapper.toJobResponse;
+
+        const response = await request(app)
+            .get(`/api/jobs/${jobId.toString()}`)
+            .set('Authorization', 'Bearer fake-token')
+            .expect(200);
+
+        expect(response.body).toHaveProperty('message', 'Job retrieved successfully');
+        expect(response.body.data).toHaveProperty('job');
+        expect(response.body.data.job).toHaveProperty('id', jobId.toString());
+        expect(response.body.data.job).toHaveProperty('orderId', orderId.toString());
+        expect(response.body.data.job).toHaveProperty('studentId', studentId.toString());
+        expect(response.body.data.job).toHaveProperty('moverId', moverId.toString());
+        expect(response.body.data.job).toHaveProperty('jobType', JobType.STORAGE);
+        expect(response.body.data.job).toHaveProperty('status', JobStatus.ACCEPTED);
+        expect(mockJobModel.findById).toHaveBeenCalledWith(jobId);
+    });
+
+    // Test toJobResponse mapper with undefined moverId (covers moverId ternary branch)
+    test('should get job by id with undefined moverId', async () => {
+        const actualMapper = jest.requireActual('../../src/mappers/job.mapper') as typeof import('../../src/mappers/job.mapper');
+        
+        const jobId = new mongoose.Types.ObjectId();
+        const orderId = new mongoose.Types.ObjectId();
+        const studentId = new mongoose.Types.ObjectId();
+
+        const mockJob = {
+            _id: jobId,
+            orderId: orderId,
+            studentId: studentId,
+            moverId: undefined, // Test the undefined moverId branch
+            jobType: JobType.STORAGE,
+            status: JobStatus.AVAILABLE,
+            volume: 5,
+            price: 30,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date('2025-11-20T14:00:00Z'),
+            createdAt: new Date('2025-11-15T10:00:00Z'),
+            updatedAt: new Date('2025-11-16T11:00:00Z'),
+        };
+
+        mockJobModel.findById.mockResolvedValue(mockJob as any);
+
+        const jobMapperModule = require('../../src/mappers/job.mapper');
+        jobMapperModule.toJobResponse = actualMapper.toJobResponse;
+
+        const response = await request(app)
+            .get(`/api/jobs/${jobId.toString()}`)
+            .set('Authorization', 'Bearer fake-token')
+            .expect(200);
+
+        expect(response.body.data.job).toHaveProperty('id', jobId.toString());
+        expect(response.body.data.job.moverId).toBeUndefined();
+    });
+
+    // Test toJobResponse mapper with string timestamps (covers date ternary branches)
+    test('should get job by id with string timestamps', async () => {
+        const actualMapper = jest.requireActual('../../src/mappers/job.mapper') as typeof import('../../src/mappers/job.mapper');
+        
+        const jobId = new mongoose.Types.ObjectId();
+        const orderId = new mongoose.Types.ObjectId();
+        const studentId = new mongoose.Types.ObjectId();
+
+        const mockJob = {
+            _id: jobId,
+            orderId: orderId,
+            studentId: studentId,
+            moverId: undefined,
+            jobType: JobType.RETURN,
+            status: JobStatus.AVAILABLE,
+            volume: 8,
+            price: 45,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: '2025-11-25T09:00:00Z', // String instead of Date
+            createdAt: '2025-11-18T08:30:00Z',     // String instead of Date
+            updatedAt: '2025-11-19T10:15:00Z',     // String instead of Date
+        };
+
+        mockJobModel.findById.mockResolvedValue(mockJob as any);
+
+        const jobMapperModule = require('../../src/mappers/job.mapper');
+        jobMapperModule.toJobResponse = actualMapper.toJobResponse;
+
+        const response = await request(app)
+            .get(`/api/jobs/${jobId.toString()}`)
+            .set('Authorization', 'Bearer fake-token')
+            .expect(200);
+
+        expect(response.body.data.job).toHaveProperty('id', jobId.toString());
+        expect(response.body.data.job).toHaveProperty('scheduledTime', '2025-11-25T09:00:00Z');
+        expect(response.body.data.job).toHaveProperty('createdAt', '2025-11-18T08:30:00Z');
+        expect(response.body.data.job).toHaveProperty('updatedAt', '2025-11-19T10:15:00Z');
+    });
 });
 
 describe('PATCH /api/jobs/:id/status', () => {
