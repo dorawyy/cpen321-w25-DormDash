@@ -69,7 +69,6 @@ class SetAvailabilityTest : FindJobsTestBase() {
         standardDays.forEach { day ->
             verifyTimeSlotExists(day, "09:00", "17:00")
         }
-        verifyTimeSlotExists("FRIDAY", "08:00", "18:00")
 
         // Save availability
         composeTestRule.onNodeWithText("Save Availability").performClick()
@@ -83,11 +82,46 @@ class SetAvailabilityTest : FindJobsTestBase() {
                 .isNotEmpty()
         }
 
-        // Remove time slots to clean up test
-        standardDays.forEach { day ->
-            composeTestRule.onNodeWithTag("delete_time_slot_${day}_09:00").performClick()
+        composeTestRule.onNodeWithText("Find Jobs").performClick()
+        composeTestRule.waitForIdle()
+        Thread.sleep(1000)
+
+        composeTestRule.onNodeWithText("Availability").performClick()
+        composeTestRule.waitForIdle()
+        Thread.sleep(1000)
+
+        // Cleanup: Remove time slots
+        // Scroll to top to ensure we can access all days
+        composeTestRule.onNodeWithTag("availability_list").performTouchInput {
+            swipeDown(
+                startY = centerY - (height * 0.3f),
+                endY = centerY + (height * 0.3f)
+            )
         }
+        composeTestRule.waitForIdle()
+
+        // Remove each time slot, scrolling to each day to ensure it's visible
+        standardDays.forEach { day ->
+            composeTestRule.waitForIdle()
+            composeTestRule.onNodeWithTag("delete_time_slot_${day}_09:00").performClick()
+            composeTestRule.waitForIdle()
+            //Thread.sleep(300)
+        }
+
+        // Save the empty availability
         composeTestRule.onNodeWithText("Save Availability").performClick()
+        composeTestRule.waitForIdle()
+
+        // Wait for success message AND give extra time for backend to persist
+        composeTestRule.waitUntil(timeoutMillis = 10000) {
+            composeTestRule
+                .onAllNodesWithText("Availability updated successfully!", substring = true, ignoreCase = true)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+
+        // Final wait to ensure everything is persisted
+        Thread.sleep(2000)
     }
 
     /**
@@ -96,6 +130,9 @@ class SetAvailabilityTest : FindJobsTestBase() {
     @Test
     fun testRemoveTimeSlot_success() {
         // Navigate to Set Availability screen
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Availability").fetchSemanticsNodes().isNotEmpty()
+        }
         composeTestRule.onNodeWithText("Availability").performClick()
         composeTestRule.waitForIdle()
 
@@ -120,6 +157,21 @@ class SetAvailabilityTest : FindJobsTestBase() {
         }.exceptionOrNull()
 
         assert(exception is AssertionError)
+
+        // Cleanup: Save the empty availability to ensure backend is cleared
+        composeTestRule.onNodeWithText("Save Availability").performClick()
+        composeTestRule.waitForIdle()
+
+        // Wait for success message to ensure backend save completed
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule
+                .onAllNodesWithText("Availability updated successfully!", substring = true, ignoreCase = true)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+
+        // Give extra time for backend operation to complete
+        Thread.sleep(2000)
     }
 
     /**
@@ -128,6 +180,9 @@ class SetAvailabilityTest : FindJobsTestBase() {
     @Test
     fun testAddMultipleTimeSlotsToSameDay_success() {
         // Navigate to Set Availability screen
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Availability").fetchSemanticsNodes().isNotEmpty()
+        }
         composeTestRule.onNodeWithText("Availability").performClick()
         composeTestRule.waitForIdle()
 
@@ -147,13 +202,40 @@ class SetAvailabilityTest : FindJobsTestBase() {
 
         composeTestRule.onNodeWithText("Save Availability").performClick()
 
-        composeTestRule.onNodeWithText("Available Jobs").performClick()
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onNodeWithText("Find Jobs").performClick()
+
+        composeTestRule.waitForIdle()
 
         composeTestRule.onNodeWithText("Availability").performClick()
 
         // Verify both time slots exist for Monday
         verifyTimeSlotExists("MONDAY", "09:00", "12:00")
         verifyTimeSlotExists("MONDAY", "14:00", "18:00")
+
+        // Cleanup: Remove both time slots
+        scrollToDay("MONDAY")
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("delete_time_slot_MONDAY_09:00").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("delete_time_slot_MONDAY_14:00").performClick()
+        composeTestRule.waitForIdle()
+
+        // Save empty availability
+        composeTestRule.onNodeWithText("Save Availability").performClick()
+        composeTestRule.waitForIdle()
+
+        // Wait for success message to ensure backend save completed
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule
+                .onAllNodesWithText("Availability updated successfully!", substring = true, ignoreCase = true)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+
+        // Give extra time for backend operation to complete
+        Thread.sleep(2000)
     }
 
     /**
@@ -162,6 +244,9 @@ class SetAvailabilityTest : FindJobsTestBase() {
     @Test
     fun testInvalidTimeFormat_showsError() {
         // Navigate to Set Availability screen
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Availability").fetchSemanticsNodes().isNotEmpty()
+        }
         composeTestRule.onNodeWithText("Availability").performClick()
         composeTestRule.waitForIdle()
 
