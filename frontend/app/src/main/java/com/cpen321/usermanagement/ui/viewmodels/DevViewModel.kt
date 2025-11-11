@@ -36,7 +36,7 @@ class DevViewModel @Inject constructor(
                 } else {
                     _uiState.value = DevUiState(
                         isLoading = false,
-                        error = "Failed to seed jobs: ${response.code()}"
+                        //error = "Failed to seed jobs: ${response.code()}"
                     )
                 }
             } catch (e: Exception) {
@@ -61,7 +61,7 @@ class DevViewModel @Inject constructor(
                 } else {
                     _uiState.value = DevUiState(
                         isLoading = false,
-                        error = "Failed to seed availability jobs: ${response.code()}"
+                        //error = "Failed to seed availability jobs: ${response.code()}"
                     )
                 }
             } catch (e: Exception) {
@@ -86,7 +86,7 @@ class DevViewModel @Inject constructor(
                 } else {
                     _uiState.value = DevUiState(
                         isLoading = false,
-                        error = "Failed to clear jobs: ${response.code()}"
+                        //error = "Failed to clear jobs: ${response.code()}"
                     )
                 }
             } catch (e: Exception) {
