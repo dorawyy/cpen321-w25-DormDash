@@ -362,23 +362,30 @@ _(Placeholder for Jest coverage screenshot both with and without mocking)_
 
 ### 5.1. Commit Hash Where Codacy Ran
 
-`[Insert Commit SHA here]`
+`[e4c2b4cd3933df38dc5398dd0fba0305d02f241f]`
 
 ### 5.2. Unfixed Issues per Codacy Category
 
-_(Placeholder for screenshots of Codacy's Category Breakdown table in Overview)_
+![Codacy issues breakdown](images/codacy_issues_breakdown.png)
+
+_Figure: Codacy Issues breakdown (Security issues count)_
 
 ### 5.3. Unfixed Issues per Codacy Code Pattern
 
-_(Placeholder for screenshots of Codacy's Issues page)_
+![Codacy issues breakdown](images/codacy_issues_page.png)
+
+_Figure: Codacy Issues Page, per category_
 
 ### 5.4. Justifications for Unfixed Issues
 
-- **Code Pattern: [Usage of Deprecated Modules](#)**
+- **Code Pattern: [No pattern, just says 'All issues'](#)**
 
-    1. **Issue**
+    1. **‘Detect missing process.exit’**
 
-        - **Location in Git:** [`src/services/chatService.js#L31`](#)
-        - **Justification:** ...
+        - **Location in Git:** [`../backend/src/index.ts#L44`](#)
+        - **Justification:** false positive, we call process.exitCode=1
 
-    2. ...
+    2. **‘Detect missing process.exit’**
+
+        - **Location in Git:** [`../backend/src/index.ts#L44`](#)
+        - **Justification:** false positive, the solution says to add an error listener, however the error is on an error handler.
