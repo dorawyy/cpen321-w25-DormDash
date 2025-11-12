@@ -555,63 +555,16 @@ private fun DevToolsSection(
             color = MaterialTheme.colorScheme.primary
         )
 
-        // Status message
-        if (devUiState.message != null) {
-            androidx.compose.material3.Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = androidx.compose.material3.CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            ) {
-                Text(
-                    text = devUiState.message,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(LocalSpacing.current.medium),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-        }
+        // Status messages
+        DevToolsStatusMessages(devUiState)
 
-        if (devUiState.error != null) {
-            androidx.compose.material3.Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = androidx.compose.material3.CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
-            ) {
-                Text(
-                    text = "❌ ${devUiState.error}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(LocalSpacing.current.medium),
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
-            }
-        }
-
-        // Button 1: Seed Test Jobs
-        MenuButtonItem(
-            text = "Seed Test Jobs (10)",
-            iconRes = R.drawable.ic_check,
-            onClick = { devViewModel.seedTestJobs() },
-            enabled = isInteractive && !devUiState.isLoading,
+        // Action buttons
+        DevToolsActionButtons(
+            devViewModel = devViewModel,
+            isEnabled = isInteractive && !devUiState.isLoading
         )
 
-        // Button 2: Seed Availability Test Jobs
-        MenuButtonItem(
-            text = "Seed Availability Jobs (2)",
-            iconRes = R.drawable.ic_check,
-            onClick = { devViewModel.seedAvailabilityTestJobs() },
-            enabled = isInteractive && !devUiState.isLoading,
-        )
-
-        // Button 3: Clear All Jobs
-        MenuButtonItem(
-            text = "Clear All Jobs",
-            iconRes = R.drawable.ic_delete_forever,
-            onClick = { devViewModel.clearJobs() },
-            enabled = isInteractive && !devUiState.isLoading,
-        )
-
+        // Loading indicator
         if (devUiState.isLoading) {
             Box(
                 modifier = Modifier.fillMaxWidth(),
@@ -621,6 +574,68 @@ private fun DevToolsSection(
             }
         }
     }
+}
+
+@Composable
+private fun DevToolsStatusMessages(devUiState: com.cpen321.usermanagement.ui.viewmodels.DevUiState) {
+    if (devUiState.message != null) {
+        androidx.compose.material3.Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = androidx.compose.material3.CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            )
+        ) {
+            Text(
+                text = devUiState.message,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(LocalSpacing.current.medium),
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
+    }
+
+    if (devUiState.error != null) {
+        androidx.compose.material3.Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = androidx.compose.material3.CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer
+            )
+        ) {
+            Text(
+                text = "❌ ${devUiState.error}",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(LocalSpacing.current.medium),
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+        }
+    }
+}
+
+@Composable
+private fun DevToolsActionButtons(
+    devViewModel: DevViewModel,
+    isEnabled: Boolean
+) {
+    MenuButtonItem(
+        text = "Seed Test Jobs (10)",
+        iconRes = R.drawable.ic_check,
+        onClick = { devViewModel.seedTestJobs() },
+        enabled = isEnabled,
+    )
+
+    MenuButtonItem(
+        text = "Seed Availability Jobs (2)",
+        iconRes = R.drawable.ic_check,
+        onClick = { devViewModel.seedAvailabilityTestJobs() },
+        enabled = isEnabled,
+    )
+
+    MenuButtonItem(
+        text = "Clear All Jobs",
+        iconRes = R.drawable.ic_delete_forever,
+        onClick = { devViewModel.clearJobs() },
+        enabled = isEnabled,
+    )
 }
 
 @Composable
