@@ -83,31 +83,239 @@ _(Placeholder for Jest coverage screenshot both with and without mocking)_
 ---
 
 ## 4. Front-end Test Specification
+**Instructions to run the tests**:
+- Create a test.properties file under DormDash/frontend/app/src/androidTest/resources
+- Add the following to the file, and fill in 2 test accounts (1 for student and 1 for mover):
+  STUDENT_EMAIL=<the email for the student account>
+  STUDENT_PASSWORD=<the password for the student account>
+  MOVER_EMAIL=<the email for the mover account>
+  MOVER_PASSWORD=<the password for the mover account>
+-Optionally set up those accounts with google, but our tests do that anyways
+- Run tests
 
 ### 4.1. Location in Git of Front-end Test Suite:
 
 `frontend/src/androidTest/java/com/cpen321/usermanagement/features`
 
 ### 4.2. Tests
-
-- **Use Case: Login**
+**Feature: Authenticate**
+- **Use Case: Sign In**
 
     - **Expected Behaviors:**
       | **Scenario Steps** | **Test Case Steps** |
       | ------------------ | ------------------- |
-      | 1. The user opens "Add Todo Items" screen. | Open "Add Todo Items" screen. |
-      | 2. The app shows an input text field and an "Add" button. The add button is disabled. | Check that the text field is present on screen.<br>Check that the button labelled "Add" is present on screen.<br>Check that the "Add" button is disabled. |
-      | 3a. The user inputs an ill-formatted string. | Input "_^_^^OQ#$" in the text field. |
-      | 3a1. The app displays an error message prompting the user for the expected format. | Check that a dialog is opened with the text: "Please use only alphanumeric characters ". |
-      | 3. The user inputs a new item for the list and the add button becomes enabled. | Input "buy milk" in the text field.<br>Check that the button labelled "add" is enabled. |
-      | 4. The user presses the "Add" button. | Click the button labelled "add ". |
-      | 5. The screen refreshes and the new item is at the bottom of the todo list. | Check that a text box with the text "buy milk" is present on screen.<br>Input "buy chocolate" in the text field.<br>Click the button labelled "add".<br>Check that two text boxes are present on the screen with "buy milk" on top and "buy chocolate" at the bottom. |
-      | 5a. The list exceeds the maximum todo-list size. | Repeat steps 3 to 5 ten times.<br>Check that a dialog is opened with the text: "You have too many items, try completing one first". |
+      | 1. User opens app and clicks on ‘Sign In with Google’ | Ensure ‘Sign in with Google’ exists and click it |
+      | 2. System suggests list of authenticated accounts | Ensure accounts are present |
+      | 3. User selects their desired account | Click on desired account |
+      | 4. The system authenticates users and redirects them to the role-based main screen. | Ensure existence of app title ‘Dormdash’ |
+      | 4a. User does not exist | Not tested, since we are asked to set up an account for the tester; the user will already be signed up |
 
     - **Test Logs:**
       ```
-      [Placeholder for Espresso test execution logs]
+      > Task :app:connectedDebugAndroidTest
+      Starting 2 tests on Pixel_7(AVD) - 13
+      Connected to process 13912 on device 'Pixel_7 [emulator-5554]'.
+
+      Pixel_7(AVD) - 13 Tests 1/2 completed. (0 skipped) (0 failed)
+      Pixel_7(AVD) - 13 Tests 2/2 completed. (0 skipped) (0 failed)
+      Finished 2 tests on Pixel_7(AVD) - 13
       ```
+-**Use Case: Sign Up**
+ - **Use Case: Sign Up**
+
+    - **Expected Behaviors:**
+      | **Scenario Steps** | **Test Case Steps** |
+      | ------------------ | ------------------- |
+      | 1. User opens app and clicks on ‘Sign Up with Google’ | Ensure ‘Sign up with Google’ exists and click it |
+      | 2. System suggests list of authenticated accounts | Ensure accounts are present |
+      | 3. User selects their desired account | Click on desired account |
+      | 4. The system authenticates users and redirects them to the role selection screen. | Ensure existence of role selection screen identifiers (‘I\'m a Student’ and ‘I\'m a Mover’) |
+      | 4a. User already exists | Check for ‘User already exists, please sign in instead’ |
+      | 5. The user selects their role. | Choose ‘I\'m a Student’ for this account and ensure redirection to role-based main screen; verify app title ‘Dormdash’ |
+
+    - **Test Logs:**
+      ```
+      > Task :app:connectedDebugAndroidTest
+      Starting 2 tests on Pixel_7(AVD) - 13
+      Connected to process 22011 on device 'Pixel_7 [emulator-5554]'.
+
+      Pixel_7(AVD) - 13 Tests 1/2 completed. (0 skipped) (0 failed)
+      Finished 2 tests on Pixel_7(AVD) - 13
+
+      BUILD SUCCESSFUL in 35s
+      76 actionable tasks: 1 executed, 75 up-to-date
+      ```
+
+
+ - **Use case: Sign Out**
+
+    - **Expected Behaviors:**
+      | **Scenario Steps** | **Test Case Steps** |
+      | ------------------ | ------------------- |
+      | 1. User opens app and executes ‘Sign in’ use case. | Execute Sign in test |
+      | 2. User clicks on profile icon | Ensure profile icon exists and click it |
+      | 3. System redirects user to profile screen | Ensure profile screen elements exist like ‘Sign out’ |
+      | 4. The user clicks Sign Out | Click Sign Out |
+      | 5. The system de-authenticates the account and redirects the user to the authentication screen. | Ensure auth screen identifiers exist, like app title and Google auth buttons |
+
+    - **Test Logs:**
+      ```
+      > Task :app:connectedDebugAndroidTest
+      Starting 1 tests on Pixel_7(AVD) - 13
+
+      Pixel_7(AVD) - 13 Tests 0/1 completed. (0 skipped) (0 failed)
+      Finished 1 tests on Pixel_7(AVD) - 13
+
+      BUILD SUCCESSFUL in 35s
+      76 actionable tasks: 1 executed, 75 up-to-date
+      ```
+
+
+-**Use case: Delete Account**
+
+ - **Use case: Delete Account**
+
+    - **Expected Behaviors:**
+      | **Scenario Steps** | **Test Case Steps** |
+      | ------------------ | ------------------- |
+      | 1. User opens app and executes ‘Sign in’ use case. | Execute Sign in test |
+      | 2. User clicks on profile icon | Ensure profile icon exists and click it |
+      | 3. System redirects user to profile screen | Ensure profile screen elements exist like ‘Delete Account’ |
+      | 4. The user clicks ‘Delete Account’ | Click ‘Delete Account’ |
+      | 5. The system prompts user to confirm | Ensure confirm button existence |
+      | 6. User clicks ‘Confirm’ | Click ‘Confirm’ |
+      | 7. System deletes account and redirects user to authentication screen | Ensure auth screen identifiers exist, like app title and Google auth buttons |
+
+    - **Test Logs:**
+      ```
+      > Task :app:connectedDebugAndroidTest
+      Starting 1 tests on Pixel_7(AVD) - 13
+      Connected to process 17126 on device 'Pixel_7 [emulator-5554]'.
+
+      Pixel_7(AVD) - 13 Tests 0/1 completed. (0 skipped) (0 failed)
+      Finished 1 tests on Pixel_7(AVD) - 13
+
+      BUILD SUCCESSFUL in 34s
+      76 actionable tasks: 1 executed, 75 up-to-date
+      ```
+
+
+
+
+**Feature: Manage Orders**
+
+  - **Use case: Create Order**
+
+    - **Expected Behaviors:**
+      | **Scenario Steps** | **Test Case Steps** |
+      | ------------------ | ------------------- |
+      | 1. Student clicks “Create New Order” button | Ensure its existence and click ‘Create New Order’ |
+      | 2. System displays auto-complete text field for address | Ensure text field existence |
+      | 3. The student enters the pick up address. | Enter address in text field |
+      | 4. System suggests a list of valid addresses matching student input using Google Maps | Ensure suggestion existence |
+      | 5. Student selects address by clicking on the suggestion and clicks on “Get Base Delivery Charge” button | Select suggestion and click “Get Base Delivery Charge” |
+      | 5a. Student enters address outside of Greater Vancouver area | Input address outside of Greater Vancouver Area, and select suggestion |
+      | 5a1 System displays an error message: “We currently only service Greater Vancouver.” and continues to display the address input field. | Ensure System displays error message: “We currently only service Greater Vancouver.” and continues to display the address input field. |
+      | 6. The system displays two date picker field for pickup/return dates, +/- buttons to adjust the hour and 15 minute time intervals for the pickup/return time, and +/- buttons for the number of small, medium, large boxes. | Ensure fields exist |
+      | 7. Student enters both time fields, dates and number of boxes. | Keep as default for success scenario |
+      | 7a Student inputs a return date or time which is before the pickup date or time | Input a return date or time which is before the pickup date or time |
+      | 7a1 System displays error: “Return date/time must be after pickup date/time” and stays on the form. | Ensure System displays error: “Return date/time must be after pickup date/time” and stays on the form. |
+      | 8. Student adds boxes to order and clicks ‘Proceed to Payment’ | Click on ‘+’ for small box and ‘Proceed to Payment’ |
+      | 9. Execute ‘UC-2 Pay’ use case successfully | Run payment use case test, which is a static function to not lose progress and restart. |
+      | 10. Order is placed and the system displays the order status, details, and pin showing pick up address using Google Maps. | Ensure ‘Active Order’ text |
+
+    - **Execution Logs / Notes:**
+      ```
+      java.lang.AssertionError: Failed to inject touch input.
+      Reason: Expected exactly '1' node but could not find any node that satisfies: (Text + InputText + EditableText contains
+       '15' (ignoreCase: false))
+      ```
+
+  - **Use case: Pay**
+    - **Expected Behaviors:**
+      | **Scenario Steps** | **Test Case Steps** |
+      | ------------------ | ------------------- |
+      | 1. User Enters a Valid Name and Email. | Enter Name and Email. |
+      | 1a. User Enters invalid information. | Enter nothing, which is considered invalid. |
+      | 2. System Displays "Please fill in all required fields with valid information."  | Ensure error message, "Please fill in all required fields with valid information." is displayed.  |
+      | 3. User clicks  'Process Payment'  | Click on 'Process Payment' |
+      | 4. System asks users to confirm. | Ensure '"Confirm & Pay' button exists, and click on it.|
+      | 5. System displays active order. | Ensure active order exists. |
+
+    - **Execution Logs / Notes:**
+      Not reached, since test fails before is executed.
+  - **Use case: Create Return Job**
+
+    - **Expected Behaviors:**
+
+      | **Scenario Steps** | **Test Case Steps** |
+      | ------------------ | ------------------- |
+      | 1. Student clicks on "Schedule Return Delivery" button | 1. Click on "Schedule Return Delivery" button |
+      | 2. System displays bottom sheet with return job form showing "Select Return Date & Time" with expected return date displayed | 2. Ensure the bottom sheet and "Select Return Date & Time" are displayed and the expected return date is visible |
+      | 3. System displays selected time on the time card and calculates days difference from expected return date | 3. Ensure the selected time is shown on the time card and that "Early Return Refund" information is present |
+      | 4. Student selects early return date by clicking ‘Continue’ | 4. Click "Continue" to accept the current date as the return date |
+      | 5. System displays address selection step with default return address (same as pickup address) and option to use custom address | 5. Ensure address selection step appears, default return address is shown, and "Use custom address" option exists |
+      | 6. Student selects custom address | 6. Click on "Use custom address" |
+      | 7. Student enters custom address in auto-complete field | 7. Enter the custom address in the auto-complete field and select a suggestion |
+      | 8. Student enters address outside of Greater Vancouver area and clicks ‘Confirm Address’ (failure scenario) | 8. Enter an invalid address, select the suggestion, and click "Confirm Address" |
+      | 8a1. System displays error message: "Invalid address. Please select a valid address within Greater Vancouver." | 8a1. Ensure the error message "Invalid address. Please select a valid address within Greater Vancouver." is displayed |
+      | 9. Student clicks ‘Confirm Address’ button (success path) | 9. Click "Confirm Address" |
+      | 10. System displays success message with refund/late fee information: "Return job created! Refund of $X.XX has been processed for early return." | 10. Ensure the success message with refund information is displayed |
+
+    - **Execution Logs:**
+      ```
+      > Task :app:connectedDebugAndroidTest
+      Starting 1 tests on Pixel_7(AVD) - 13
+
+      Pixel_7(AVD) - 13 Tests 0/1 completed. (0 skipped) (0 failed)
+      Finished 1 tests on Pixel_7(AVD) - 13
+
+      BUILD SUCCESSFUL in 1m 7s
+      76 actionable tasks: 7 executed, 69 up-to-date
+      ```
+
+  - **Use case: Confirm Pickup**
+
+    - **Expected Behaviors:**
+
+      | **Scenario Steps** | **Test Case Steps** |
+      | ------------------ | ------------------- |
+      | 1. Student clicks on 'Confirm Pickup' button | 1. Ensure 'Confirm Pickup' button exists and click it |
+      | 2. System displays success message 'Mover has picked up your items' | 2. Ensure success message 'Mover has picked up your items' is displayed |
+
+    - **Execution Logs:**
+      ```
+      > Task :app:connectedDebugAndroidTest
+      Starting 1 tests on Pixel_7(AVD) - 13
+      Pixel_7(AVD) - 13 Tests 0/1 completed. (0 skipped) (0 failed)
+      Finished 1 tests on Pixel_7(AVD) - 13
+      BUILD SUCCESSFUL in 1m 7s
+      76 actionable tasks: 7 executed, 69 up-to-date
+      ```
+
+  - **Use case: Cancel Order**
+
+    - **Expected Behaviors:**
+
+      | **Scenario Steps** | **Test Case Steps** |
+      | ------------------ | ------------------- |
+      | 1. Student clicks on 'Profile' button | 1. Ensure profile icon exists and click it |
+      | 2. System displays manage profile screen | 2. Ensure profile screen elements exist like 'Manage Orders' |
+      | 3. Student clicks 'Manage Orders' | 3. Click 'Manage Orders' |
+      | 4. System displays all orders | 4. Ensure order list exists |
+      | 5. Student clicks on pending order and clicks 'Cancel' | 5. Click on a pending order and click 'Cancel' |
+      | 6. System prints 'Order cancelled successfully, refund has been processed' | 6. Ensure success message 'Order cancelled successfully, refund has been processed' is displayed |
+
+    - **Execution Logs:**
+      ```
+      > Task :app:connectedDebugAndroidTest
+      Starting 1 tests on Pixel_7(AVD) - 13
+      Pixel_7(AVD) - 13 Tests 0/1 completed. (0 skipped) (0 failed)
+      Finished 1 tests on Pixel_7(AVD) - 13
+      BUILD SUCCESSFUL in 1m 7s
+      76 actionable tasks: 7 executed, 69 up-to-date
+      ```
+
 
 **Feature: Find Jobs**
 - **Use Case: Browse and Filter Jobs**

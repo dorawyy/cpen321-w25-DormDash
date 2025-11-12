@@ -194,6 +194,12 @@ class CreateOrderTest : OrderTestBase() {
         // Step 2: Process payment
         composeTestRule.onNodeWithTag("process_payment_button", useUnmergedTree = true)
             .performClick()
+            
+        composeTestRule.waitForIdle()
+
+        // Step 3: Confirm payment in dialog
+        composeTestRule.onNodeWithTag("confirm_pay_button", useUnmergedTree = true)
+            .performClick()
 
     }
 
