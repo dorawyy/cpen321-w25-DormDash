@@ -15,20 +15,32 @@ const router = Router();
  * @desc    Seed 10 test jobs for Smart Route testing
  * @access  Public (dev only)
  */
-router.post('/seed-jobs', devController.seedTestJobs);
+router.post('/seed-jobs', (req, res, next) => {
+  devController.seedTestJobs(req, res, next).catch((err: unknown) => {
+    next(err);
+  });
+});
 
 /**
  * @route   POST /api/dev/seed-availability-jobs
  * @desc    Seed 2 availability test jobs (1 within, 1 outside availability)
  * @access  Public (dev only)
  */
-router.post('/seed-availability-jobs', devController.seedAvailabilityTestJobs);
+router.post('/seed-availability-jobs', (req, res, next) => {
+  devController.seedAvailabilityTestJobs(req, res, next).catch((err: unknown) => {
+    next(err);
+  });
+});
 
 /**
  * @route   POST /api/dev/clear-jobs
  * @desc    Clear all jobs from the database
  * @access  Public (dev only)
  */
-router.post('/clear-jobs', devController.clearJobs);
+router.post('/clear-jobs', (req, res, next) => {
+  devController.clearJobs(req, res, next).catch((err: unknown) => {
+    next(err);
+  });
+});
 
 export default router;

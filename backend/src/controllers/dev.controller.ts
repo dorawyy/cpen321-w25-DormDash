@@ -5,7 +5,7 @@
  * WARNING: These endpoints should only be available in development/test environments.
  */
 
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import logger from '../utils/logger.util';
@@ -16,7 +16,7 @@ export class DevController {
   /**
    * Seed test jobs (10 varied jobs for testing Smart Route)
    */
-  async seedTestJobs(req: Request, res: Response): Promise<void> {
+  async seedTestJobs(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       logger.info('Running seed-test-jobs script...');
       
@@ -46,7 +46,7 @@ export class DevController {
   /**
    * Seed availability test jobs (2 jobs: 1 within availability, 1 outside)
    */
-  async seedAvailabilityTestJobs(req: Request, res: Response): Promise<void> {
+  async seedAvailabilityTestJobs(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       logger.info('Running seed-availability-test-jobs script...');
       
@@ -76,7 +76,7 @@ export class DevController {
   /**
    * Clear all jobs from the database
    */
-  async clearJobs(req: Request, res: Response): Promise<void> {
+  async clearJobs(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       logger.info('Running clear-jobs script...');
       
