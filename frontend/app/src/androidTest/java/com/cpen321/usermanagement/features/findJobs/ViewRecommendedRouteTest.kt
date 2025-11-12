@@ -180,6 +180,148 @@ class ViewRecommendedRouteTest : FindJobsTestBase() {
     }
 
     /**
+     * Test: Accept all jobs in recommended route
+     * Step 7: Test "Accept all jobs" button
+     */
+    @Test
+    fun testRecommendedRoute_acceptAllJobs() {
+        // Wait for initial navigation to be ready
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Availability").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Setup: Navigate to Profile and seed test jobs
+        composeTestRule.onNodeWithTag("ProfileButton").performClick()
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onNodeWithText("Seed Test Jobs (10)").performClick()
+        composeTestRule.waitForIdle()
+
+        Thread.sleep(2000)
+
+        // Navigate back to main screen
+        device.pressBack()
+        composeTestRule.waitForIdle()
+
+        // Set availability with unlimited time
+        composeTestRule.onNodeWithText("Availability").performClick()
+        composeTestRule.waitForIdle()
+
+        // Verify we're on the Set Availability screen
+        composeTestRule.onNodeWithText("Set Availability").assertIsDisplayed()
+
+        // Days to add unlimited availability
+        val allDays = listOf("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY")
+
+        // Add unlimited time slots (00:00-23:59) for all days
+        allDays.forEach { day ->
+            addTimeSlot(
+                day = day,
+                startTime = "00:00",
+                endTime = "23:59"
+            )
+        }
+
+        // Save availability
+        composeTestRule.onNodeWithText("Save Availability").performClick()
+        composeTestRule.waitForIdle()
+
+        // Verify success message appears
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule
+                .onAllNodesWithText("Availability updated successfully!", substring = true, ignoreCase = true)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+
+        // Navigate to Find Jobs and request route
+        composeTestRule.onNodeWithText("Find Jobs").performClick()
+        composeTestRule.waitForIdle()
+
+        // Click "Get Optimal Route" button
+        composeTestRule.onNodeWithText("Get Optimal Route", ignoreCase = true).performClick()
+        composeTestRule.waitForIdle()
+
+        // Click "Find Smart Route" button
+        composeTestRule.onNodeWithText("Find Smart Route", ignoreCase = true).performClick()
+        composeTestRule.waitForIdle()
+
+        // Grant location permission
+        grantLocationPermission()
+        composeTestRule.waitForIdle()
+
+        // Wait for route calculation to complete
+        waitForRouteCalculation()
+
+        // Step 7: Click "Accept all jobs" button
+        composeTestRule.onNodeWithText("Accept all jobs", ignoreCase = true)
+            .assertIsDisplayed()
+            .performClick()
+
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("ProfileButton").performClick()
+        composeTestRule.waitForIdle()
+
+        // Navigate to Find Jobs - need to click retry if error appears
+        composeTestRule.onNodeWithText("Find Jobs").performClick()
+        composeTestRule.waitForIdle()
+        Thread.sleep(1000)
+
+        // Check if retry button appears (happens because seeded jobs don't have real student IDs)
+        val retryNodes = composeTestRule.onAllNodesWithText("Retry", ignoreCase = true).fetchSemanticsNodes()
+        if (retryNodes.isNotEmpty()) {
+            composeTestRule.onNodeWithText("Retry", ignoreCase = true).performClick()
+            composeTestRule.waitForIdle()
+        }
+
+        // Navigate to Current Jobs to verify
+        composeTestRule.onNodeWithText("Current Jobs").performClick()
+        composeTestRule.waitForIdle()
+        Thread.sleep(1000)
+
+        // Check if retry button appears again
+        val retryNodesCurrentJobs = composeTestRule.onAllNodesWithText("Retry", ignoreCase = true).fetchSemanticsNodes()
+        if (retryNodesCurrentJobs.isNotEmpty()) {
+            composeTestRule.onNodeWithText("Retry", ignoreCase = true).performClick()
+            composeTestRule.waitForIdle()
+        }
+
+        // Verify current jobs list is displayed
+        composeTestRule.onNodeWithTag("current_jobs_list").assertIsDisplayed()
+
+        // Verify multiple jobs are now in current jobs
+        val jobCount = composeTestRule.onAllNodesWithTag("current_job_card")
+            .fetchSemanticsNodes().size
+        assert(jobCount > 1) { "Should have multiple jobs after accepting all" }
+
+        // Cleanup: Remove all added availability
+        composeTestRule.onNodeWithText("Availability").performClick()
+        composeTestRule.waitForIdle()
+
+        allDays.forEach { day ->
+            scrollToDay(day)
+            composeTestRule.onNodeWithTag("delete_time_slot_${day}_00:00").performClick()
+        }
+        composeTestRule.onNodeWithText("Save Availability").performClick()
+
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule
+                .onAllNodesWithText("Availability updated successfully!", substring = true, ignoreCase = true)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+
+        // Cleanup: Navigate to Profile and clear all jobs
+        composeTestRule.onNodeWithTag("ProfileButton").performClick()
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onNodeWithText("Clear All Jobs").performClick()
+        composeTestRule.waitForIdle()
+
+        Thread.sleep(2000) // Give backend time to persist
+    }
+
+    /**
      * Failure Scenario 5a: Mover denies location permission
      */
     @Test

@@ -19,7 +19,7 @@ export class DevController {
     try {
       console.log('Running seed-test-jobs script...');
       
-      const { stdout, stderr } = await execAsync('npm run seed-jobs:ts', {
+      const { stdout } = await execAsync('npm run seed-jobs:ts', {
         cwd: process.cwd(),
         env: process.env
       });
@@ -49,7 +49,7 @@ export class DevController {
     try {
       console.log('Running seed-availability-test-jobs script...');
       
-      const { stdout, stderr } = await execAsync('npm run seed-availability-test-jobs', {
+      const { stdout } = await execAsync('npm run seed-availability-test-jobs', {
         cwd: process.cwd(),
         env: process.env
       });
@@ -79,7 +79,7 @@ export class DevController {
     try {
       console.log('Running clear-jobs script...');
       
-      const { stdout, stderr } = await execAsync('npm run clear-jobs', {
+      const { stdout } = await execAsync('npm run clear-jobs', {
         cwd: process.cwd(),
         env: process.env
       });
