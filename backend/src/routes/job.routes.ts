@@ -2,6 +2,8 @@ import { NextFunction, Router } from 'express';
 import { JobController } from '../controllers/job.controller';
 import { jobService } from '../services/job.service';
 import { authenticateToken } from '../middleware/auth.middleware';
+import { validateBody } from '../middleware/validation.middleware';
+import { CreateJobRequest, jobSchema } from '../types/job.type';
 
 const router = Router();
 const jobController = new JobController(jobService);
@@ -42,11 +44,15 @@ router.get('/:id', (req, res, next) => {
 });
 
 // POST /api/jobs - Create a new job
-router.post('/', (req, res, next) => {
-  jobController.createJob(req, res, next).catch((err: unknown) => {
-    next(err);
-  });
-});
+router.post(
+  '/',
+  validateBody<CreateJobRequest>(jobSchema),
+  (req, res, next) => {
+    jobController.createJob(req, res, next).catch((err: unknown) => {
+      next(err);
+    });
+  }
+);
 
 // PATCH /api/jobs/:id/status - Update job status (assign, start, complete)
 router.patch('/:id/status', (req, res, next: NextFunction) => {
