@@ -9,10 +9,9 @@ import org.junit.Test
  * 
  * Tests the ability for movers to accept unassigned jobs.
  *
- * Before running tests, ensure the following setup is complete:
+ * Before running test, ensure the following setup is complete:
  *
- * 1. Backend must be running (npm run dev)
- * 2. Database must have at least 1 unassigned job created by a student
+ * 1. Create an order from a student's account.
  *
  * Main Success Scenario:
  * 1. Mover clicks "Accept" button for a job
@@ -36,10 +35,8 @@ class AcceptJobTest : FindJobsTestBase() {
             composeTestRule.onAllNodesWithText("Find Jobs").fetchSemanticsNodes().isNotEmpty()
         }
 
-        // Precondition: Navigate to Find Jobs (UC-3)
+        // Navigate to Find Jobs (UC-3)
         composeTestRule.onNodeWithText("Find Jobs").performClick()
-        
-        // Wait for the screen to load
         composeTestRule.waitForIdle()
 
         // Wait for jobs to load
@@ -65,20 +62,17 @@ class AcceptJobTest : FindJobsTestBase() {
             .assertIsEnabled()
             .assertHasClickAction()
 
-        // Step 1: Mover clicks "Accept" button for the first job
+        // Step 1: Mover clicks "Accept" button for the job
         composeTestRule.onAllNodesWithTag("job_accept_button")
             .onFirst()
             .performClick()
         
-        // Step 2: Wait for assignment to complete
-        // Give it some time to process the acceptance
+        // Wait for assignment to complete
         composeTestRule.waitForIdle()
         Thread.sleep(2000) // Wait for backend to process
 
-        // Step 3: Navigate to "Current Jobs" to verify the job is listed there
+        // Navigate to "Current Jobs" to verify the job is listed there
         composeTestRule.onNodeWithText("Current Jobs").performClick()
-        
-        // Wait for current jobs screen to load
         composeTestRule.waitForIdle()
 
         // Wait for current jobs to load

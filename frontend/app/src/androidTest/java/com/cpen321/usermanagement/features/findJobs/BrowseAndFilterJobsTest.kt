@@ -8,26 +8,6 @@ import org.junit.Test
  * UC-3: Browse and Filter Jobs
  * 
  * Tests the ability for movers to browse unassigned jobs and filter them by availability.
- * 
- * ⚠️ TEST PREREQUISITES:
- *
- * Before running tests, ensure the following setup is complete:
- *
- * 1. Backend must be running (npm run dev)
- * 2. Database must have the correct test data:
- *
- * For testFilterByAvailability_displaysFilteredJobs, testBrowseAllJobs_displaysJobList, testToggleBackToShowAll_displaysAllJobs:
- *    Run: npm run seed-availability-test-jobs
- *    This creates 2 jobs:
- *    - Job 1: Monday 10:00 AM (WITHIN availability)
- *    - Job 2: Saturday 11:00 AM (OUTSIDE availability)
- *
- * For testNoJobsAvailable_displaysEmptyState:
- *    Run: npm run clear-jobs
- *    This removes all jobs from the database
- *
- * 3. Test mover account must have availability set to:
- *    Monday-Friday: 09:00-17:00
  *
  * Main Success Scenario:
  * 1. Mover clicks on "Find Jobs" on the navigation bar
@@ -47,7 +27,6 @@ class BrowseAndFilterJobsTest : FindJobsTestBase() {
      * Test: Main success scenario - Browse all jobs
      * Steps 1-2: Navigate to Find Jobs and verify job list is displayed
      *
-     * Prerequisites: Run `npm run seed-availability-test-jobs` to create 2 test jobs
      */
     @Test
     fun testBrowseAllJobs_displaysJobList() {
@@ -104,9 +83,6 @@ class BrowseAndFilterJobsTest : FindJobsTestBase() {
      * Test: Toggle filter between "Show All" and "Within Availability"
      * Steps 3-4: Test the availability filter toggle functionality
      *
-     * Prerequisites: Run `npm run seed-availability-test-jobs` to create 2 test jobs:
-     * - Job 1: Monday 10:00 AM - WITHIN availability (Monday-Friday 09:00-17:00)
-     * - Job 2: Saturday 11:00 AM - OUTSIDE availability (weekend)
      */
     @Test
     fun testFilterByAvailability_displaysFilteredJobs() {
@@ -179,7 +155,7 @@ class BrowseAndFilterJobsTest : FindJobsTestBase() {
         // Should show only 1 job (Monday 10:00)
         composeTestRule.onAllNodesWithTag("job_card").assertCountEquals(1)
 
-        //go to availability screen and remove availability to clean up
+        // Cleanup: Remove availability
         composeTestRule.onNodeWithText("Availability").performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithTag("delete_time_slot_MONDAY_08:00").performClick()
@@ -199,13 +175,11 @@ class BrowseAndFilterJobsTest : FindJobsTestBase() {
         composeTestRule.waitForIdle()
 
         Thread.sleep(2000) // Give backend time to persist
-
     }
 
     /**
      * Failure Scenario 2a: No unassigned jobs exist
-     *
-     * Prerequisites: Run `npm run clear-jobs` to remove all jobs from database
+     * Failure Scenario 4a: No jobs exist within mover's availability
      */
     @Test
     fun testNoJobsAvailable_displaysEmptyState() {
@@ -229,14 +203,35 @@ class BrowseAndFilterJobsTest : FindJobsTestBase() {
 
         // Step 1: Navigate to Find Jobs
         composeTestRule.onNodeWithText("Find Jobs").performClick()
-        
-        // Wait for the screen to load
         composeTestRule.waitForIdle()
 
         // Step 2a: No jobs available - Verify empty state message is displayed
         composeTestRule.onNodeWithText("No available jobs").assertIsDisplayed()
-        
+
         // Verify the job list is not displayed (no job cards exist)
+        composeTestRule.onAllNodesWithTag("job_card").assertCountEquals(0)
+
+        // Setup: Navigate to Profile and seed test jobs
+        composeTestRule.onNodeWithTag("ProfileButton").performClick()
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onNodeWithText("Seed Test Jobs (10)").performClick()
+        composeTestRule.waitForIdle()
+
+        Thread.sleep(2000)
+
+        // Navigate back to main screen
+        device.pressBack()
+        composeTestRule.waitForIdle()
+
+        // Toggle availability filter
+        composeTestRule.onNodeWithTag("availability_switch").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("Show All").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Within Availability").assertIsDisplayed()
+
+        // Step 4a: No jobs within availability - Verify empty state message is displayed and no jobs shown
+        composeTestRule.onNodeWithText("No available jobs within your availability").assertIsDisplayed()
         composeTestRule.onAllNodesWithTag("job_card").assertCountEquals(0)
     }
 }
