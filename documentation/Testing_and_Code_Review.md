@@ -61,7 +61,7 @@ _(Placeholder for Jest coverage screenshot both with and without mocking)_
 | **Non-Functional Requirement**  | **Location in Git**                              |
 | ------------------------------- | ------------------------------------------------ |
 | **Performance (Response Time)** | [`tests/nonfunctional/response_time.test.js`](#) |
-| **Chat Data Security**          | [`tests/nonfunctional/chat_security.test.js`](#) |
+| **UI Responsivness**     | [`frontend/app/src/androidTest/java/com/cpen321/usermanagement/performance/UIResponsivness/MoverUIResponseTimeTest.kt`](#) [`frontend/app/src/androidTest/java/com/cpen321/usermanagement/performance/UIResponsivness/StudentUIResponseTimeTest.kt`](#) |
 
 ### 3.2. Test Verification and Logs
 
@@ -73,11 +73,33 @@ _(Placeholder for Jest coverage screenshot both with and without mocking)_
       [Placeholder for response time test logs]
       ```
 
-- **Chat Data Security**
-    - **Verification:** ...
+- **UI Responsivness**
+    - **Verification:** This test suite evaluates the responsiveness of core UI components that operate independently of API calls, focusing purely on client-side interactions. The goal is to ensure that user actions trigger visible state changes within 0.1 seconds, maintaining a seamless experience. For the Mover interface, tests cover interactions such as navigating to the Find Jobs screen, updating Availability, and clicking the Get Optimal Route button. For the Student interface, tests include actions like clicking Create New Order or editing the profile, verifying that UI feedback occurs within the defined responsiveness threshold.
+
+   - **Running the Tests:**
+  1. Create a **Mover** or **Student** account.  
+  2. When prompted, enter text for the **bio** field and click **Save**.  
+  3. Verify that only **one account** appears when clicking **Sign In**.  
+  4. Before switching between **Mover** and **Student** tests, **delete the existing account** and create a new one by repeating the steps above.  
+     - Avoid keeping both Mover and Student accounts saved simultaneously, as this may cause the test to sign in with the wrong account type (e.g., selecting a Mover account during a Student test), leading to test failures.
+    
+    *Note: Due to occasional UI flakiness, the test may need to be run up to three times before passing.*
+
+    
     - **Log Output**
+        
+      ***MoverUIResponseTimeTest.kt***
       ```
-      [Placeholder for chat security test logs]
+      Pixel 4 - 13 Tests 3/3 completed. (0 skipped) (0 failed)
+      Finished 3 tests on Pixel 4 - 13
+
+      BUILD SUCCESSFUL in 50s
+      ```
+      ***StudentUIResponseTimeTest.kt***
+      ```
+      Pixel 4 - 13 Tests 2/2 completed. (0 skipped) (0 failed) 
+      Finished 2 tests on Pixel 4 - 13
+      BUILD SUCCESSFUL in 3m 27s
       ```
 
 ---
