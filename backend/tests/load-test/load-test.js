@@ -8,38 +8,15 @@ const postOrderLatency = new Trend('post_order_latency');
 const getAvailableJobsLatency = new Trend('get_available_jobs_latency');
 
 // test config
-// export const options = {
-//   stages: [
-//     // gradually increase load over 2 minutes
-//     { duration: '1m', target: 200 }, // ramp to 200 users in 1 minute
-//     { duration: '1m', target: 400 }, // Ramp to 400 users in another minute
-//     { duration: '3m', target: 400 }, // hold at 400 users for 3 minutes
-//     // gradually decrease load over 2 minutes
-//     { duration: '1m', target: 200 }, // down to 200 users
-//     { duration: '1m', target: 0 }, // down to 0 users
-//   ],
-//   thresholds: {
-//     // 90th percentile latency must be below 800ms for each endpoint
-//     'http_req_duration{name:POST /api/order}': ['p(90)<800'],
-//     'http_req_duration{name:GET /api/jobs/available}': ['p(90)<800'],
-//     // overall error rate must be below 1%
-//     errors: ['rate<0.01'],
-//     // HTTP errors should be less than 1%
-//     'http_req_failed': ['rate<0.01'],
-//     // check if 95% of requests complete within 800ms
-//     'http_req_duration': ['p(90)<800'],
-//   },
-// };
-
-
-// test config
 export const options = {
-   stages: [
-    { duration: '30s', target: 10 },  // ramp up to 10 users
-    { duration: '1m', target: 20 },   // ramp up to 20 users
-    { duration: '1m', target: 20 },   // hold at 20 users
-    { duration: '30s', target: 10 },  // ramp down to 10 users
-    { duration: '30s', target: 0 },   // ramp down to 0 users
+  stages: [
+    // gradually increase load over 2 minutes
+    { duration: '1m', target: 200 }, // ramp to 200 users in 1 minute
+    { duration: '1m', target: 400 }, // Ramp to 400 users in another minute
+    { duration: '3m', target: 400 }, // hold at 400 users for 3 minutes
+    // gradually decrease load over 2 minutes
+    { duration: '1m', target: 200 }, // down to 200 users
+    { duration: '1m', target: 0 }, // down to 0 users
   ],
   thresholds: {
     // 90th percentile latency must be below 800ms for each endpoint
@@ -49,12 +26,13 @@ export const options = {
     errors: ['rate<0.01'],
     // HTTP errors should be less than 1%
     'http_req_failed': ['rate<0.01'],
-    // check if 95% of requests complete within 800ms
+    // check if 90% of requests complete within 800ms
     'http_req_duration': ['p(90)<800'],
   },
 };
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
+
+const BASE_URL = "http://ec2-44-254-94-195.us-west-2.compute.amazonaws.com"
 
 console.log(`Using BASE_URL: ${BASE_URL}`);
 
