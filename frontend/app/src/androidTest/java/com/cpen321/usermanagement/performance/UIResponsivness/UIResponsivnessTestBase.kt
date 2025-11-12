@@ -106,7 +106,7 @@ abstract class UIResponsivnessTestBase {
     fun resetToHome() {
         try {
             repeat(5) {
-                val isHomeScreen = composeTestRule.onAllNodesWithText("Create New Order", useUnmergedTree = true)
+                val isHomeScreen = composeTestRule.onAllNodesWithText("DormDash", useUnmergedTree = true)
                     .fetchSemanticsNodes().isNotEmpty()
 
                 if (isHomeScreen) return
@@ -117,7 +117,7 @@ abstract class UIResponsivnessTestBase {
 
             // Final verification — wait up to 3 seconds for "Your orders" to appear
             composeTestRule.waitUntil(timeoutMillis = 3000) {
-                composeTestRule.onAllNodesWithText("Create New Order", useUnmergedTree = true)
+                composeTestRule.onAllNodesWithText("DormDash", useUnmergedTree = true)
                     .fetchSemanticsNodes().isNotEmpty()
             }
 
