@@ -535,6 +535,50 @@ describe('POST /api/auth/select-role - Select User Role (Mocked)', () => {
     // Restore original method
     userModel.update = originalUpdate;
   });
+
+  test('should return 401 when req.user is undefined', async () => {
+    // Mock userModel.findById to return null, simulating user not found
+    const originalFindById = userModel.findById;
+    userModel.findById = (jest.fn() as any).mockResolvedValue(null) as any;
+
+    try {
+      const response = await request(app)
+        .post('/api/auth/select-role')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ userRole: 'STUDENT' });
+
+      // Auth middleware returns 401 when user not found, which means req.user is undefined
+      expect(response.status).toBe(401);
+      expect(response.body.message).toBe('Token is valid but user no longer exists');
+    } finally {
+      userModel.findById = originalFindById;
+    }
+  });
+
+  test('should return 401 when req.user exists but has no _id', async () => {
+    // Mock userModel.findById to return a user without _id
+    const originalFindById = userModel.findById;
+    userModel.findById = (jest.fn() as any).mockResolvedValue({
+      googleId: 'test-google-id',
+      email: 'test@example.com',
+      name: 'Test User',
+      userRole: 'STUDENT',
+      // _id is missing/undefined
+    }) as any;
+
+    try {
+      const response = await request(app)
+        .post('/api/auth/select-role')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ userRole: 'STUDENT' });
+
+      // Controller checks for !user._id and returns 401
+      expect(response.status).toBe(401);
+      expect(response.body.message).toBe('Authentication required');
+    } finally {
+      userModel.findById = originalFindById;
+    }
+  });
 });
 
 describe('UserModel Error Handling - Lines 160-161, 173-209', () => {
