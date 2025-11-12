@@ -78,11 +78,6 @@ afterAll(async () => {
 });
 
 describe('POST /api/auth/signup - Sign Up with Google', () => {
-    test('should successfully sign up a new user with valid Google token', async () => {
-        // This would require a real Google token - skipping for now
-        // Integration tests would require mocking Google OAuth
-    });
-
     test('should return 401 for invalid Google token', async () => {
         const response = await request(app)
             .post('/api/auth/signup')
@@ -92,11 +87,6 @@ describe('POST /api/auth/signup - Sign Up with Google', () => {
         expect(response.body.message).toBe('Invalid Google token');
     });
 
-    test('should return 409 if user already exists', async () => {
-        // This would require a real Google token that matches an existing user
-        // Integration tests would require mocking Google OAuth
-    });
-
     test('should return 400 for missing idToken', async () => {
         const response = await request(app)
             .post('/api/auth/signup')
@@ -104,14 +94,17 @@ describe('POST /api/auth/signup - Sign Up with Google', () => {
 
         expect(response.status).toBe(400);
     });
+
+    test('should return 400 for invalid idToken type', async () => {
+        const response = await request(app)
+            .post('/api/auth/signup')
+            .send({ idToken: 12345 });
+
+        expect(response.status).toBe(400);
+    });
 });
 
 describe('POST /api/auth/signin - Sign In with Google', () => {
-    test('should successfully sign in an existing user with valid Google token', async () => {
-        // This would require a real Google token - skipping for now
-        // Integration tests would require mocking Google OAuth
-    });
-
     test('should return 401 for invalid Google token', async () => {
         const response = await request(app)
             .post('/api/auth/signin')
@@ -121,15 +114,18 @@ describe('POST /api/auth/signin - Sign In with Google', () => {
         expect(response.body.message).toBe('Invalid Google token');
     });
 
-    test('should return 404 if user does not exist', async () => {
-        // This would require a valid Google token for non-existent user
-        // Integration tests would require mocking Google OAuth
-    });
-
     test('should return 400 for missing idToken', async () => {
         const response = await request(app)
             .post('/api/auth/signin')
             .send({});
+
+        expect(response.status).toBe(400);
+    });
+
+    test('should return 400 for invalid idToken type', async () => {
+        const response = await request(app)
+            .post('/api/auth/signin')
+            .send({ idToken: { invalid: 'object' } });
 
         expect(response.status).toBe(400);
     });
