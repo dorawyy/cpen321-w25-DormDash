@@ -30,6 +30,10 @@ const mockJobService: any = {
     getAllAvailableJobs: jest.fn(),
 };
 
+const mockExtractObjectId = jest.fn();
+const mockExtractObjectIdString = jest.fn();
+const mockIsValidObjectId = jest.fn();
+
 // Mock all external dependencies
 jest.mock('../../src/models/user.model', () => ({
     userModel: mockUserModel,
@@ -37,6 +41,12 @@ jest.mock('../../src/models/user.model', () => ({
 
 jest.mock('../../src/services/job.service', () => ({
     jobService: mockJobService,
+}));
+
+jest.mock('../../src/utils/mongoose.util', () => ({
+    extractObjectId: mockExtractObjectId,
+    extractObjectIdString: mockExtractObjectIdString,
+    isValidObjectId: mockIsValidObjectId,
 }));
 
 // Import app after mocking dependencies (but NOT the service itself)
@@ -48,6 +58,12 @@ describe('GET /api/routePlanner/smart - Get Smart Route', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        
+        // Set default return values for mongoose util mocks
+        mockExtractObjectId.mockReturnValue(testMoverId);
+        mockExtractObjectIdString.mockReturnValue(testMoverId.toString());
+        mockIsValidObjectId.mockReturnValue(true);
+        
         // Set default mock user in auth middleware
         const authMiddleware = require('../../src/middleware/auth.middleware');
         authMiddleware.authenticateToken = (req: any, res: any, next: any) => {
@@ -1425,4 +1441,106 @@ describe('GET /api/routePlanner/smart - Get Smart Route', () => {
         expect(response.body).toHaveProperty('data');
         expect(Array.isArray(response.body.data.route)).toBe(true);
     });
+
+    test('should handle extractObjectId returning null for invalid moverId', async () => {
+        // Mock extractObjectId to return null (simulating invalid ObjectId format)
+        mockExtractObjectId.mockReturnValueOnce(null);
+
+        // Mock userModel and jobService (shouldn't be reached)
+        mockUserModel.findById.mockResolvedValue({
+            _id: testMoverId,
+            availability: { MON: [['09:00', '17:00']] },
+        });
+        mockJobService.getAllAvailableJobs.mockResolvedValue({
+            message: 'Available jobs retrieved successfully',
+            data: { jobs: [] },
+        });
+
+        const response = await request(app)
+            .get('/api/routePlanner/smart')
+            .query({
+                currentLat: testLocation.lat,
+                currentLon: testLocation.lon,
+            })
+            .set('Authorization', `Bearer fake-token`)
+            .expect(200);
+
+        // Should return empty route when extractObjectId returns null
+        expect(response.body).toHaveProperty('data');
+        expect(response.body.data).toMatchObject({
+            route: [],
+            metrics: {
+                totalDistance: 0,
+                totalEarnings: 0,
+            },
+            startLocation: {
+                lat: testLocation.lat,
+                lon: testLocation.lon,
+            },
+        });
+        
+        // Verify userModel.findById was NOT called since extractObjectId returned null
+        expect(mockUserModel.findById).not.toHaveBeenCalled();
+    });
+
+    test('should handle invalid day number to trigger default cases in convertToDayOfWeek', async () => {
+        const mockMover = {
+            _id: testMoverId,
+            availability: {
+                SUN: [['09:00', '17:00']], // Sunday availability (will be returned by default case)
+            },
+        };
+        
+        // Save original Date.prototype.getDay
+        const originalGetDay = Date.prototype.getDay;
+        
+        // Mock Date.prototype.getDay to return an invalid day number (7)
+        // This will trigger the default case in convertToDayOfWeek (line 525) which returns 'SUN'
+        Date.prototype.getDay = jest.fn().mockReturnValue(7) as any;
+        
+        const mockJobs = [
+            {
+                id: new mongoose.Types.ObjectId().toString(),
+                orderId: new mongoose.Types.ObjectId().toString(),  
+                studentId: new mongoose.Types.ObjectId().toString(),
+                jobType: 'STORAGE',
+                status: 'AVAILABLE',
+                volume: 1,
+                price: 50,
+                pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+                dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+                scheduledTime: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            },
+        ];
+        
+        mockUserModel.findById.mockResolvedValue(mockMover);
+        mockJobService.getAllAvailableJobs.mockResolvedValue({
+            message: 'Available jobs retrieved successfully',
+            data: { jobs: mockJobs },
+        });
+        
+        const response = await request(app)
+            .get('/api/routePlanner/smart')
+            .query({
+                currentLat: testLocation.lat,
+                currentLon: testLocation.lon,
+            })
+            .set('Authorization', `Bearer fake-token`)
+            .expect(200);
+        
+        // The default case returns 'SUN', so if mover has SUN availability, job may be accepted
+        // Verify the response is valid
+        expect(response.body).toHaveProperty('data');
+        expect(Array.isArray(response.body.data.route)).toBe(true);
+        
+        // Verify Date.prototype.getDay was called
+        expect(Date.prototype.getDay).toHaveBeenCalled();
+        
+        // Restore original Date.prototype.getDay
+        Date.prototype.getDay = originalGetDay;
+    });
+
+    
 });
