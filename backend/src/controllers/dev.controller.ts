@@ -24,8 +24,8 @@ export class DevController {
         env: process.env
       });
       
-      console.log('Seed jobs script output:', stdout);
-      if (stderr) console.log('Seed jobs script stderr:', stderr);
+      //console.log('Seed jobs script output:', stdout);
+      //if (stderr) console.log('Seed jobs script stderr:', stderr);
       
       res.status(200).json({
         success: true,
@@ -33,7 +33,7 @@ export class DevController {
         output: stdout
       });
     } catch (error) {
-      console.log('Error running seed-test-jobs script:', error);
+      //console.log('Error running seed-test-jobs script:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to seed test jobs'
@@ -54,8 +54,8 @@ export class DevController {
         env: process.env
       });
       
-      console.log('Seed availability test jobs script output:', stdout);
-      if (stderr) console.log('Seed availability test jobs script stderr:', stderr);
+      //console.log('Seed availability test jobs script output:', stdout);
+      //if (stderr) console.log('Seed availability test jobs script stderr:', stderr);
       
       res.status(200).json({
         success: true,
@@ -63,7 +63,7 @@ export class DevController {
         output: stdout
       });
     } catch (error) {
-      console.log('Error running seed-availability-test-jobs script:', error);
+      //console.log('Error running seed-availability-test-jobs script:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to seed availability test jobs',
@@ -84,8 +84,8 @@ export class DevController {
         env: process.env
       });
       
-      console.log('Clear jobs script output:', stdout);
-      if (stderr) console.log('Clear jobs script stderr:', stderr);
+      //console.log('Clear jobs script output:', stdout);
+      //if (stderr) console.log('Clear jobs script stderr:', stderr);
       
       res.status(200).json({
         success: true,
@@ -93,7 +93,7 @@ export class DevController {
         output: stdout
       });
     } catch (error) {
-      console.log('Error running clear-jobs script:', error);
+      //console.log('Error running clear-jobs script:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to clear jobs',
