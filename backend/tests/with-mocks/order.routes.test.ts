@@ -394,13 +394,15 @@ describe('POST /api/order - Create Order (Mocked)', () => {
     expect(mockOrderModel.findByIdempotencyKey).toHaveBeenCalledWith('test-key-123');
   });
 
-  test('should handle order creation validation errors', async () => {
+  test('should handle order creation validation errors with invalid studentId', async () => {
+    // Test the Zod validation for invalid student ID
+    // The createOrderSchema uses mongoose.isValidObjectId(val) which should fail for 'invalid-id'
     const response = await request(app)
       .post('/api/order')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
-        studentId: 'invalid-id',
-        volume: -1, // Invalid volume
+        studentId: 'not-a-valid-mongodb-objectid', // Invalid ObjectId - triggers Zod refine validation
+        volume: 2.5,
         totalPrice: 150.0,
         studentAddress: {
           lat: 49.2606,
@@ -412,11 +414,43 @@ describe('POST /api/order - Create Order (Mocked)', () => {
           lon: -123.1207,
           formattedAddress: '123 Warehouse St, Vancouver, BC'
         },
-        pickupTime: 'invalid-date',
+        pickupTime: '2025-11-10T10:00:00.000Z',
         returnTime: '2025-11-15T10:00:00.000Z'
       })
-      .expect(500);
+      .expect(400);
 
+    // Verify the error response contains validation details
+    expect(response.body).toHaveProperty('error', 'Validation error');
+    expect(response.body).toHaveProperty('details');
+    expect(response.body.details[0]).toHaveProperty('field', 'studentId');
+    expect(response.body.details[0]).toHaveProperty('message', 'Invalid student ID');
+    expect(mockOrderModel.create).not.toHaveBeenCalled();
+  });
+
+  test('should handle order creation validation errors with negative volume', async () => {
+    const response = await request(app)
+      .post('/api/order')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        studentId: testUserId.toString(),
+        volume: -1, // Invalid negative volume
+        totalPrice: 150.0,
+        studentAddress: {
+          lat: 49.2606,
+          lon: -123.1133,
+          formattedAddress: '123 Student Ave, Vancouver, BC'
+        },
+        warehouseAddress: {
+          lat: 49.2827,
+          lon: -123.1207,
+          formattedAddress: '123 Warehouse St, Vancouver, BC'
+        },
+        pickupTime: '2025-11-10T10:00:00.000Z',
+        returnTime: '2025-11-15T10:00:00.000Z'
+      })
+      .expect(400);
+
+    expect(response.body).toHaveProperty('error', 'Validation error');
     expect(mockOrderModel.create).not.toHaveBeenCalled();
   });
 
