@@ -24,10 +24,10 @@ router.use('/payment', authenticateToken, paymentRoutes);
 
 router.use('/routePlanner', authenticateToken, routePlannerRoutes);
 
-// Load test endpoints (no authentication required - use with caution in production)
+// Load test endpoints (no authentication required - use with caution)
 router.use('/load-test', loadTestRoutes);
 
-// Development/testing routes (no auth for easier testing)
+// E2E tests endpoints (no authentication required - use with caution)
 router.use('/dev', devRoutes);
 
 export default router;
