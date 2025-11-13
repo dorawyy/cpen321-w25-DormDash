@@ -49,7 +49,7 @@
 
 #### 2.1.2. Commit Hash Where Tests Run
 
-`[Insert Commit SHA here]`
+`deb761996260ef597203cf65d2f5bd474ca74bc4`
 
 #### 2.1.3. Explanation on How to Run the Tests
 
@@ -560,7 +560,7 @@ Notification. Service: The branches that are not covered are defensive checks to
 
 ### 5.1. Commit Hash Where Codacy Ran
 
-`[e4c2b4cd3933df38dc5398dd0fba0305d02f241f]`
+`4a3c52bb44685d50ef99052dcdda729e25068bc2`
 
 ### 5.2. Unfixed Issues per Codacy Category
 
