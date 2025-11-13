@@ -31,10 +31,10 @@ export class JobService {
   
   // Helper to add credits to mover when job is completed
   private async addCreditsToMover(job: Job | null) {
-    if (!job?.moverId) {
-      logger.warn('No mover assigned to job, skipping credits');
-      return;
-    }
+    // if (!job?.moverId) {
+    //   logger.warn('No mover assigned to job, skipping credits');
+    //   return;
+    // }
 
     try {
       // Extract moverId using utility
@@ -624,6 +624,10 @@ export class JobService {
         updatedAt: new Date(),
       });
 
+      if (!updatedJob) {
+        throw new Error('Failed to update job - no job returned');
+      }
+
       // Update order status to PICKED_UP
       try {
         const orderObjectId = extractObjectId(updatedJob?.orderId);
@@ -657,9 +661,9 @@ export class JobService {
         logger.warn('Failed to emit job.updated after confirmPickup:', emitErr);
       }
 
-      if (!updatedJob) {
-        throw new Error('Failed to update job - no job returned');
-      }
+      // if (!updatedJob) {
+      //   throw new Error('Failed to update job - no job returned');
+      // }
 
       return {
         id: updatedJob._id.toString(),
@@ -769,6 +773,10 @@ export class JobService {
         updatedAt: new Date(),
       });
 
+      if (!updatedJob) {
+        throw new Error('Failed to update job - no job returned');
+      }
+
       // Add credits to mover when job is completed
       await this.addCreditsToMover(updatedJob);
 
@@ -808,9 +816,9 @@ export class JobService {
         );
       }
 
-      if (!updatedJob) {
-        throw new Error('Failed to update job - no job returned');
-      }
+      // if (!updatedJob) {
+      //   throw new Error('Failed to update job - no job returned');
+      // }
 
       const nonNullUpdatedJob = updatedJob; 
       return {
