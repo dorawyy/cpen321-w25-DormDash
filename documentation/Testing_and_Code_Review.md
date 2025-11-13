@@ -119,6 +119,12 @@
 
 ![Jest with all tests](images/jest-all-tests.png)
 
+Justification:
+dev.controller.ts: This is used for E2E testing the FindJob feature, so is exempt from coverage.                   
+loadTest.controller.ts: This is used for testing non-functional requirements, so is exempt from coverage.   
+database.ts: These lines are used as error handlers, for shutting down the server of the mongo db connection, so are not executable through endpoints.
+auth.middleware.ts:  The try-catch block inside the IIFE catches ALL errors that occur within the async function
+Notification. Service: The branches that are not covered are defensive checks to ensure that unexpected errors are handled correctly
 ---
 
 ## 3. Back-end Test Specification: Tests of Non-Functional Requirements
