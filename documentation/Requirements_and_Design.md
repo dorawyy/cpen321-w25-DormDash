@@ -361,7 +361,7 @@ DormDash provides a complete, stress-free solution. Through an Uber-like app, st
         4. `Int estimateJobDuration(double volume) `
             - **Purpose**: Estimates job duration based on item volume using formula. Returns duration in minutes.
         5. `JobInRoute[] buildOptimalRoute(JobWithValue[] jobs, Location startLocation, DayAvailability availability, Integer maxDuration)`
-            - **Purpose**: Greedy algorithm that iteratively selects the best job to add to the route based on value and distance. Stops when maxDuration is reached or no more jobs fit within the availability. Returns ordered list of jobs with travel details.
+            - **Purpose**: Greedy algorithm that iteratively selects the best job to add to the route based on value and distance. Stops when maxDuration is reached or no more jobs fit within the availability. Returns ordered list of jobs with travel 				details.
         6. `AssignmentResult acceptSuggestedRoute(String moverId, String suggestedRouteId, String[] acceptedJobIds)`
             - **Purpose**: Assigns selected jobs from suggested route to mover; atomically accepts jobs and returns AssignmentResult which includes successfully accepted jobs and any that were already taken by other movers.
 
@@ -483,4 +483,5 @@ DormDash provides a complete, stress-free solution. Through an Uber-like app, st
 2. [**[UI Response Time]**](#nfr2)
 
     - **Validation**: The Android frontend uses Jetpack Compose with local, immediate UI state updates so interactions that don’t require a backend round-trip (box counters, date/time pickers, form input) update instantly on-device while network calls are performed asynchronously via the app’s repository/services layer, keeping core UI feedback below the 0.1s perceptual target
+
 
