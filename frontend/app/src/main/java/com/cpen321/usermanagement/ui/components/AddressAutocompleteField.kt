@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import com.cpen321.usermanagement.BuildConfig
@@ -115,12 +116,12 @@ private fun AddressAutocompleteContent(
     controller: AutocompleteController,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier) {
+    Column(modifier = Modifier) {
         AddressTextField(
             value = value,
             onValueChange = controller.onValueChange,
             isLoading = isLoading,
-            modifier = Modifier.fillMaxWidth()
+            modifier = modifier.fillMaxWidth()
         )
 
         if (showSuggestions && suggestions.isNotEmpty()) {
@@ -282,6 +283,7 @@ private fun AddressSuggestionItem(
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp)
+            .testTag("address_suggestion_item")
     ) {
         Icon(
             imageVector = Icons.Default.LocationOn,
@@ -293,13 +295,15 @@ private fun AddressSuggestionItem(
             Text(
                 text = suggestion.primaryText,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.testTag("suggestion_primary_text")
             )
             if (suggestion.secondaryText.isNotEmpty()) {
                 Text(
                     text = suggestion.secondaryText,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.testTag("suggestion_secondary_text")
                 )
             }
         }

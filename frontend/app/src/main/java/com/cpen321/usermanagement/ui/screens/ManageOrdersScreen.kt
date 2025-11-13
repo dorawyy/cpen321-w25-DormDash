@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.cpen321.usermanagement.data.local.models.Order
@@ -242,7 +243,8 @@ fun OrderListItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 4.dp)
+            .testTag("order_list_item_${order.status.name}"),
         elevation = CardDefaults.cardElevation(2.dp),
         onClick = { onManageOrderClick(order) }
     ) {
@@ -430,7 +432,8 @@ private fun CancelOrderButton(
         },
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp),
+            .padding(top = 8.dp)
+            .testTag("cancel_order_button"),
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.error
         )

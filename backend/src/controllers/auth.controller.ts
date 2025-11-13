@@ -100,11 +100,14 @@ export class AuthController {
     next: NextFunction
   ) {
     try {
-      if (!req.user) {
-        return res.status(401).json({ message: 'User not authenticated' });
-      }
       const user = req.user;
       const { userRole } = req.body;
+
+      if (!user || !user._id) {
+        return res.status(401).json({
+          message: 'Authentication required',
+        });
+      }
 
       // Initialize credits to 0 when selecting MOVER role
       const updateData: Partial<IUser> = { userRole };
@@ -129,7 +132,7 @@ export class AuthController {
 
       if (error instanceof Error) {
         return res.status(500).json({
-          message: error.message || 'Failed to select role',
+          message: error.message ,
         });
       }
 

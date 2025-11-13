@@ -97,15 +97,6 @@ export class OrderModel {
     }
   }
 
-  async findById(orderId: mongoose.Types.ObjectId): Promise<Order | null> {
-    try {
-      return await this.order.findById(orderId);
-    } catch (error) {
-      logger.error('Error finding order:', error);
-      throw new Error('Failed to find order');
-    }
-  }
-
   async findActiveOrder(filter: {
     studentId: ObjectId | undefined;
     status: { $in: OrderStatus[] };
@@ -147,14 +138,8 @@ export class OrderModel {
     }
   }
 
-  async delete(orderId: mongoose.Types.ObjectId): Promise<void> {
-    try {
-      await this.order.findByIdAndDelete(orderId);
-    } catch (error) {
-      logger.error('Error deleting order:', error);
-      throw new Error('Failed to delete order');
-    }
-  }
+
+
 }
 
 export const orderModel = new OrderModel();
