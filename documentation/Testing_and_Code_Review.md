@@ -554,3 +554,6 @@ _Figure: Codacy Issues Page, per category_
 
         - **Location in Git:** [`backend/src/config/database.ts#L9`](https://github.com/Dormdash-CPEN321/DormDash/blob/ee50449596bc9711fcc12f09662c9cebb66b9a0d/backend/src/config/database.ts#L9)
         - **Justification:** false positive, the solution says to add an error listener, however the error is on an error handler.
+
+    Justification for not pursuing fixes any long: 'Steve McConnell, Code Complete: “Industry average is about 15 - 50 errors per
+1000 lines of delivered code.”' Our code has a KLoc of 0.43, which is much higher than industry standard.
