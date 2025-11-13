@@ -16,10 +16,36 @@
 
 | **Interface**                 | **Describe Group Location, No Mocks**                | **Describe Group Location, With Mocks**            | **Mocked Components**              |
 | ----------------------------- | ---------------------------------------------------- | -------------------------------------------------- | ---------------------------------- |
-| **POST /user/login**          | [`tests/unmocked/authenticationLogin.test.js#L1`](#) | [`tests/mocked/authenticationLogin.test.js#L1`](#) | Google Authentication API, User DB |
-| **POST /study-groups/create** | ...                                                  | ...                                                | Study Group DB                     |
-| ...                           | ...                                                  | ...                                                | ...                                |
-| ...                           | ...                                                  | ...                                                | ...                                |
+| **POST /api/auth/signup**        | [`backend/tests/no-mocks/auth.routes.test.ts#L80`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/auth.routes.test.ts#L80)| [`backend/tests/with-mocks/auth.routes.test.ts#L97`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/auth.routes.test.ts#L97) | OAuth2Client (Google Auth Library) |
+| **POST /api/auth/signin** | [`backend/tests/no-mocks/auth.routes.test.ts#L107`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/auth.routes.test.ts#L107) | [`backend/tests/with-mocks/auth.routes.test.ts#L494`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/auth.routes.test.ts#L494) | OAuth2Client (Google Auth Library) |
+| **POST /api/auth/select-role** | [`backend/tests/no-mocks/auth.routes.test.ts#L134`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/auth.routes.test.ts#L134)| [`backend/tests/with-mocks/auth.routes.test.ts#L693`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/auth.routes.test.ts#L693) | None (uses real DB) |
+| **POST /api/jobs** | [`backend/tests/no-mocks/jobs.routes.test.ts#L81`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/jobs.routes.test.ts#L81) | [`backend/tests/with-mocks/jobs.routes.test.ts#L95`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/jobs.routes.test.ts#L95) | Database Connection, Auth Middleware, Job Model, Order Service, Notification Service, Event Emitter, Job Mapper, User Model |
+| **GET /api/jobs** | [`backend/tests/no-mocks/jobs.routes.test.ts#L278`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/jobs.routes.test.ts#L278) | [`backend/tests/with-mocks/jobs.routes.test.ts#L266`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/jobs.routes.test.ts#L266) | Database Connection, Auth Middleware, Job Model, Job Mapper |
+| **GET /api/jobs/available** | [`backend/tests/no-mocks/jobs.routes.test.ts#L331`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/jobs.routes.test.ts#L331) | [`backend/tests/with-mocks/jobs.routes.test.ts#L323`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/jobs.routes.test.ts#L323) | Database Connection, Auth Middleware, Job Model, Job Mapper |
+| **GET /api/jobs/mover** | [`backend/tests/no-mocks/jobs.routes.test.ts#L376`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/jobs.routes.test.ts#L376) | [`backend/tests/with-mocks/jobs.routes.test.ts#L369`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/jobs.routes.test.ts#L369) | Database Connection, Auth Middleware, Job Model, Job Mapper |
+| **GET /api/jobs/student** | [`backend/tests/no-mocks/jobs.routes.test.ts#L438`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/jobs.routes.test.ts#L438) | [`backend/tests/with-mocks/jobs.routes.test.ts#L434`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/jobs.routes.test.ts#L434) | Database Connection, Auth Middleware, Job Model, Job Mapper |
+| **GET /api/jobs/:id** | [`backend/tests/no-mocks/jobs.routes.test.ts#L498`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/jobs.routes.test.ts#L498) | [`backend/tests/with-mocks/jobs.routes.test.ts#L499`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/jobs.routes.test.ts#L499) | Database Connection, Auth Middleware, Job Model |
+| **PATCH /api/jobs/:id/status** | [`backend/tests/no-mocks/jobs.routes.test.ts#L541`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/jobs.routes.test.ts#L541) | [`backend/tests/with-mocks/jobs.routes.test.ts#L675`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/jobs.routes.test.ts#L675) | Database Connection, Auth Middleware, Job Model, Order Service, Notification Service, Event Emitter, User Model |
+| **POST /api/jobs/:id/arrived** | [`backend/tests/no-mocks/jobs.routes.test.ts#L771`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/jobs.routes.test.ts#L771) | [`backend/tests/with-mocks/jobs.routes.test.ts#L1250`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/jobs.routes.test.ts#L1250) | Database Connection, Auth Middleware, Job Model, Order Service, Notification Service, Event Emitter, User Model |
+| **POST /api/jobs/:id/confirm-pickup** | [`backend/tests/no-mocks/jobs.routes.test.ts#L873`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/jobs.routes.test.ts#L873) | [`backend/tests/with-mocks/jobs.routes.test.ts#L1359`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/jobs.routes.test.ts#L1359) | Database Connection, Auth Middleware, Job Model, Order Service, Notification Service, Event Emitter, User Model |
+| **POST /api/jobs/:id/delivered** | [`backend/tests/no-mocks/jobs.routes.test.ts#L1040`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/jobs.routes.test.ts#L1040) | [`backend/tests/with-mocks/jobs.routes.test.ts#L1532`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/jobs.routes.test.ts#L1532) | Database Connection, Auth Middleware, Job Model, Order Service, Notification Service, Event Emitter, User Model |
+| **POST /api/jobs/:id/confirm-delivery** | [`backend/tests/no-mocks/jobs.routes.test.ts#L1189`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/jobs.routes.test.ts#L1189) | [`backend/tests/with-mocks/jobs.routes.test.ts#L1641`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/jobs.routes.test.ts#L1641) | Database Connection, Auth Middleware, Job Model, Order Service, Notification Service, Event Emitter, User Model |
+| **POST /api/order/quote** | [`backend/tests/no-mocks/order.routes.test.ts#L68`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/order.routes.test.ts#L68) | [`backend/tests/with-mocks/order.routes.test.ts#L149`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/order.routes.test.ts#L149) | Socket.io, Job Service, Payment Service, Stripe Service, Order Model, Job Model, Event Emitter |
+| **POST /api/order** | [`backend/tests/no-mocks/order.routes.test.ts#L122`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/order.routes.test.ts#L122) | [`backend/tests/with-mocks/order.routes.test.ts#L259`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/order.routes.test.ts#L259) | Socket.io, Job Service, Payment Service, Stripe Service, Order Model, Job Model, Event Emitter |
+| **POST /api/order/create-return-Job** | [`backend/tests/no-mocks/order.routes.test.ts#L230`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/order.routes.test.ts#L230) | [`backend/tests/with-mocks/order.routes.test.ts#L901`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/order.routes.test.ts#L901) | Socket.io, Job Service, Payment Service, Stripe Service, Order Model, Job Model, Event Emitter |
+| **GET /api/order/all-orders** | [`backend/tests/no-mocks/order.routes.test.ts#L441`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/order.routes.test.ts#L441) | [`backend/tests/with-mocks/order.routes.test.ts#L1502`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/order.routes.test.ts#L1502) | Socket.io, Job Service, Payment Service, Stripe Service, Order Model, Job Model, Event Emitter |
+| **GET /api/order/active-order** | [`backend/tests/no-mocks/order.routes.test.ts#L542`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/order.routes.test.ts#L542) | [`backend/tests/with-mocks/order.routes.test.ts#L1764`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/order.routes.test.ts#L1764) | Socket.io, Job Service, Payment Service, Stripe Service, Order Model, Job Model, Event Emitter |
+| **DELETE /api/order/cancel-order** | [`backend/tests/no-mocks/order.routes.test.ts#L667`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/order.routes.test.ts#L667) | [`backend/tests/with-mocks/order.routes.test.ts#L1901`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/order.routes.test.ts#L1901) | Socket.io, Job Service, Payment Service, Stripe Service, Order Model, Job Model, Event Emitter |
+| **POST /api/payment/create-intent** | [`backend/tests/no-mocks/payment.routes.test.ts#L85`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/payment.routes.test.ts#L85) | [`backend/tests/with-mocks/payment.routes.test.ts#L96`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/payment.routes.test.ts#L96) | Socket.io, Stripe Service |
+| **POST /api/payment/process** | [`backend/tests/no-mocks/payment.routes.test.ts#L153`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/payment.routes.test.ts#L153) | [`backend/tests/with-mocks/payment.routes.test.ts#L219`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/payment.routes.test.ts#L219) | Socket.io, Stripe Service |
+| **GET /api/payment/status/:paymentIntentId** | [`backend/tests/no-mocks/payment.routes.test.ts#L194`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/payment.routes.test.ts#L194) | N/A | N/A |
+| **GET /api/routePlanner/smart** | [`backend/tests/no-mocks/routePlanner.routes.test.ts#L82`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/routePlanner.routes.test.ts#L82) | [`backend/tests/with-mocks/routePlanner.routes.test.ts#L55`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/routePlanner.routes.test.ts#L55) | Database Connection, Auth Middleware, User Model, Job Service, Mongoose Utils |
+| **GET /api/user/profile** | [`backend/tests/no-mocks/user.routes.test.ts#L84`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/user.routes.test.ts#L84) | [`backend/tests/with-mocks/user.routes.test.ts#L99`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/user.routes.test.ts#L99) | None (uses real DB) |
+| **POST /api/user/profile** | [`backend/tests/no-mocks/user.routes.test.ts#L112`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/user.routes.test.ts#L112) | [`backend/tests/with-mocks/user.routes.test.ts#L192`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/user.routes.test.ts#L192) | None (uses real DB) |
+| **POST /api/user/cash-out** | [`backend/tests/no-mocks/user.routes.test.ts#L233`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/user.routes.test.ts#L233) | [`backend/tests/with-mocks/user.routes.test.ts#L577`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/user.routes.test.ts#L577) | User Model (partial mocking in some tests) |
+| **DELETE /api/user/profile** | [`backend/tests/no-mocks/user.routes.test.ts#L304`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/no-mocks/user.routes.test.ts#L304) | [`backend/tests/with-mocks/user.routes.test.ts#L769`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/user.routes.test.ts#L769) | None (uses real DB) |
+| **Socket.IO - Order Status Updates** | N/A | [`backend/tests/with-mocks/socket.test.ts#L171`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/socket.test.ts#L171) | None (integration test with real DB, Order Model, Job Model, Event Emitter) |
+| **Socket.IO - Job Status Updates** | N/A | [`backend/tests/with-mocks/socket.test.ts#L510`](https://github.com/Dormdash-CPEN321/DormDash/blob/main/backend/tests/with-mocks/socket.test.ts#L510) | None (integration test with real DB, Order Model, Job Model, Event Emitter) |
 
 #### 2.1.2. Commit Hash Where Tests Run
 
@@ -27,14 +53,55 @@
 
 #### 2.1.3. Explanation on How to Run the Tests
 
+**Prerequisites:**
+
+- Ensure you have Node.js (version 14 or higher) and npm installed on your system. You can check by running `node --version` and `npm --version` in your terminal.
+
 1. **Clone the Repository**:
 
-    - Open your terminal and run:
-      ```
-      git clone https://github.com/example/your-project.git
-      ```
+   - Open your terminal and run:
+     ```
+     git clone https://github.com/Dormdash-CPEN321/DormDash.git CPEN321-Project
+     ```
 
-2. **...**
+2. **Navigate to the Backend Directory**:
+
+   - Change to the backend directory:
+     ```
+     cd CPEN321-Project/backend
+     ```
+
+3. **Install Dependencies**:
+
+   - Install the required npm packages:
+     ```
+     npm install
+     ```
+
+4. **Update Test Scripts**:
+
+   - Update all the test packages:
+     ```
+     npm run update-test-scripts
+     ```
+
+5. **Run the Tests**:
+
+   - To run all the tests:
+     ```
+     npm run test
+     ```
+
+   - To run all tests with coverage:
+     ```
+     npm run test:coverage
+     ```
+
+   - To run specific tests (e.g., order tests with mocks and coverage):
+     ```
+     npm run test:mock:order:coverage
+     ```
+     Replace `order` with the desired module (e.g., `auth`, `jobs`, `payment`, `routePlanner`, `user`) and choose `mock` or `nomock` as needed. For coverage, append `:coverage` to the script name.
 
 ### 2.2. GitHub Actions Configuration Location
 
