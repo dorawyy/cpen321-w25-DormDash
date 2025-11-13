@@ -13,6 +13,8 @@
 | 2025-10-22     | Design | Added Jobs component and RoutePlanner component to the design description and diagram. Why: Jobs were added because orders are a two-phase service (storage and return); RoutePlanner was separated out to follow separation of concerns and encapsulate routing logic. |
 | 2025-11-12 | Requirement | We changed the requirements to not mention user can change profile picture. Why: we are no longer having profile picture in our app and need to ensure our documentation matches the functionality |
 | 2025-11-12 | Use Case Specification | We changed the 'View Recommended Route' use case to use a slider, instead of a multiple choice list. For selecting the duration of the route. |
+| 2025-11-12 | Requirements: Non-Functional Requirement | Changed our first non-functional requirement to 200 concurrent requests, of which 70% are to create orders and 30% are to get jobs. Why: We are restricted by our free-tier service, 400 was not feasible.               
+| 2025-11-12 | Requirements: Non-Functional Requirement | Changed our second non-functional requirement to a response to core functionalites independent of a backend response. Why: Between network failures, and the limitation of our backend tier, 0.1s for a response to arrive and be reflected was not reasible. Additionally, the applicated is not always open. So student and movers not seeing changes (job creation, order and job status updates) reflected from the backend within 0.1s, does not reduce the app's appeal.              
 
 ---
 
@@ -256,12 +258,12 @@ DormDash provides a complete, stress-free solution. Through an Uber-like app, st
 
 1. **Scalability**  
    - **Description**: Handle short, predictable bursts around move-in/move-out while remaining simple enough for a student-built deployment.  
-   - **Parameters**: Support ~400 concurrent users and ~200 jobs/day during peak weeks.  
-   - **Justification**: UBC Vancouver alone has ~60k students, so even low adoption during peak periods can create bursts. In late April’s “Great Shuffle,” UBC reports ~7,000 residence moves in Vancouver (~9,100 system-wide including UBCO) within a single week. Designing for ~400 concurrent users and ~200 jobs/day offers conservative headroom without requiring complex infrastructure.  
+   - **Parameters**: Support a load of ~200 concurrent requests.  
+   - **Justification**: UBC Vancouver alone has ~60k students, so even low adoption during peak periods can create bursts. In late April’s “Great Shuffle,” UBC reports ~7,000 residence moves in Vancouver (~9,100 system-wide including UBCO) within a single week. Designing for ~200 concurrent requests offers conservative headroom without requiring complex infrastructure.  
 
 2. **UI Response Time**  
    - **Description**: Ensure responsiveness and reliability of UI interactions.  
-   - **Parameters**: We want to support 95% of requests to reflect onto the UI within 0.1s of change (e.g. job list updates on job creation, order status updates are immediately visible to students, click of any buttons is responsive etc.) 
+   - **Parameters**: We want UI actions to reflect within 0.1s of change. For core functionalities, that do not depend on the backends response.
    - **Justification**: Research on usability response times shows that sub-0.1s feedback feels instantaneous to users, improving trust and engagement ([Nielsen Norman Group](https://www.nngroup.com/articles/response-times-3-important-limits/)).  
 
 ### **4. Designs Specification**
@@ -347,19 +349,19 @@ DormDash provides a complete, stress-free solution. Through an Uber-like app, st
             - **Purpose**: Cancels all uncompleted jobs for an order when order is cancelled; updates status to CANCELLED and emits events to update movers' "Find Jobs" or "Current Jobs" pages. 
 
 
-5.**RoutePlanner**
+5. **RoutePlanner**
    - **Purpose**: Handles creation of optimized routes for movers to maximize efficiency and earnings.
    - **Interfaces**:
-        1.` SuggestedRoute calculateSmartRoute(String moverId, LatLng currentLocation, Int maxDuration) `
+        1. ` SuggestedRoute calculateSmartRoute(String moverId, LatLng currentLocation, Int maxDuration) `
             - **Purpose**: Calculates optimal route for mover based on current location and time constraints. Returns route with jobs ordered by composite score balancing earnings and proximity.
-        2.` Job[] filterJobsByAvailability(Job[] jobs, DayAvailability availability)`
+        2. ` Job[] filterJobsByAvailability(Job[] jobs, DayAvailability availability)`
             - **Purpose**: Filters available jobs to only include those that fall within mover's availability time windows. Checks if job start and end times fit within any availability slot for the scheduled day.
-        3.` JobWithValue[] calculateJobValues(Job[] jobs)`
+        3. ` JobWithValue[] calculateJobValues(Job[] jobs)`
             - **Purpose**: Calculates value score (earnings per minute) for each job. Returns jobs with valueScore.
         4. `Int estimateJobDuration(double volume) `
             - **Purpose**: Estimates job duration based on item volume using formula. Returns duration in minutes.
         5. `JobInRoute[] buildOptimalRoute(JobWithValue[] jobs, Location startLocation, DayAvailability availability, Integer maxDuration)`
-            - **Purpose**: Greedy algorithm that iteratively selects the best job to add to the route based on value and distance. Stops when maxDuration is reached or no more jobs fit within the availability. Returns ordered list of jobs with travel details.
+            - **Purpose**: Greedy algorithm that iteratively selects the best job to add to the route based on value and distance. Stops when maxDuration is reached or no more jobs fit within the availability. Returns ordered list of jobs with travel 				details.
         6. `AssignmentResult acceptSuggestedRoute(String moverId, String suggestedRouteId, String[] acceptedJobIds)`
             - **Purpose**: Assigns selected jobs from suggested route to mover; atomically accepts jobs and returns AssignmentResult which includes successfully accepted jobs and any that were already taken by other movers.
 
@@ -477,7 +479,11 @@ DormDash provides a complete, stress-free solution. Through an Uber-like app, st
 
 ### **4.7. Design and Ways to Test Non-Functional Requirements**
 1. [**[Scalability]**](#nfr1)
-    - **Validation**: The system uses Docker containerization with MongoDB for horizontal scalability and Express.js with Socket.io for real-time job updates, allowing the simple Node.js deployment to handle short bursts of ~400 concurrent users through efficient connection pooling and stateless API design. MongoDB's flexible schema and indexing capabilities combined with the lightweight Express server ensure ~200 jobs/day can be processed efficiently during peak move-in/move-out periods without requiring complex infrastructure
+    - **Validation**: The backend is containerized (see dockerfile and docker-compose.yml) and uses a horizontally-scalable Node + MongoDB stack with a pooled Mongoose connection (see mongoose.util.ts), plus real-time sockets (socket.ts) and an internal event-based worker path (eventEmitter.util.ts) so bursty work (notifications, cleanup, billing) can be handled asynchronously and scaled out with more containers or an external worker queue when needed
 2. [**[UI Response Time]**](#nfr2)
 
-    - **Validation**: Socket.io Real-Time Push: Instead of polling for updates, the backend pushes job status changes directly to connected clients, eliminating the need for repeated API calls and providing immediate feedback.
+    - **Validation**: The Android frontend uses Jetpack Compose with local, immediate UI state updates so interactions that don’t require a backend round-trip (box counters, date/time pickers, form input) update instantly on-device while network calls are performed asynchronously via the app’s repository/services layer, keeping core UI feedback below the 0.1s perceptual target
+
+
+
+
