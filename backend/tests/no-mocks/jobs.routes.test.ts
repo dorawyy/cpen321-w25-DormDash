@@ -79,6 +79,10 @@ afterAll(async () => {
 
 
 describe('POST /api/jobs', () => {
+    // Input: valid STORAGE job data with all required fields
+    // Expected status code: 201
+    // Expected behavior: new job is created in database with STORAGE type
+    // Expected output: success: true, id: jobId, message: "STORAGE job created successfully"
     test('should successfully create a STORAGE job', async () => {
         const reqData = {
             orderId: new mongoose.Types.ObjectId().toString(),
@@ -102,6 +106,10 @@ describe('POST /api/jobs', () => {
         expect(response.body.message).toBe(`${reqData.jobType} job created successfully`);
     });
 
+    // Input: valid RETURN job data with all required fields
+    // Expected status code: 201
+    // Expected behavior: new job is created in database with RETURN type
+    // Expected output: success: true, id: jobId, message: "RETURN job created successfully"
     test('should successfully create a RETURN job', async () => {
         const reqData = {
             orderId: new mongoose.Types.ObjectId().toString(),
@@ -125,6 +133,10 @@ describe('POST /api/jobs', () => {
         expect(response.body.message).toBe(`${reqData.jobType} job created successfully`);
     });
 
+    // Input: job data with invalid jobType ("INVALID_TYPE")
+    // Expected status code: 400
+    // Expected behavior: database is unchanged, no job created
+    // Expected output: validation error response
     test('should return 400 for invalid job data', async () => {
         const reqData = {
             orderId: new mongoose.Types.ObjectId().toString(),
@@ -144,6 +156,10 @@ describe('POST /api/jobs', () => {
             .expect(400);
     });
 
+    // Input: job data with missing orderId field
+    // Expected status code: 400
+    // Expected behavior: database is unchanged, no job created
+    // Expected output: validation error response
     test('should return 400 for missing orderId', async () => {
         const reqData = {
             studentId: testUserId.toString(),
@@ -162,6 +178,10 @@ describe('POST /api/jobs', () => {
             .expect(400);
     });
 
+    // Input: job data with missing studentId field
+    // Expected status code: 400
+    // Expected behavior: database is unchanged, no job created
+    // Expected output: validation error response
     test('should return 400 for missing studentId', async () => {
         const reqData = {
             orderId: new mongoose.Types.ObjectId().toString(),
@@ -180,6 +200,10 @@ describe('POST /api/jobs', () => {
             .expect(400);
     });
 
+    // Input: job data with volume = 0
+    // Expected status code: 400
+    // Expected behavior: database is unchanged, no job created
+    // Expected output: validation error response
     test('should return 400 for invalid volume (0)', async () => {
         const reqData = {
             orderId: new mongoose.Types.ObjectId().toString(),
@@ -199,6 +223,10 @@ describe('POST /api/jobs', () => {
             .expect(400);
     });
 
+    // Input: job data with price = 0
+    // Expected status code: 400
+    // Expected behavior: database is unchanged, no job created
+    // Expected output: validation error response
     test('should return 400 for invalid price (0)', async () => {
         const reqData = {
             orderId: new mongoose.Types.ObjectId().toString(),
@@ -218,6 +246,10 @@ describe('POST /api/jobs', () => {
             .expect(400);
     });
 
+    // Input: job data with studentId that is not a valid MongoDB ObjectId
+    // Expected status code: 400
+    // Expected behavior: database is unchanged, no job created
+    // Expected output: validation error response
     test('should return 400 for invalid studentId (not a valid MongoDB ObjectId)', async () => {
         const reqData = {
             orderId: new mongoose.Types.ObjectId().toString(),
@@ -237,6 +269,10 @@ describe('POST /api/jobs', () => {
             .expect(400);
     });
 
+    // Input: job data with orderId that is not a valid MongoDB ObjectId
+    // Expected status code: 400
+    // Expected behavior: database is unchanged, no job created
+    // Expected output: validation error response
     test('should return 400 for invalid orderId (not a valid MongoDB ObjectId)', async () => {
         const reqData = {
             orderId: "invalid-order-id",
@@ -256,6 +292,10 @@ describe('POST /api/jobs', () => {
             .expect(400);
     });
 
+    // Input: valid job data but no Authorization header
+    // Expected status code: 401
+    // Expected behavior: database is unchanged, no job created
+    // Expected output: authentication error response
     test('should return 401 without authentication', async () => {
         const reqData = {
             orderId: new mongoose.Types.ObjectId().toString(),
@@ -276,6 +316,10 @@ describe('POST /api/jobs', () => {
 });
 
 describe('GET /api/jobs', () => {
+    // Input: GET request with valid authentication token, database contains 2 jobs
+    // Expected status code: 200
+    // Expected behavior: all jobs are retrieved from database
+    // Expected output: message, data.jobs array containing 2 jobs
     test('should get all jobs', async () => {
         // Create a test job first
         const job1 = await jobModel.create({
@@ -318,6 +362,10 @@ describe('GET /api/jobs', () => {
         expect(response.body.data.jobs.length).toBe(2);
     });
 
+    // Input: GET request with valid authentication token, database contains no jobs
+    // Expected status code: 200
+    // Expected behavior: no jobs retrieved (empty result)
+    // Expected output: data.jobs is an empty array
     test('should return empty array when no jobs exist', async () => {
         const response = await request(app)
             .get('/api/jobs')
@@ -329,6 +377,10 @@ describe('GET /api/jobs', () => {
 });
 
 describe('GET /api/jobs/available', () => {
+    // Input: GET request with valid authentication token, database contains 1 AVAILABLE job and 1 ACCEPTED job
+    // Expected status code: 200
+    // Expected behavior: only AVAILABLE jobs are retrieved from database
+    // Expected output: data.jobs array containing 1 job with status AVAILABLE
     test('should get only available jobs', async () => {
         // Create available job
         await jobModel.create({
@@ -374,6 +426,10 @@ describe('GET /api/jobs/available', () => {
 });
 
 describe('GET /api/jobs/mover', () => {
+    // Input: GET request with mover authentication token, database contains 1 job accepted by this mover and 1 job accepted by different mover
+    // Expected status code: 200
+    // Expected behavior: only jobs accepted by authenticated mover are retrieved from database
+    // Expected output: data.jobs array containing 1 job with moverId matching authenticated mover
     test('should get jobs accepted by authenticated mover', async () => {
         // Create job accepted by the mover
         const acceptedJob = await jobModel.create({
@@ -419,6 +475,10 @@ describe('GET /api/jobs/mover', () => {
         expect(response.body.data.jobs[0].id).toBe(acceptedJob._id.toString());
     });
 
+    // Input: GET request with mover authentication token, database contains no jobs for this mover
+    // Expected status code: 200
+    // Expected behavior: no jobs retrieved (empty result)
+    // Expected output: data.jobs is an empty array
     test('should return empty array when mover has no jobs', async () => {
         const response = await request(app)
             .get('/api/jobs/mover')
@@ -428,6 +488,10 @@ describe('GET /api/jobs/mover', () => {
         expect(response.body.data.jobs).toEqual([]);
     });
 
+    // Input: GET request without Authorization header
+    // Expected status code: 401
+    // Expected behavior: no database query executed
+    // Expected output: authentication error response
     test('should return 401 without authentication', async () => {
         await request(app)
             .get('/api/jobs/mover')
@@ -436,6 +500,10 @@ describe('GET /api/jobs/mover', () => {
 });
 
 describe('GET /api/jobs/student', () => {
+    // Input: GET request with student authentication token, database contains 1 job for this student and 1 job for different student
+    // Expected status code: 200
+    // Expected behavior: only jobs belonging to authenticated student are retrieved from database
+    // Expected output: data.jobs array containing 1 job with studentId matching authenticated student
     test('should get jobs for authenticated student', async () => {
         // Create job for the student
         const studentJob = await jobModel.create({
@@ -479,6 +547,10 @@ describe('GET /api/jobs/student', () => {
         expect(response.body.data.jobs[0].id).toBe(studentJob._id.toString());
     });
 
+    // Input: GET request with student authentication token, database contains no jobs for this student
+    // Expected status code: 200
+    // Expected behavior: no jobs retrieved (empty result)
+    // Expected output: data.jobs is an empty array
     test('should return empty array when student has no jobs', async () => {
         const response = await request(app)
             .get('/api/jobs/student')
@@ -488,6 +560,10 @@ describe('GET /api/jobs/student', () => {
         expect(response.body.data.jobs).toEqual([]);
     });
 
+    // Input: GET request without Authorization header
+    // Expected status code: 401
+    // Expected behavior: no database query executed
+    // Expected output: authentication error response
     test('should return 401 without authentication', async () => {
         await request(app)
             .get('/api/jobs/student')
@@ -496,6 +572,10 @@ describe('GET /api/jobs/student', () => {
 });
 
 describe('GET /api/jobs/:id', () => {
+    // Input: GET request with valid job ID and authentication token, job exists in database
+    // Expected status code: 200
+    // Expected behavior: job is retrieved from database by ID
+    // Expected output: data.job object with job details matching the requested ID
     test('should get job by ID', async () => {
         const job = await jobModel.create({
             orderId: new mongoose.Types.ObjectId(),
@@ -522,6 +602,10 @@ describe('GET /api/jobs/:id', () => {
         expect(response.body.data.job.status).toBe(JobStatus.AVAILABLE);
     });
 
+    // Input: GET request with valid ObjectId format but job does not exist in database
+    // Expected status code: 404
+    // Expected behavior: database query executed but no job found
+    // Expected output: job not found error response
     test('should return 404 for non-existent job', async () => {
         const nonExistentId = new mongoose.Types.ObjectId();
         await request(app)
@@ -530,6 +614,10 @@ describe('GET /api/jobs/:id', () => {
             .expect(404);
     });
 
+    // Input: GET request with invalid job ID format (not a valid MongoDB ObjectId)
+    // Expected status code: 400
+    // Expected behavior: no database query executed due to invalid ID format
+    // Expected output: validation error response
     test('should return 400 for invalid job ID format', async () => {
         await request(app)
             .get('/api/jobs/invalid-id')
@@ -539,6 +627,10 @@ describe('GET /api/jobs/:id', () => {
 });
 
 describe('PATCH /api/jobs/:id/status', () => {
+    // Input: PATCH request with valid job ID, status: ACCEPTED, mover authentication token, job exists with status AVAILABLE and has associated order
+    // Expected status code: 200
+    // Expected behavior: job status updated to ACCEPTED, moverId set to authenticated mover, order status updated
+    // Expected output: data.status: ACCEPTED, data.moverId: moverId, data.orderId: orderId
     test('should accept a job (change status to ACCEPTED)', async () => {
         // Create an order first
         const order = await orderModel.create({
@@ -576,6 +668,10 @@ describe('PATCH /api/jobs/:id/status', () => {
         expect(response.body.data.orderId).toBe(order._id.toString());
     });
 
+    // Input: PATCH request with valid job ID, status: PICKED_UP, mover authentication token, job exists with status ACCEPTED
+    // Expected status code: 200
+    // Expected behavior: job status updated to PICKED_UP in database
+    // Expected output: data.status: PICKED_UP
     test('should update job status to PICKED_UP', async () => {
         const job = await jobModel.create({
             orderId: new mongoose.Types.ObjectId(),
@@ -601,6 +697,10 @@ describe('PATCH /api/jobs/:id/status', () => {
         expect(response.body.data.status).toBe(JobStatus.PICKED_UP);
     });
 
+    // Input: PATCH request with valid job ID, status: COMPLETED, mover authentication token, STORAGE job exists with status PICKED_UP and has associated order
+    // Expected status code: 200
+    // Expected behavior: job status updated to COMPLETED, mover credits updated, order status updated to IN_STORAGE
+    // Expected output: data.status: COMPLETED
     test('should update job status to COMPLETED for STORAGE job', async () => {
         const order = await orderModel.create({
             studentId: testUserId,
@@ -640,6 +740,10 @@ describe('PATCH /api/jobs/:id/status', () => {
         expect(response.body.data.status).toBe(JobStatus.COMPLETED);
     });
 
+    // Input: PATCH request with valid job ID, status: COMPLETED, mover authentication token, RETURN job exists with status PICKED_UP and has associated order
+    // Expected status code: 200
+    // Expected behavior: job status updated to COMPLETED, mover credits updated, order status updated to RETURNED
+    // Expected output: data.status: COMPLETED
     test('should update job status to COMPLETED for RETURN job', async () => {
         const order = await orderModel.create({
             studentId: testUserId,
@@ -679,6 +783,10 @@ describe('PATCH /api/jobs/:id/status', () => {
         expect(response.body.data.status).toBe(JobStatus.COMPLETED);
     });
 
+    // Input: PATCH request with valid job ID, status: "INVALID_STATUS", mover authentication token
+    // Expected status code: 400
+    // Expected behavior: database is unchanged, no job status updated
+    // Expected output: validation error response
     test('should return 400 for invalid status', async () => {
         const job = await jobModel.create({
             orderId: new mongoose.Types.ObjectId(),
@@ -701,6 +809,10 @@ describe('PATCH /api/jobs/:id/status', () => {
             .expect(400);
     });
 
+    // Input: PATCH request with valid job ID, empty request body (no status field), mover authentication token
+    // Expected status code: 400
+    // Expected behavior: database is unchanged, no job status updated
+    // Expected output: validation error response
     test('should return 400 for missing status', async () => {
         const job = await jobModel.create({
             orderId: new mongoose.Types.ObjectId(),
@@ -723,6 +835,10 @@ describe('PATCH /api/jobs/:id/status', () => {
             .expect(400);
     });
 
+    // Input: PATCH request with valid ObjectId format but job does not exist in database, status: ACCEPTED, mover authentication token
+    // Expected status code: 404
+    // Expected behavior: database query executed but no job found, no updates performed
+    // Expected output: job not found error response
     test('should return 404 for non-existent job when updating status', async () => {
         const nonExistentId = new mongoose.Types.ObjectId();
         await request(app)
@@ -732,6 +848,10 @@ describe('PATCH /api/jobs/:id/status', () => {
             .expect(404);
     });
 
+    // Input: PATCH request with valid job ID, status: ACCEPTED, mover authentication token, job already has status ACCEPTED
+    // Expected status code: 400
+    // Expected behavior: database is unchanged, job status remains ACCEPTED
+    // Expected output: error response indicating job already accepted
     test('should handle job already accepted scenario', async () => {
         const order = await orderModel.create({
             studentId: testUserId,
@@ -769,6 +889,10 @@ describe('PATCH /api/jobs/:id/status', () => {
 });
 
 describe('POST /api/jobs/:id/arrived', () => {
+    // Input: POST request with valid job ID, mover authentication token, STORAGE job exists with status ACCEPTED and moverId matches authenticated mover
+    // Expected status code: 200
+    // Expected behavior: job status updated to AWAITING_STUDENT_CONFIRMATION, verificationRequestedAt timestamp set
+    // Expected output: success: true, message: "Confirmation requested"
     test('should request pickup confirmation when mover arrives', async () => {
         const job = await jobModel.create({
             orderId: new mongoose.Types.ObjectId(),
@@ -794,6 +918,10 @@ describe('POST /api/jobs/:id/arrived', () => {
         expect(response.body.message).toBe('Confirmation requested');
     });
 
+    // Input: POST request with valid job ID, mover authentication token, STORAGE job exists but moverId does not match authenticated mover
+    // Expected status code: 403
+    // Expected behavior: database is unchanged, no job status updated
+    // Expected output: authorization error response
     test('should return error if mover is not assigned to job', async () => {
         const otherMoverId = new mongoose.Types.ObjectId();
         const job = await jobModel.create({
@@ -817,6 +945,10 @@ describe('POST /api/jobs/:id/arrived', () => {
             .expect(403);
     });
 
+    // Input: POST request with valid ObjectId format but job does not exist in database, mover authentication token
+    // Expected status code: 404
+    // Expected behavior: database query executed but no job found, no updates performed
+    // Expected output: job not found error response
     test('should return 404 for non-existent job', async () => {
         const nonExistentId = new mongoose.Types.ObjectId();
         await request(app)
@@ -825,6 +957,10 @@ describe('POST /api/jobs/:id/arrived', () => {
             .expect(404);
     });
 
+    // Input: POST request with valid job ID, mover authentication token, RETURN job exists with status ACCEPTED
+    // Expected status code: 400
+    // Expected behavior: database is unchanged, no job status updated
+    // Expected output: error response indicating endpoint only valid for STORAGE jobs
     test('should return 400 for RETURN job type', async () => {
         const job = await jobModel.create({
             orderId: new mongoose.Types.ObjectId(),
@@ -847,6 +983,10 @@ describe('POST /api/jobs/:id/arrived', () => {
             .expect(400);
     });
 
+    // Input: POST request with valid job ID, mover authentication token, STORAGE job exists but status is not ACCEPTED (e.g., AVAILABLE)
+    // Expected status code: 400
+    // Expected behavior: database is unchanged, no job status updated
+    // Expected output: error response indicating job must be ACCEPTED
     test('should return 400 if job status is not ACCEPTED', async () => {
         const job = await jobModel.create({
             orderId: new mongoose.Types.ObjectId(),
@@ -871,6 +1011,10 @@ describe('POST /api/jobs/:id/arrived', () => {
 });
 
 describe('POST /api/jobs/:id/confirm-pickup', () => {
+    // Input: POST request with valid job ID, student authentication token, STORAGE job exists with status AWAITING_STUDENT_CONFIRMATION and studentId matches authenticated student, job has associated order
+    // Expected status code: 200
+    // Expected behavior: job status updated to PICKED_UP, order status updated to PICKED_UP
+    // Expected output: success: true, message: "Pickup confirmed"
     test('should confirm pickup by student', async () => {
         // Create an order first
         const order = await orderModel.create({
@@ -946,6 +1090,10 @@ describe('POST /api/jobs/:id/confirm-pickup', () => {
             .expect(403);
     });
 
+    // Input: POST request with valid ObjectId format but job does not exist in database, student authentication token
+    // Expected status code: 404
+    // Expected behavior: database query executed but no job found, no updates performed
+    // Expected output: job not found error response
     test('should return 404 for non-existent job', async () => {
         const nonExistentId = new mongoose.Types.ObjectId();
         await request(app)
@@ -954,6 +1102,10 @@ describe('POST /api/jobs/:id/confirm-pickup', () => {
             .expect(404);
     });
 
+    // Input: POST request with valid job ID, student authentication token, RETURN job exists with status AWAITING_STUDENT_CONFIRMATION
+    // Expected status code: 400
+    // Expected behavior: database is unchanged, no job status updated
+    // Expected output: error response indicating endpoint only valid for STORAGE jobs
     test('should return 400 for RETURN job type', async () => {
         const order = await orderModel.create({
             studentId: testUserId,
@@ -988,6 +1140,10 @@ describe('POST /api/jobs/:id/confirm-pickup', () => {
             .expect(400);
     });
 
+    // Input: POST request with valid job ID, student authentication token, STORAGE job exists but status is not AWAITING_STUDENT_CONFIRMATION (e.g., ACCEPTED)
+    // Expected status code: 400
+    // Expected behavior: database is unchanged, no job status updated
+    // Expected output: error response indicating job must be AWAITING_STUDENT_CONFIRMATION
     test('should return 400 if job status is not AWAITING_STUDENT_CONFIRMATION', async () => {
         const order = await orderModel.create({
             studentId: testUserId,
@@ -1021,6 +1177,10 @@ describe('POST /api/jobs/:id/confirm-pickup', () => {
             .expect(400);
     });
 
+    // Input: POST request with empty/invalid job ID (space character in URL)
+    // Expected status code: 500
+    // Expected behavior: database is unchanged, no job status updated
+    // Expected output: server error response
     test('should return 500 when jobId is empty string', async () => {
         await request(app)
             .post('/api/jobs/%20/confirm-pickup')  
@@ -1028,6 +1188,10 @@ describe('POST /api/jobs/:id/confirm-pickup', () => {
             .expect(500);
     });
 
+    // Input: POST request with valid job ID but no Authorization header
+    // Expected status code: 401
+    // Expected behavior: no database query executed, no job status updated
+    // Expected output: authentication error response
     test('should return 401 when studentId is missing', async () => {
         const validJobId = new mongoose.Types.ObjectId();
         await request(app)
@@ -1038,6 +1202,10 @@ describe('POST /api/jobs/:id/confirm-pickup', () => {
 });
 
 describe('POST /api/jobs/:id/delivered', () => {
+    // Input: POST request with valid job ID, mover authentication token, RETURN job exists with status PICKED_UP and moverId matches authenticated mover
+    // Expected status code: 200
+    // Expected behavior: job status updated to AWAITING_STUDENT_CONFIRMATION, verificationRequestedAt timestamp set
+    // Expected output: success: true, message: "Delivery confirmation requested"
     test('should request delivery confirmation when mover delivers (RETURN job)', async () => {
         // Create an order first
         const order = await orderModel.create({
@@ -1075,6 +1243,10 @@ describe('POST /api/jobs/:id/delivered', () => {
         expect(response.body.message).toBe('Delivery confirmation requested');
     });
 
+    // Input: POST request with valid job ID, mover authentication token, RETURN job exists but moverId does not match authenticated mover
+    // Expected status code: 403
+    // Expected behavior: database is unchanged, no job status updated
+    // Expected output: authorization error response
     test('should return error if mover is not assigned to job', async () => {
         const otherMoverId = new mongoose.Types.ObjectId();
         
@@ -1111,6 +1283,10 @@ describe('POST /api/jobs/:id/delivered', () => {
             .expect(403);
     });
 
+    // Input: POST request with valid ObjectId format but job does not exist in database, mover authentication token
+    // Expected status code: 404
+    // Expected behavior: database query executed but no job found, no updates performed
+    // Expected output: job not found error response
     test('should return 404 for non-existent job', async () => {
         const nonExistentId = new mongoose.Types.ObjectId();
         await request(app)
@@ -1119,6 +1295,10 @@ describe('POST /api/jobs/:id/delivered', () => {
             .expect(404);
     });
 
+    // Input: POST request with valid job ID, mover authentication token, STORAGE job exists with status PICKED_UP
+    // Expected status code: 400
+    // Expected behavior: database is unchanged, no job status updated
+    // Expected output: error response indicating endpoint only valid for RETURN jobs
     test('should return 400 for STORAGE job type', async () => {
         const order = await orderModel.create({
             studentId: testUserId,
@@ -1152,6 +1332,10 @@ describe('POST /api/jobs/:id/delivered', () => {
             .expect(400);
     });
 
+    // Input: POST request with valid job ID, mover authentication token, RETURN job exists but status is not PICKED_UP (e.g., ACCEPTED)
+    // Expected status code: 400
+    // Expected behavior: database is unchanged, no job status updated
+    // Expected output: error response indicating job must be PICKED_UP
     test('should return 400 if job status is not PICKED_UP', async () => {
         const order = await orderModel.create({
             studentId: testUserId,
@@ -1187,6 +1371,10 @@ describe('POST /api/jobs/:id/delivered', () => {
 });
 
 describe('POST /api/jobs/:id/confirm-delivery', () => {
+    // Input: POST request with valid job ID, student authentication token, RETURN job exists with status AWAITING_STUDENT_CONFIRMATION and studentId matches authenticated student, job has associated order
+    // Expected status code: 200
+    // Expected behavior: job status updated to COMPLETED, mover credits updated, order status updated to COMPLETED
+    // Expected output: success: true, message: "Delivery confirmed"
     test('should confirm delivery by student (RETURN job)', async () => {
         // Create an order first
         const order = await orderModel.create({
@@ -1225,6 +1413,10 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
         expect(response.body.message).toBe('Delivery confirmed');
     });
 
+    // Input: POST request with valid job ID, student authentication token, RETURN job exists but studentId does not match authenticated student
+    // Expected status code: 403
+    // Expected behavior: database is unchanged, no job status updated
+    // Expected output: authorization error response
     test('should return error if student is not the job owner', async () => {
         const otherStudentId = new mongoose.Types.ObjectId();
         
@@ -1262,6 +1454,10 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
             .expect(403);
     });
 
+    // Input: POST request with valid ObjectId format but job does not exist in database, student authentication token
+    // Expected status code: 404
+    // Expected behavior: database query executed but no job found, no updates performed
+    // Expected output: job not found error response
     test('should return 404 for non-existent job', async () => {
         const nonExistentId = new mongoose.Types.ObjectId();
         await request(app)
@@ -1270,6 +1466,10 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
             .expect(404);
     });
 
+    // Input: POST request with valid job ID, student authentication token, STORAGE job exists with status AWAITING_STUDENT_CONFIRMATION
+    // Expected status code: 400
+    // Expected behavior: database is unchanged, no job status updated
+    // Expected output: error response indicating endpoint only valid for RETURN jobs
     test('should return 400 for STORAGE job type', async () => {
         const order = await orderModel.create({
             studentId: testUserId,
@@ -1304,6 +1504,10 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
             .expect(400);
     });
 
+    // Input: POST request with valid job ID, student authentication token, RETURN job exists but status is not AWAITING_STUDENT_CONFIRMATION (e.g., PICKED_UP)
+    // Expected status code: 400
+    // Expected behavior: database is unchanged, no job status updated
+    // Expected output: error response indicating job must be AWAITING_STUDENT_CONFIRMATION
     test('should return 400 if job status is not AWAITING_STUDENT_CONFIRMATION', async () => {
         const order = await orderModel.create({
             studentId: testUserId,
