@@ -73,7 +73,18 @@ beforeEach(async () => {
 
 afterAll(async () => {
     await cleanupDatabase();
+    
+    // Ensure all mongoose connections are closed
+    if (mongoose.connection.readyState !== 0) {
+        await mongoose.connection.close();
+    }
+    
+    // Also call the disconnectDB function
     await disconnectDB();
+    
+    // Give a moment for all async operations to complete
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     console.warn = originalWarn; 
 });
 

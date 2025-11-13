@@ -110,6 +110,7 @@
       "/node_modules/",
       "/tests/",
       "/dist/"
-    ]
+    ],
+    "globalTeardown": "<rootDir>/tests/globalTeardown.ts"
   }
 }

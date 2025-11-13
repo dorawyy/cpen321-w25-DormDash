@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach, jest } from '@jest/globals';
+import { describe, expect, test, beforeEach, afterEach, jest } from '@jest/globals';
 import request from 'supertest';
 import mongoose from 'mongoose';
 import { JobStatus, JobType } from '../../src/types/job.type';
@@ -4647,6 +4647,254 @@ describe('NotificationService Coverage Tests', () => {
         } finally {
             mockNotificationService.sendJobStatusNotification = originalMock;
         }
+    });
+});
+
+describe('Route Handler Catch Blocks Coverage', () => {
+    let originalMethods: any = {};
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        // Restore original methods before each test
+        if (Object.keys(originalMethods).length > 0) {
+            const { JobController } = require('../../src/controllers/job.controller');
+            Object.keys(originalMethods).forEach(method => {
+                if (originalMethods[method]) {
+                    JobController.prototype[method] = originalMethods[method];
+                }
+            });
+            originalMethods = {};
+        }
+    });
+
+    afterEach(() => {
+        // Restore original methods after each test
+        if (Object.keys(originalMethods).length > 0) {
+            const { JobController } = require('../../src/controllers/job.controller');
+            Object.keys(originalMethods).forEach(method => {
+                if (originalMethods[method]) {
+                    JobController.prototype[method] = originalMethods[method];
+                }
+            });
+            originalMethods = {};
+        }
+    });
+
+    // Mocked behavior: JobController.getAllJobs returns a rejected promise directly (bypassing controller try-catch)
+    // Input: GET /api/jobs
+    // Expected status code: 500
+    // Expected behavior: route handler catch block (line 14) is executed
+    // Expected output: error response
+    test('should cover route handler catch block for getAllJobs (line 14)', async () => {
+        const { JobController } = require('../../src/controllers/job.controller');
+        originalMethods.getAllJobs = JobController.prototype.getAllJobs;
+        
+        JobController.prototype.getAllJobs = jest.fn().mockReturnValue(Promise.reject(new Error('Route handler catch test')));
+
+        const response = await request(app)
+            .get('/api/jobs')
+            .set('Authorization', `Bearer fake-token`);
+
+        expect(response.status).toBeGreaterThanOrEqual(500);
+    });
+
+    // Mocked behavior: JobController.getAllAvailableJobs returns a rejected promise directly
+    // Input: GET /api/jobs/available
+    // Expected status code: 500
+    // Expected behavior: route handler catch block (line 21) is executed
+    // Expected output: error response
+    test('should cover route handler catch block for getAllAvailableJobs (line 21)', async () => {
+        const { JobController } = require('../../src/controllers/job.controller');
+        originalMethods.getAllAvailableJobs = JobController.prototype.getAllAvailableJobs;
+        
+        JobController.prototype.getAllAvailableJobs = jest.fn().mockReturnValue(Promise.reject(new Error('Route handler catch test')));
+
+        const response = await request(app)
+            .get('/api/jobs/available')
+            .set('Authorization', `Bearer fake-token`);
+
+        expect(response.status).toBeGreaterThanOrEqual(500);
+    });
+
+    // Mocked behavior: JobController.getMoverJobs returns a rejected promise directly
+    // Input: GET /api/jobs/mover
+    // Expected status code: 500
+    // Expected behavior: route handler catch block (line 28) is executed
+    // Expected output: error response
+    test('should cover route handler catch block for getMoverJobs (line 28)', async () => {
+        const { JobController } = require('../../src/controllers/job.controller');
+        originalMethods.getMoverJobs = JobController.prototype.getMoverJobs;
+        
+        JobController.prototype.getMoverJobs = jest.fn().mockReturnValue(Promise.reject(new Error('Route handler catch test')));
+
+        const response = await request(app)
+            .get('/api/jobs/mover')
+            .set('Authorization', `Bearer fake-token`);
+
+        expect(response.status).toBeGreaterThanOrEqual(500);
+    });
+
+    // Mocked behavior: JobController.getStudentJobs returns a rejected promise directly
+    // Input: GET /api/jobs/student
+    // Expected status code: 500
+    // Expected behavior: route handler catch block (line 35) is executed
+    // Expected output: error response
+    test('should cover route handler catch block for getStudentJobs (line 35)', async () => {
+        const { JobController } = require('../../src/controllers/job.controller');
+        originalMethods.getStudentJobs = JobController.prototype.getStudentJobs;
+        
+        JobController.prototype.getStudentJobs = jest.fn().mockReturnValue(Promise.reject(new Error('Route handler catch test')));
+
+        const response = await request(app)
+            .get('/api/jobs/student')
+            .set('Authorization', `Bearer fake-token`);
+
+        expect(response.status).toBeGreaterThanOrEqual(500);
+    });
+
+    // Mocked behavior: JobController.getJobById returns a rejected promise directly
+    // Input: GET /api/jobs/:id
+    // Expected status code: 500
+    // Expected behavior: route handler catch block (line 42) is executed
+    // Expected output: error response
+    test('should cover route handler catch block for getJobById (line 42)', async () => {
+        const { JobController } = require('../../src/controllers/job.controller');
+        originalMethods.getJobById = JobController.prototype.getJobById;
+        
+        JobController.prototype.getJobById = jest.fn().mockReturnValue(Promise.reject(new Error('Route handler catch test')));
+
+        const jobId = new mongoose.Types.ObjectId();
+        const response = await request(app)
+            .get(`/api/jobs/${jobId}`)
+            .set('Authorization', `Bearer fake-token`);
+
+        expect(response.status).toBeGreaterThanOrEqual(500);
+    });
+
+    // Mocked behavior: JobController.createJob returns a rejected promise directly
+    // Input: POST /api/jobs
+    // Expected status code: 500
+    // Expected behavior: route handler catch block (line 52) is executed
+    // Expected output: error response
+    test('should cover route handler catch block for createJob (line 52)', async () => {
+        const { JobController } = require('../../src/controllers/job.controller');
+        originalMethods.createJob = JobController.prototype.createJob;
+        
+        JobController.prototype.createJob = jest.fn().mockReturnValue(Promise.reject(new Error('Route handler catch test')));
+
+        const reqData = {
+            orderId: new mongoose.Types.ObjectId().toString(),
+            studentId: new mongoose.Types.ObjectId().toString(),
+            jobType: JobType.STORAGE,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
+            scheduledTime: new Date().toISOString()
+        };
+
+        const response = await request(app)
+            .post('/api/jobs')
+            .set('Authorization', `Bearer fake-token`)
+            .send(reqData);
+
+        expect(response.status).toBeGreaterThanOrEqual(500);
+    });
+
+    // Mocked behavior: JobController.updateJobStatus returns a rejected promise directly
+    // Input: PATCH /api/jobs/:id/status
+    // Expected status code: 500
+    // Expected behavior: route handler catch block (line 60) is executed
+    // Expected output: error response
+    test('should cover route handler catch block for updateJobStatus (line 60)', async () => {
+        const { JobController } = require('../../src/controllers/job.controller');
+        originalMethods.updateJobStatus = JobController.prototype.updateJobStatus;
+        
+        JobController.prototype.updateJobStatus = jest.fn().mockReturnValue(Promise.reject(new Error('Route handler catch test')));
+
+        const jobId = new mongoose.Types.ObjectId();
+        const response = await request(app)
+            .patch(`/api/jobs/${jobId}/status`)
+            .set('Authorization', `Bearer fake-token`)
+            .send({ status: JobStatus.ACCEPTED });
+
+        expect(response.status).toBeGreaterThanOrEqual(500);
+    });
+
+    // Mocked behavior: JobController.send_arrival_confirmation returns a rejected promise directly
+    // Input: POST /api/jobs/:id/arrived
+    // Expected status code: 500
+    // Expected behavior: route handler catch block (line 69) is executed
+    // Expected output: error response
+    test('should cover route handler catch block for send_arrival_confirmation (line 69)', async () => {
+        const { JobController } = require('../../src/controllers/job.controller');
+        originalMethods.send_arrival_confirmation = JobController.prototype.send_arrival_confirmation;
+        
+        JobController.prototype.send_arrival_confirmation = jest.fn().mockReturnValue(Promise.reject(new Error('Route handler catch test')));
+
+        const jobId = new mongoose.Types.ObjectId();
+        const response = await request(app)
+            .post(`/api/jobs/${jobId}/arrived`)
+            .set('Authorization', `Bearer fake-token`);
+
+        expect(response.status).toBeGreaterThanOrEqual(500);
+    });
+
+    // Mocked behavior: JobController.confirmPickup returns a rejected promise directly
+    // Input: POST /api/jobs/:id/confirm-pickup
+    // Expected status code: 500
+    // Expected behavior: route handler catch block (line 76) is executed
+    // Expected output: error response
+    test('should cover route handler catch block for confirmPickup (line 76)', async () => {
+        const { JobController } = require('../../src/controllers/job.controller');
+        originalMethods.confirmPickup = JobController.prototype.confirmPickup;
+        
+        JobController.prototype.confirmPickup = jest.fn().mockReturnValue(Promise.reject(new Error('Route handler catch test')));
+
+        const jobId = new mongoose.Types.ObjectId();
+        const response = await request(app)
+            .post(`/api/jobs/${jobId}/confirm-pickup`)
+            .set('Authorization', `Bearer fake-token`);
+
+        expect(response.status).toBeGreaterThanOrEqual(500);
+    });
+
+    // Mocked behavior: JobController.delivered returns a rejected promise directly
+    // Input: POST /api/jobs/:id/delivered
+    // Expected status code: 500
+    // Expected behavior: route handler catch block (line 83) is executed
+    // Expected output: error response
+    test('should cover route handler catch block for delivered (line 83)', async () => {
+        const { JobController } = require('../../src/controllers/job.controller');
+        originalMethods.delivered = JobController.prototype.delivered;
+        
+        JobController.prototype.delivered = jest.fn().mockReturnValue(Promise.reject(new Error('Route handler catch test')));
+
+        const jobId = new mongoose.Types.ObjectId();
+        const response = await request(app)
+            .post(`/api/jobs/${jobId}/delivered`)
+            .set('Authorization', `Bearer fake-token`);
+
+        expect(response.status).toBeGreaterThanOrEqual(500);
+    });
+
+    // Mocked behavior: JobController.confirmDelivery returns a rejected promise directly
+    // Input: POST /api/jobs/:id/confirm-delivery
+    // Expected status code: 500
+    // Expected behavior: route handler catch block (line 90) is executed
+    // Expected output: error response
+    test('should cover route handler catch block for confirmDelivery (line 90)', async () => {
+        const { JobController } = require('../../src/controllers/job.controller');
+        originalMethods.confirmDelivery = JobController.prototype.confirmDelivery;
+        
+        JobController.prototype.confirmDelivery = jest.fn().mockReturnValue(Promise.reject(new Error('Route handler catch test')));
+
+        const jobId = new mongoose.Types.ObjectId();
+        const response = await request(app)
+            .post(`/api/jobs/${jobId}/confirm-delivery`)
+            .set('Authorization', `Bearer fake-token`);
+
+        expect(response.status).toBeGreaterThanOrEqual(500);
     });
 });
 
