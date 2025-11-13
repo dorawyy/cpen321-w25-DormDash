@@ -2,6 +2,7 @@ import { describe, expect, test, beforeEach, jest } from '@jest/globals';
 import request from 'supertest';
 import mongoose from 'mongoose';
 import { JobStatus, JobType } from '../../src/types/job.type';
+import { OrderStatus } from '../../src/types/order.types';
 import { InternalServerError, JobNotFoundError } from '../../src/utils/errors.util';
 
 // Mock the database connection to avoid actual DB connections in mock tests
@@ -29,6 +30,7 @@ const mockJobModel: any = {
     findAvailableJobs: jest.fn(),
     findByMoverId: jest.fn(),
     findByStudentId: jest.fn(),
+    findByOrderId: jest.fn(),
     findById: jest.fn(),
     update: jest.fn(),
     tryAcceptJob: jest.fn(),
@@ -3038,6 +3040,845 @@ describe('POST /api/jobs/:id/confirm-pickup - confirmPickup error cases', () => 
         const error = mockNext.mock.calls[0][0] as Error;
         // The error occurs when trying to extract orderId from null updatedJob
         expect(error.message).toContain('Invalid orderId');
+    });
+});
+
+describe('JobService - Additional Coverage Tests', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    test('should cover getStudentJobs mapper call (line 239)', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+        
+        const studentId = new mongoose.Types.ObjectId().toString();
+        const mockJobs = [{
+            _id: new mongoose.Types.ObjectId(),
+            orderId: new mongoose.Types.ObjectId(),
+            studentId: new mongoose.Types.ObjectId(studentId),
+            jobType: JobType.STORAGE,
+            status: JobStatus.AVAILABLE,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        }];
+
+        mockJobModel.findByStudentId.mockResolvedValue(mockJobs as any);
+
+        const result = await service.getStudentJobs(studentId);
+
+        expect(result.data.jobs).toBeDefined();
+        expect(Array.isArray(result.data.jobs)).toBe(true);
+        expect(mockJobModel.findByStudentId).toHaveBeenCalled();
+    });
+
+    test('should cover updateJobStatus missing jobId validation (lines 272-273)', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        await expect(
+            service.updateJobStatus('', { status: JobStatus.ACCEPTED })
+        ).rejects.toThrow('jobId is required');
+    });
+
+    test('should cover RETURN job PICKED_UP flow with null updatedJob (line 368)', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        const jobId = new mongoose.Types.ObjectId().toString();
+        const orderId = new mongoose.Types.ObjectId();
+        const studentId = new mongoose.Types.ObjectId();
+        
+        const mockJob = {
+            _id: new mongoose.Types.ObjectId(jobId),
+            orderId: orderId,
+            studentId: studentId,
+            moverId: new mongoose.Types.ObjectId(),
+            jobType: JobType.RETURN,
+            status: JobStatus.ACCEPTED,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+        };
+
+        mockJobModel.findById.mockResolvedValue(mockJob as any);
+        mockJobModel.update.mockResolvedValue(null as any); // Return null to trigger line 368
+
+        await expect(
+            service.updateJobStatus(jobId, { status: JobStatus.PICKED_UP })
+        ).rejects.toThrow('Job not found');
+    });
+
+    test('should cover RETURN job PICKED_UP flow with job not found after update (line 384)', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        const jobId = new mongoose.Types.ObjectId().toString();
+        const orderId = new mongoose.Types.ObjectId();
+        const studentId = new mongoose.Types.ObjectId();
+        
+        const mockJob = {
+            _id: new mongoose.Types.ObjectId(jobId),
+            orderId: orderId,
+            studentId: studentId,
+            moverId: new mongoose.Types.ObjectId(),
+            jobType: JobType.RETURN,
+            status: JobStatus.ACCEPTED,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+        };
+
+        const mockUpdatedJob = {
+            ...mockJob,
+            status: JobStatus.PICKED_UP,
+        };
+
+        mockJobModel.findById
+            .mockResolvedValueOnce(mockJob as any) // First call
+            .mockResolvedValueOnce(null as any); // Second call returns null (line 384)
+        mockJobModel.update.mockResolvedValue(mockUpdatedJob as any);
+
+        await expect(
+            service.updateJobStatus(jobId, { status: JobStatus.PICKED_UP })
+        ).rejects.toThrow(expect.any(Error));
+    });
+
+    test('should cover RETURN job PICKED_UP flow with invalid orderId (lines 392-393)', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        const jobId = new mongoose.Types.ObjectId().toString();
+        const studentId = new mongoose.Types.ObjectId();
+        
+        const mockJob = {
+            _id: new mongoose.Types.ObjectId(jobId),
+            orderId: null, // Invalid orderId
+            studentId: studentId,
+            moverId: new mongoose.Types.ObjectId(),
+            jobType: JobType.RETURN,
+            status: JobStatus.ACCEPTED,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+        };
+
+        const mockUpdatedJob = {
+            ...mockJob,
+            status: JobStatus.PICKED_UP,
+        };
+
+        mockJobModel.findById
+            .mockResolvedValueOnce(mockJob as any) // First call
+            .mockResolvedValueOnce(mockJob as any); // Second call
+        mockJobModel.update.mockResolvedValue(mockUpdatedJob as any);
+
+        await expect(
+            service.updateJobStatus(jobId, { status: JobStatus.PICKED_UP })
+        ).rejects.toThrow('Invalid orderId in job');
+    });
+
+    test('should cover RETURN job PICKED_UP flow error handling (line 410)', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        const jobId = new mongoose.Types.ObjectId().toString();
+        const orderId = new mongoose.Types.ObjectId();
+        const studentId = new mongoose.Types.ObjectId();
+        
+        const mockJob = {
+            _id: new mongoose.Types.ObjectId(jobId),
+            orderId: orderId,
+            studentId: studentId,
+            moverId: new mongoose.Types.ObjectId(),
+            jobType: JobType.RETURN,
+            status: JobStatus.ACCEPTED,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+        };
+
+        const mockUpdatedJob = {
+            ...mockJob,
+            status: JobStatus.PICKED_UP,
+        };
+
+        mockJobModel.findById
+            .mockResolvedValueOnce(mockJob as any) // First call
+            .mockResolvedValueOnce(mockJob as any); // Second call
+        mockJobModel.update.mockResolvedValue(mockUpdatedJob as any);
+        mockOrderService.updateOrderStatus.mockRejectedValue(new Error('Order service error') as any);
+
+        // Should not throw, error is caught and logged (line 410)
+        const result = await service.updateJobStatus(jobId, { status: JobStatus.PICKED_UP });
+        expect(result.status).toBe(JobStatus.PICKED_UP);
+    });
+
+    test('should cover COMPLETED flow with invalid orderId (lines 450-451)', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        const jobId = new mongoose.Types.ObjectId().toString();
+        const studentId = new mongoose.Types.ObjectId();
+        
+        const mockJob = {
+            _id: new mongoose.Types.ObjectId(jobId),
+            orderId: null, // Invalid orderId
+            studentId: studentId,
+            moverId: new mongoose.Types.ObjectId(),
+            jobType: JobType.STORAGE,
+            status: JobStatus.PICKED_UP,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+        };
+
+        const mockUpdatedJob = {
+            ...mockJob,
+            status: JobStatus.COMPLETED,
+        };
+
+        mockJobModel.findById.mockResolvedValue(mockJob as any);
+        mockJobModel.update.mockResolvedValue(mockUpdatedJob as any);
+        mockUserModel.findByIdAndUpdate.mockResolvedValue({} as any);
+
+        await expect(
+            service.updateJobStatus(jobId, { status: JobStatus.COMPLETED })
+        ).rejects.toThrow('Invalid orderId in job');
+    });
+
+    test('should cover RETURN job COMPLETED flow (lines 479-488)', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        const jobId = new mongoose.Types.ObjectId().toString();
+        const orderId = new mongoose.Types.ObjectId();
+        const studentId = new mongoose.Types.ObjectId();
+        const moverId = new mongoose.Types.ObjectId();
+        
+        const mockJob = {
+            _id: new mongoose.Types.ObjectId(jobId),
+            orderId: orderId,
+            studentId: studentId,
+            moverId: moverId,
+            jobType: JobType.RETURN, // RETURN job
+            status: JobStatus.PICKED_UP,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+        };
+
+        const mockUpdatedJob = {
+            ...mockJob,
+            status: JobStatus.COMPLETED,
+        };
+
+        mockJobModel.findById.mockResolvedValue(mockJob as any);
+        mockJobModel.update.mockResolvedValue(mockUpdatedJob as any);
+        mockUserModel.findById.mockResolvedValue({
+            _id: moverId,
+            userRole: 'MOVER',
+            credits: 100,
+        } as any);
+        mockUserModel.update.mockResolvedValue({} as any);
+        mockOrderService.updateOrderStatus.mockResolvedValue(undefined as any);
+        mockNotificationService.sendJobStatusNotification.mockResolvedValue(undefined as any);
+
+        const result = await service.updateJobStatus(jobId, { status: JobStatus.COMPLETED });
+
+        expect(result.status).toBe(JobStatus.COMPLETED);
+        expect(mockOrderService.updateOrderStatus).toHaveBeenCalledWith(
+            orderId,
+            OrderStatus.RETURNED,
+            expect.any(String)
+        );
+    });
+
+    test('should cover invalid orderId at end of updateJobStatus (line 504)', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        const jobId = new mongoose.Types.ObjectId().toString();
+        const studentId = new mongoose.Types.ObjectId();
+        
+        const mockJob = {
+            _id: new mongoose.Types.ObjectId(jobId),
+            orderId: new mongoose.Types.ObjectId(),
+            studentId: studentId,
+            jobType: JobType.STORAGE,
+            status: JobStatus.AVAILABLE,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+        };
+
+        const mockUpdatedJob = {
+            ...mockJob,
+            orderId: null, // Invalid orderId at the end
+            status: JobStatus.PICKED_UP,
+        };
+
+        mockJobModel.findById.mockResolvedValue(mockJob as any);
+        mockJobModel.update.mockResolvedValue(mockUpdatedJob as any);
+
+        await expect(
+            service.updateJobStatus(jobId, { status: JobStatus.PICKED_UP })
+        ).rejects.toThrow('Order ID is invalid');
+    });
+
+    test('should cover confirmPickup with null updatedJob (line 661)', async () => {
+        // Mock extractObjectId to return a valid ObjectId even when updatedJob is null
+        // This allows us to bypass the earlier throw and reach line 661
+        const mongooseUtil = require('../../src/utils/mongoose.util');
+        const originalExtractObjectId = mongooseUtil.extractObjectId;
+        
+        mongooseUtil.extractObjectId = jest.fn((field) => {
+            if (field == null) {
+                // Return a valid ObjectId to bypass the early throw
+                return new mongoose.Types.ObjectId();
+            }
+            return originalExtractObjectId(field);
+        });
+
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        const jobId = new mongoose.Types.ObjectId().toString();
+        const studentId = new mongoose.Types.ObjectId().toString();
+        const orderId = new mongoose.Types.ObjectId();
+        
+        const mockJob = {
+            _id: new mongoose.Types.ObjectId(jobId),
+            orderId: orderId,
+            studentId: new mongoose.Types.ObjectId(studentId),
+            moverId: new mongoose.Types.ObjectId(),
+            jobType: JobType.STORAGE,
+            status: JobStatus.AWAITING_STUDENT_CONFIRMATION,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+        };
+
+        mockJobModel.findById.mockResolvedValue(mockJob as any);
+        mockJobModel.update.mockResolvedValue(null as any); // Return null to trigger line 661
+        mockOrderService.updateOrderStatus.mockResolvedValue(undefined as any);
+        mockEventEmitter.emitJobUpdated.mockResolvedValue(undefined as any);
+
+        await expect(
+            service.confirmPickup(jobId, studentId)
+        ).rejects.toThrow('Failed to update job - no job returned');
+
+        // Restore original function
+        mongooseUtil.extractObjectId = originalExtractObjectId;
+    });
+
+    test('should cover confirmDelivery with null updatedJob (line 812)', async () => {
+        // Mock extractObjectId to return a valid ObjectId even when updatedJob is null
+        // This allows us to bypass the earlier throw and reach line 812
+        const mongooseUtil = require('../../src/utils/mongoose.util');
+        const originalExtractObjectId = mongooseUtil.extractObjectId;
+        
+        mongooseUtil.extractObjectId = jest.fn((field) => {
+            if (field == null) {
+                // Return a valid ObjectId to bypass the early throw
+                return new mongoose.Types.ObjectId();
+            }
+            return originalExtractObjectId(field);
+        });
+
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        const jobId = new mongoose.Types.ObjectId().toString();
+        const studentId = new mongoose.Types.ObjectId().toString();
+        const orderId = new mongoose.Types.ObjectId();
+        
+        const mockJob = {
+            _id: new mongoose.Types.ObjectId(jobId),
+            orderId: orderId,
+            studentId: new mongoose.Types.ObjectId(studentId),
+            moverId: new mongoose.Types.ObjectId(),
+            jobType: JobType.RETURN,
+            status: JobStatus.AWAITING_STUDENT_CONFIRMATION,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+        };
+
+        mockJobModel.findById.mockResolvedValue(mockJob as any);
+        mockJobModel.update.mockResolvedValue(null as any); // Return null to trigger line 812
+        mockUserModel.findById.mockResolvedValue({
+            _id: new mongoose.Types.ObjectId(),
+            userRole: 'MOVER',
+            credits: 100,
+        } as any);
+        mockUserModel.update.mockResolvedValue({} as any);
+        mockOrderService.updateOrderStatus.mockResolvedValue(undefined as any);
+        mockEventEmitter.emitJobUpdated.mockResolvedValue(undefined as any);
+
+        await expect(
+            service.confirmDelivery(jobId, studentId)
+        ).rejects.toThrow('Failed to update job - no job returned');
+
+        // Restore original function
+        mongooseUtil.extractObjectId = originalExtractObjectId;
+    });
+
+    test('should cover addCreditsToMover with invalid moverId (lines 43-44)', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        const jobId = new mongoose.Types.ObjectId().toString();
+        const orderId = new mongoose.Types.ObjectId();
+        const studentId = new mongoose.Types.ObjectId();
+        
+        const mockJob = {
+            _id: new mongoose.Types.ObjectId(jobId),
+            orderId: orderId,
+            studentId: studentId,
+            moverId: { invalid: 'object' }, // Invalid moverId that extractObjectId can't convert (truthy but not extractable)
+            jobType: JobType.STORAGE,
+            status: JobStatus.PICKED_UP,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+        };
+
+        const mockUpdatedJob = {
+            ...mockJob,
+            status: JobStatus.COMPLETED,
+        };
+
+        mockJobModel.findById.mockResolvedValue(mockJob as any);
+        mockJobModel.update.mockResolvedValue(mockUpdatedJob as any);
+        mockUserModel.findByIdAndUpdate.mockResolvedValue({} as any);
+        mockOrderService.updateOrderStatus.mockResolvedValue(undefined as any);
+        mockNotificationService.sendJobStatusNotification.mockResolvedValue(undefined as any);
+
+        // Should not throw, invalid moverId is handled gracefully (extractObjectId returns null)
+        const result = await service.updateJobStatus(jobId, { status: JobStatus.COMPLETED });
+        expect(result.status).toBe(JobStatus.COMPLETED);
+    });
+
+    test('should cover addCreditsToMover catch block (line 62)', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        const jobId = new mongoose.Types.ObjectId().toString();
+        const orderId = new mongoose.Types.ObjectId();
+        const studentId = new mongoose.Types.ObjectId();
+        const moverId = new mongoose.Types.ObjectId();
+        
+        const mockJob = {
+            _id: new mongoose.Types.ObjectId(jobId),
+            orderId: orderId,
+            studentId: studentId,
+            moverId: moverId,
+            jobType: JobType.STORAGE,
+            status: JobStatus.PICKED_UP,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+        };
+
+        const mockUpdatedJob = {
+            ...mockJob,
+            status: JobStatus.COMPLETED,
+        };
+
+        mockJobModel.findById.mockResolvedValue(mockJob as any);
+        mockJobModel.update.mockResolvedValue(mockUpdatedJob as any);
+        mockUserModel.findById.mockRejectedValue(new Error('Database error') as any); // Trigger catch block
+        mockOrderService.updateOrderStatus.mockResolvedValue(undefined as any);
+        mockNotificationService.sendJobStatusNotification.mockResolvedValue(undefined as any);
+
+        // Should not throw, credit error is caught and logged
+        const result = await service.updateJobStatus(jobId, { status: JobStatus.COMPLETED });
+        expect(result.status).toBe(JobStatus.COMPLETED);
+    });
+
+    test('should cover cancelJobsForOrder method (lines 62-129)', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        const orderId = new mongoose.Types.ObjectId().toString();
+        const actorId = new mongoose.Types.ObjectId().toString();
+        const jobId1 = new mongoose.Types.ObjectId();
+        const jobId2 = new mongoose.Types.ObjectId();
+        const studentId = new mongoose.Types.ObjectId();
+        
+        const mockJobs = [
+            {
+                _id: jobId1,
+                orderId: new mongoose.Types.ObjectId(orderId),
+                studentId: studentId,
+                jobType: JobType.STORAGE,
+                status: JobStatus.AVAILABLE,
+                volume: 10,
+                price: 50,
+            },
+            {
+                _id: jobId2,
+                orderId: new mongoose.Types.ObjectId(orderId),
+                studentId: studentId,
+                jobType: JobType.RETURN,
+                status: JobStatus.ACCEPTED,
+                volume: 15,
+                price: 75,
+            },
+        ];
+
+        const mockUpdatedJob1 = {
+            ...mockJobs[0],
+            status: JobStatus.CANCELLED,
+        };
+
+        const mockUpdatedJob2 = {
+            ...mockJobs[1],
+            status: JobStatus.CANCELLED,
+        };
+
+        mockJobModel.findByOrderId.mockResolvedValue(mockJobs as any);
+        mockJobModel.update
+            .mockResolvedValueOnce(mockUpdatedJob1 as any)
+            .mockResolvedValueOnce(mockUpdatedJob2 as any);
+
+        const result = await service.cancelJobsForOrder(orderId, actorId);
+
+        expect(result.cancelledJobs).toBeDefined();
+        expect(result.cancelledJobs.length).toBe(2);
+        expect(mockJobModel.findByOrderId).toHaveBeenCalled();
+    });
+
+    test('should cover cancelJobsForOrder with missing orderId', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        await expect(
+            service.cancelJobsForOrder('')
+        ).rejects.toThrow('orderId is required');
+    });
+
+    test('should cover cancelJobsForOrder with update returning null', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        const orderId = new mongoose.Types.ObjectId().toString();
+        const jobId = new mongoose.Types.ObjectId();
+        const studentId = new mongoose.Types.ObjectId();
+        
+        const mockJobs = [{
+            _id: jobId,
+            orderId: new mongoose.Types.ObjectId(orderId),
+            studentId: studentId,
+            jobType: JobType.STORAGE,
+            status: JobStatus.AVAILABLE,
+            volume: 10,
+            price: 50,
+        }];
+
+        mockJobModel.findByOrderId.mockResolvedValue(mockJobs as any);
+        mockJobModel.update.mockResolvedValue(null as any); // Return null to trigger line 100-104
+
+        const result = await service.cancelJobsForOrder(orderId);
+
+        expect(result.cancelledJobs).toBeDefined();
+        expect(result.cancelledJobs.length).toBe(0); // No jobs cancelled because update returned null
+    });
+
+    test('should cover cancelJobsForOrder with error in update loop', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        const orderId = new mongoose.Types.ObjectId().toString();
+        const jobId1 = new mongoose.Types.ObjectId();
+        const jobId2 = new mongoose.Types.ObjectId();
+        const studentId = new mongoose.Types.ObjectId();
+        
+        const mockJobs = [
+            {
+                _id: jobId1,
+                orderId: new mongoose.Types.ObjectId(orderId),
+                studentId: studentId,
+                jobType: JobType.STORAGE,
+                status: JobStatus.AVAILABLE,
+                volume: 10,
+                price: 50,
+            },
+            {
+                _id: jobId2,
+                orderId: new mongoose.Types.ObjectId(orderId),
+                studentId: studentId,
+                jobType: JobType.RETURN,
+                status: JobStatus.ACCEPTED,
+                volume: 15,
+                price: 75,
+            },
+        ];
+
+        const mockUpdatedJob1 = {
+            ...mockJobs[0],
+            status: JobStatus.CANCELLED,
+        };
+
+        mockJobModel.findByOrderId.mockResolvedValue(mockJobs as any);
+        mockJobModel.update
+            .mockResolvedValueOnce(mockUpdatedJob1 as any)
+            .mockRejectedValueOnce(new Error('Update failed') as any); // Second update fails
+
+        const result = await service.cancelJobsForOrder(orderId);
+
+        // Should still return results for successful cancellations
+        expect(result.cancelledJobs).toBeDefined();
+        expect(result.cancelledJobs.length).toBe(1);
+    });
+
+    test('should cover cancelJobsForOrder catch block (lines 127-129)', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        const orderId = new mongoose.Types.ObjectId().toString();
+        
+        mockJobModel.findByOrderId.mockRejectedValue(new Error('Database error') as any);
+
+        await expect(
+            service.cancelJobsForOrder(orderId)
+        ).rejects.toThrow('Failed to cancel jobs for order');
+    });
+
+    test('should cover createJob missing orderId/studentId validation (lines 135-139)', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        await expect(
+            service.createJob({
+                orderId: '',
+                studentId: new mongoose.Types.ObjectId().toString(),
+                jobType: JobType.STORAGE,
+                volume: 10,
+                price: 50,
+                pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+                dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+                scheduledTime: new Date().toISOString(),
+            })
+        ).rejects.toThrow('orderId and studentId are required');
+
+        await expect(
+            service.createJob({
+                orderId: new mongoose.Types.ObjectId().toString(),
+                studentId: '',
+                jobType: JobType.STORAGE,
+                volume: 10,
+                price: 50,
+                pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+                dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+                scheduledTime: new Date().toISOString(),
+            })
+        ).rejects.toThrow('orderId and studentId are required');
+    });
+
+    test('should cover createJob invalid volume validation (lines 143-144)', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        await expect(
+            service.createJob({
+                orderId: new mongoose.Types.ObjectId().toString(),
+                studentId: new mongoose.Types.ObjectId().toString(),
+                jobType: JobType.STORAGE,
+                volume: 0,
+                price: 50,
+                pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+                dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+                scheduledTime: new Date().toISOString(),
+            })
+        ).rejects.toThrow('volume must be greater than 0');
+
+        await expect(
+            service.createJob({
+                orderId: new mongoose.Types.ObjectId().toString(),
+                studentId: new mongoose.Types.ObjectId().toString(),
+                jobType: JobType.STORAGE,
+                volume: -5,
+                price: 50,
+                pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+                dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+                scheduledTime: new Date().toISOString(),
+            })
+        ).rejects.toThrow('volume must be greater than 0');
+    });
+
+    test('should cover createJob invalid price validation (lines 148-149)', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        await expect(
+            service.createJob({
+                orderId: new mongoose.Types.ObjectId().toString(),
+                studentId: new mongoose.Types.ObjectId().toString(),
+                jobType: JobType.STORAGE,
+                volume: 10,
+                price: 0,
+                pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+                dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+                scheduledTime: new Date().toISOString(),
+            })
+        ).rejects.toThrow('price must be greater than 0');
+
+        await expect(
+            service.createJob({
+                orderId: new mongoose.Types.ObjectId().toString(),
+                studentId: new mongoose.Types.ObjectId().toString(),
+                jobType: JobType.STORAGE,
+                volume: 10,
+                price: -10,
+                pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+                dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+                scheduledTime: new Date().toISOString(),
+            })
+        ).rejects.toThrow('price must be greater than 0');
+    });
+
+    test('should cover getAllJobs mapper call (line 196)', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+        
+        const mockJobs = [{
+            _id: new mongoose.Types.ObjectId(),
+            orderId: new mongoose.Types.ObjectId(),
+            studentId: new mongoose.Types.ObjectId(),
+            jobType: JobType.STORAGE,
+            status: JobStatus.AVAILABLE,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        }];
+
+        mockJobModel.findAllJobs.mockResolvedValue(mockJobs as any);
+
+        const result = await service.getAllJobs();
+
+        expect(result.data.jobs).toBeDefined();
+        expect(Array.isArray(result.data.jobs)).toBe(true);
+        expect(mockJobModel.findAllJobs).toHaveBeenCalled();
+    });
+
+    test('should cover getAllAvailableJobs mapper call (lines 207-209)', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+        
+        const mockJobs = [{
+            _id: new mongoose.Types.ObjectId(),
+            orderId: new mongoose.Types.ObjectId(),
+            studentId: new mongoose.Types.ObjectId(),
+            jobType: JobType.STORAGE,
+            status: JobStatus.AVAILABLE,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        }];
+
+        mockJobModel.findAvailableJobs.mockResolvedValue(mockJobs as any);
+
+        const result = await service.getAllAvailableJobs();
+
+        expect(result.data.jobs).toBeDefined();
+        expect(Array.isArray(result.data.jobs)).toBe(true);
+        expect(mockJobModel.findAvailableJobs).toHaveBeenCalled();
+    });
+
+    test('should cover getMoverJobs mapper call (line 224)', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+        
+        const moverId = new mongoose.Types.ObjectId().toString();
+        const mockJobs = [{
+            _id: new mongoose.Types.ObjectId(),
+            orderId: new mongoose.Types.ObjectId(),
+            studentId: new mongoose.Types.ObjectId(),
+            moverId: new mongoose.Types.ObjectId(moverId),
+            jobType: JobType.STORAGE,
+            status: JobStatus.ACCEPTED,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        }];
+
+        mockJobModel.findByMoverId.mockResolvedValue(mockJobs as any);
+
+        const result = await service.getMoverJobs(moverId);
+
+        expect(result.data.jobs).toBeDefined();
+        expect(Array.isArray(result.data.jobs)).toBe(true);
+        expect(mockJobModel.findByMoverId).toHaveBeenCalled();
+    });
+
+    test('should cover requestPickupConfirmation with EventEmitter error (lines 560-584)', async () => {
+        const { JobService } = require('../../src/services/job.service');
+        const service = new JobService();
+
+        const jobId = new mongoose.Types.ObjectId().toString();
+        const moverId = new mongoose.Types.ObjectId().toString();
+        const orderId = new mongoose.Types.ObjectId();
+        const studentId = new mongoose.Types.ObjectId();
+        
+        const mockJob = {
+            _id: new mongoose.Types.ObjectId(jobId),
+            orderId: orderId,
+            studentId: studentId,
+            moverId: new mongoose.Types.ObjectId(moverId),
+            jobType: JobType.STORAGE,
+            status: JobStatus.ACCEPTED,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+        };
+
+        const mockUpdatedJob = {
+            ...mockJob,
+            status: JobStatus.AWAITING_STUDENT_CONFIRMATION,
+            verificationRequestedAt: new Date(),
+        };
+
+        mockJobModel.findById.mockResolvedValue(mockJob as any);
+        mockJobModel.update.mockResolvedValue(mockUpdatedJob as any);
+        mockNotificationService.sendJobStatusNotification.mockResolvedValue(undefined as any);
+        mockEventEmitter.emitJobUpdated.mockImplementation(() => {
+            throw new Error('EventEmitter error');
+        });
+
+        // Should not throw, error is caught and logged
+        const result = await service.requestPickupConfirmation(jobId, moverId);
+        expect(result.status).toBe(JobStatus.AWAITING_STUDENT_CONFIRMATION);
     });
 });
 
