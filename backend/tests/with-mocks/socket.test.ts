@@ -169,6 +169,11 @@ afterAll(async () => {
 }, 30000);
 
 describe('Socket.IO - Order Status Updates', () => {
+  // Mocked behavior: none (real Socket.IO connections and database operations)
+  // Input: PATCH /api/jobs/:jobId/status with status=ACCEPTED, student socket listening for order.updated
+  // Expected status code: 200
+  // Expected behavior: job status updates, order status updates, socket event emitted to student
+  // Expected output: order.updated event with order data and ACCEPTED status
   test('Order status should update to ACCEPTED when mover accepts STORAGE job', async () => {
     // Create order and job
     const order = await (orderModel as any).order.create({
@@ -225,7 +230,6 @@ describe('Socket.IO - Order Status Updates', () => {
       studentSocket.on('connect', () => resolve());
       studentSocket.on('connect_error', (err) => reject(err));
       
-      // Add timeout
       setTimeout(() => reject(new Error('Socket connection timeout')), 5000);
     });
 
@@ -257,6 +261,11 @@ describe('Socket.IO - Order Status Updates', () => {
     await (orderModel as any).order.deleteOne({ _id: order._id });
   }, 30000);
 
+  // Mocked behavior: none (real Socket.IO connections and database operations)
+  // Input: PATCH /api/jobs/:jobId/status with status=COMPLETED on STORAGE job, student socket listening
+  // Expected status code: 200
+  // Expected behavior: job status updates to COMPLETED, order status updates to IN_STORAGE, socket event emitted
+  // Expected output: order.updated event with order data and IN_STORAGE status
   test('Order status should update to IN_STORAGE when mover completes STORAGE job', async () => {
     // Create order with ACCEPTED status
     const order = await (orderModel as any).order.create({
@@ -346,6 +355,11 @@ describe('Socket.IO - Order Status Updates', () => {
     await (orderModel as any).order.deleteOne({ _id: order._id });
   }, 30000);
 
+  // Mocked behavior: none (real Socket.IO connections and database operations)
+  // Input: PATCH /api/jobs/:jobId/status with status=COMPLETED on RETURN job, student socket listening
+  // Expected status code: 200
+  // Expected behavior: job status updates to COMPLETED, order status updates to RETURNED, socket event emitted
+  // Expected output: order.updated event with order data and RETURNED status
   test('Order status should update to RETURNED when mover completes RETURN job', async () => {
     // Create order with IN_STORAGE status
     const order = await (orderModel as any).order.create({
@@ -441,8 +455,12 @@ describe('Socket.IO - Order Status Updates', () => {
     await (orderModel as any).order.deleteOne({ _id: order._id });
   }, 30000);
 
-
-  test('// Input: existing active order\n// Expected status code: 200\n// Expected behavior: cancellation succeeds despite emitToRooms failure\n// Expected output: success message', async () => {
+  // Mocked behavior: socketModule.emitToRooms throws error
+  // Input: DELETE /api/order/cancel-order with existing active order
+  // Expected status code: 200
+  // Expected behavior: order cancellation succeeds despite emitToRooms failure
+  // Expected output: success message, emitToRooms was called but order still cancelled
+  test('should cancel order successfully despite emitToRooms failure', async () => {
     // Create an order to cancel
     const pickupTime = new Date(Date.now() + 3600000).toISOString();
     const returnTime = new Date(Date.now() + 86400000).toISOString();
@@ -476,7 +494,12 @@ describe('Socket.IO - Order Status Updates', () => {
     spy.mockRestore();
   });
 
-  test('// Input: valid order payload\n// Expected status code: 201\n// Expected behavior: order is created despite emitToRooms failure\n// Expected output: order id returned', async () => {
+  // Mocked behavior: socketModule.emitToRooms throws error
+  // Input: POST /api/order with valid order payload
+  // Expected status code: 201
+  // Expected behavior: order is created successfully despite emitToRooms failure
+  // Expected output: order id returned, emitToRooms was called
+  test('should create order successfully despite emitToRooms failure', async () => {
       // Spy on emitToRooms and force it to throw to simulate socket failure
       const spy = jest.spyOn(socketModule, 'emitToRooms').mockImplementation(() => {
         throw new Error('Forced emitToRooms error');
@@ -500,7 +523,6 @@ describe('Socket.IO - Order Status Updates', () => {
         .expect(201);
   
       expect(response.body).toHaveProperty('_id');
-      // Ensure we did attempt to emit
       expect(spy).toHaveBeenCalled();
   
       spy.mockRestore();
@@ -508,6 +530,11 @@ describe('Socket.IO - Order Status Updates', () => {
 });
 
 describe('Socket.IO - Job Status Updates', () => {
+  // Mocked behavior: none (real Socket.IO connections and database operations)
+  // Input: PATCH /api/jobs/:jobId/status with status=PICKED_UP, student socket listening for job.updated
+  // Expected status code: 200
+  // Expected behavior: job status updates to PICKED_UP, socket event emitted to student
+  // Expected output: job.updated event with job data and PICKED_UP status
   test('Job status should update when mover picks up job', async () => {
     // Create order and job
     const order = await (orderModel as any).order.create({
@@ -599,6 +626,11 @@ describe('Socket.IO - Job Status Updates', () => {
 });
 
 describe('Socket.IO - Authentication (verifyTokenString coverage)', () => {
+  // Mocked behavior: process.env.JWT_SECRET is deleted (simulates missing config)
+  // Input: Socket connection with valid JWT token but JWT_SECRET not configured
+  // Expected status code: N/A (Socket.IO connection)
+  // Expected behavior: connection rejected with authentication error
+  // Expected output: connect_error event with "Authentication error" message
   test('should reject connection with JWT_SECRET not configured', async () => {
     const originalSecret = process.env.JWT_SECRET;
     delete process.env.JWT_SECRET;
@@ -634,6 +666,11 @@ describe('Socket.IO - Authentication (verifyTokenString coverage)', () => {
     }
   }, 10000);
 
+  // Mocked behavior: none (uses real JWT with expired timestamp)
+  // Input: Socket connection with expired JWT token (expiresIn: '-1s')
+  // Expected status code: N/A (Socket.IO connection)
+  // Expected behavior: connection rejected due to token expiration
+  // Expected output: connect_error event, promise rejection
   test('should reject connection with expired token', async () => {
     const expiredToken = jwt.sign(
       { id: testUserId },
@@ -668,6 +705,11 @@ describe('Socket.IO - Authentication (verifyTokenString coverage)', () => {
     ).rejects.toThrow();
   }, 10000);
 
+  // Mocked behavior: none (uses real invalid JWT token)
+  // Input: Socket connection with malformed JWT token ('Bearer invalid.malformed.token')
+  // Expected status code: N/A (Socket.IO connection)
+  // Expected behavior: connection rejected due to invalid token format
+  // Expected output: connect_error event, promise rejection
   test('should reject connection with malformed token', async () => {
     await expect(
       new Promise((resolve, reject) => {
@@ -698,7 +740,7 @@ describe('Socket.IO - Authentication (verifyTokenString coverage)', () => {
 });
 
 describe('EventEmitter Error Handling - Job Operations', () => {
-  // Mocked behavior: emitToRooms throws error during emitJobCreated (line 60 catch block)
+  // Mocked behavior: emitToRooms throws error during emitJobCreated 
   // Input: POST /api/jobs with valid job payload
   // Expected status code: 201
   // Expected behavior: job creation succeeds, emitJobCreated catches error internally, logger.warn is called
@@ -754,12 +796,10 @@ describe('EventEmitter Error Handling - Job Operations', () => {
         scheduledTime: new Date().toISOString()
       });
 
-    // Job creation should succeed despite emitToRooms error
     expect(response.status).toBe(201);
     expect(response.body).toHaveProperty('success', true);
     expect(response.body).toHaveProperty('id');
 
-    // Verify emitToRooms was called and threw
     expect(spy).toHaveBeenCalled();
 
     // Cleanup
@@ -771,7 +811,7 @@ describe('EventEmitter Error Handling - Job Operations', () => {
     spy.mockRestore();
   }, 10000);
 
-  // Mocked behavior: emitToRooms throws error during emitJobUpdated (line 112 catch block)
+  // Mocked behavior: emitToRooms throws error during emitJobUpdated
   // Input: PATCH /api/jobs/:id/status with status PICKED_UP
   // Expected status code: 200
   // Expected behavior: job status update succeeds, emitJobUpdated catches error internally, logger.warn is called
@@ -835,11 +875,9 @@ describe('EventEmitter Error Handling - Job Operations', () => {
       .set('Authorization', `Bearer ${moverAuthToken}`)
       .send({ status: JobStatus.PICKED_UP });
 
-    // Status update should succeed despite emitToRooms error
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('success', true);
 
-    // Verify emitToRooms was called and threw
     expect(spy).toHaveBeenCalled();
 
     // Cleanup
@@ -849,7 +887,7 @@ describe('EventEmitter Error Handling - Job Operations', () => {
     spy.mockRestore();
   }, 10000);
 
-  // Mocked behavior: emitToRooms throws error during emitJobUpdated for unassigned job (line 112 catch block, line 98 branch)
+  // Mocked behavior: emitToRooms throws error during emitJobUpdated for unassigned job broadcast
   // Input: PATCH /api/jobs/:id/accept (mover accepts available job)
   // Expected status code: 200
   // Expected behavior: job acceptance succeeds, emitJobUpdated catches error internally, broadcasts to all movers logic tested
@@ -911,11 +949,9 @@ describe('EventEmitter Error Handling - Job Operations', () => {
       .set('Authorization', `Bearer ${moverAuthToken}`)
       .send();
 
-    // Job acceptance should succeed despite emitToRooms error
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('success', true);
 
-    // Verify emitToRooms was called and threw
     expect(spy).toHaveBeenCalled();
 
     // Cleanup
@@ -925,6 +961,11 @@ describe('EventEmitter Error Handling - Job Operations', () => {
     spy.mockRestore();
   }, 10000);
 
+  // Mocked behavior: none (tests default meta object creation)
+  // Input: emitJobCreated called without meta parameter
+  // Expected status code: N/A (direct function call)
+  // Expected behavior: function creates default meta with timestamp, does not throw
+  // Expected output: no error thrown
   test('emitJobCreated without meta should create default meta', async () => {
         const job = await (jobModel as any).job.create({
           orderId: new mongoose.Types.ObjectId(),
@@ -942,6 +983,11 @@ describe('EventEmitter Error Handling - Job Operations', () => {
         await (jobModel as any).job.deleteOne({ _id: job._id });
       });
   
+      // Mocked behavior: none (tests custom meta object passing)
+      // Input: emitJobCreated called with custom meta parameter
+      // Expected status code: N/A (direct function call)
+      // Expected behavior: function uses provided meta instead of creating default, does not throw
+      // Expected output: no error thrown
       test('emitJobCreated with meta should use provided meta', async () => {
         const job = await (jobModel as any).job.create({
           orderId: new mongoose.Types.ObjectId(),
@@ -961,6 +1007,11 @@ describe('EventEmitter Error Handling - Job Operations', () => {
         await (jobModel as any).job.deleteOne({ _id: job._id });
       });
   
+      // Mocked behavior: none (tests default meta object creation)
+      // Input: emitJobUpdated called without meta parameter
+      // Expected status code: N/A (direct function call)
+      // Expected behavior: function creates default meta with timestamp, does not throw
+      // Expected output: no error thrown
       test('emitJobUpdated without meta should create default meta', async () => {
         const job = await (jobModel as any).job.create({
           orderId: new mongoose.Types.ObjectId(),
@@ -978,6 +1029,11 @@ describe('EventEmitter Error Handling - Job Operations', () => {
         await (jobModel as any).job.deleteOne({ _id: job._id });
       });
   
+      // Mocked behavior: none (tests default meta object creation)
+      // Input: emitOrderCreated called without meta parameter
+      // Expected status code: N/A (direct function call)
+      // Expected behavior: function creates default meta with timestamp, does not throw
+      // Expected output: no error thrown
       test('emitOrderCreated without meta should create default meta', async () => {
         const order = await (orderModel as any).order.create({
           studentId: testUserId,
@@ -996,6 +1052,11 @@ describe('EventEmitter Error Handling - Job Operations', () => {
         await (orderModel as any).order.deleteOne({ _id: order._id });
       });
   
+      // Mocked behavior: none (tests default meta object creation)
+      // Input: emitOrderUpdated called without meta parameter
+      // Expected status code: N/A (direct function call)
+      // Expected behavior: function creates default meta with timestamp, does not throw
+      // Expected output: no error thrown
       test('emitOrderUpdated without meta should create default meta', async () => {
         const order = await (orderModel as any).order.create({
           studentId: testUserId,
@@ -1014,6 +1075,11 @@ describe('EventEmitter Error Handling - Job Operations', () => {
         await (orderModel as any).order.deleteOne({ _id: order._id });
       });
 
+      // Mocked behavior: none (tests moverId extraction from order)
+      // Input: emitOrderCreated called with order that has moverId field
+      // Expected status code: N/A (direct function call)
+      // Expected behavior: function extracts moverId using extractId(order.moverId), does not throw
+      // Expected output: no error thrown
       test('emitOrderCreated with moverId should include moverId in payload', async () => {
             const order = await (orderModel as any).order.create({
               studentId: testUserId,
@@ -1033,6 +1099,11 @@ describe('EventEmitter Error Handling - Job Operations', () => {
             await (orderModel as any).order.deleteOne({ _id: order._id });
           });
       
+          // Mocked behavior: none (tests undefined moverId handling)
+          // Input: emitOrderCreated called with order that has NO moverId field
+          // Expected status code: N/A (direct function call)
+          // Expected behavior: function handles missing moverId (uses undefined), does not throw
+          // Expected output: no error thrown
           test('emitOrderCreated without moverId should have undefined moverId', async () => {
             const order = await (orderModel as any).order.create({
               studentId: testUserId,
@@ -1052,6 +1123,11 @@ describe('EventEmitter Error Handling - Job Operations', () => {
             await (orderModel as any).order.deleteOne({ _id: order._id });
           });
       
+          // Mocked behavior: none (tests moverId extraction from order)
+          // Input: emitOrderUpdated called with order that has moverId field
+          // Expected status code: N/A (direct function call)
+          // Expected behavior: function extracts moverId using extractId(order.moverId), does not throw
+          // Expected output: no error thrown
           test('emitOrderUpdated with moverId should include moverId in payload', async () => {
             const order = await (orderModel as any).order.create({
               studentId: testUserId,
@@ -1071,6 +1147,11 @@ describe('EventEmitter Error Handling - Job Operations', () => {
             await (orderModel as any).order.deleteOne({ _id: order._id });
           });
       
+          // Mocked behavior: none (tests undefined moverId handling)
+          // Input: emitOrderUpdated called with order that has NO moverId field
+          // Expected status code: N/A (direct function call)
+          // Expected behavior: function handles missing moverId (uses undefined), does not throw
+          // Expected output: no error thrown
           test('emitOrderUpdated without moverId should have undefined moverId', async () => {
             const order = await (orderModel as any).order.create({
               studentId: testUserId,
