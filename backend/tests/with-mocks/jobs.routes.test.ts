@@ -158,6 +158,11 @@ describe('POST /api/jobs', () => {
         jest.clearAllMocks();
     });
 
+    // Mocked behavior: jobModel.create throws an error
+    // Input: valid job data with all required fields
+    // Expected status code: 500
+    // Expected behavior: the error was handled gracefully, no job created
+    // Expected output: error response
     test('should handle database error when creating job (jobModel.create throws error)', async () => {
         mockJobModel.create.mockRejectedValue(new Error('Database connection failed'));
 
@@ -181,6 +186,11 @@ describe('POST /api/jobs', () => {
         expect(mockJobModel.create).toHaveBeenCalled();
     });
 
+    // Mocked behavior: jobModel.create throws a generic Error
+    // Input: valid job data with all required fields
+    // Expected status code: 500
+    // Expected behavior: the error was handled gracefully, no job created
+    // Expected output: error response
     test('should handle generic error when creating job (service throws Error)', async () => {
         mockJobModel.create.mockRejectedValue(new Error('Failed to create job'));
 
@@ -204,7 +214,11 @@ describe('POST /api/jobs', () => {
         expect(mockJobModel.create).toHaveBeenCalled();
     });
 
-
+    // Mocked behavior: validation middleware uses original Zod validation
+    // Input: job data with invalid orderId (not a valid MongoDB ObjectId)
+    // Expected status code: 400
+    // Expected behavior: validation error caught, database is unchanged, no job created
+    // Expected output: validation error response with field: 'orderId', message: 'Invalid order ID'
     test('should handle validation error with invalid orderId', async () => {
         // Test the Zod validation for invalid order ID
         // The jobSchema uses mongoose.isValidObjectId(val) which should fail for invalid format
@@ -233,6 +247,11 @@ describe('POST /api/jobs', () => {
         expect(mockJobModel.create).not.toHaveBeenCalled();
     });
 
+    // Mocked behavior: validation middleware uses original Zod validation
+    // Input: job data with invalid studentId (not a valid MongoDB ObjectId)
+    // Expected status code: 400
+    // Expected behavior: validation error caught, database is unchanged, no job created
+    // Expected output: validation error response with field: 'studentId', message: 'Invalid student ID'
     test('should handle validation error with invalid studentId', async () => {
         // Test the Zod validation for invalid student ID
         // The jobSchema uses mongoose.isValidObjectId(val) which should fail for invalid format
@@ -268,6 +287,11 @@ describe('GET /api/jobs', () => {
         jest.clearAllMocks();
     });
 
+    // Mocked behavior: jobModel.findAllJobs throws an error
+    // Input: GET request with valid authentication token
+    // Expected status code: 500
+    // Expected behavior: the error was handled gracefully
+    // Expected output: error response
     test('should handle database error in getAllJobs (triggers controller catch block)', async () => {
         mockJobModel.findAllJobs.mockRejectedValue(new Error('Database query failed'));
 
@@ -287,6 +311,11 @@ describe('GET /api/jobs/available', () => {
         jest.clearAllMocks();
     });
 
+    // Mocked behavior: jobModel.findAvailableJobs throws an error
+    // Input: GET request with valid authentication token
+    // Expected status code: 500
+    // Expected behavior: the error was handled gracefully
+    // Expected output: error response
     test('should handle database error in getAllAvailableJobs (triggers controller catch block)', async () => {
         mockJobModel.findAvailableJobs.mockRejectedValue(new Error('Failed to get available jobs'));
 
@@ -306,6 +335,11 @@ describe('GET /api/jobs/mover', () => {
         jest.clearAllMocks();
     });
 
+    // Mocked behavior: jobModel.findByMoverId throws an error
+    // Input: GET request with valid authentication token
+    // Expected status code: 500
+    // Expected behavior: the error was handled gracefully
+    // Expected output: error response
     test('should handle database error in getMoverJobs (triggers controller catch block)', async () => {
         mockJobModel.findByMoverId.mockRejectedValue(new Error('Failed to get mover jobs'));
 
@@ -317,8 +351,11 @@ describe('GET /api/jobs/mover', () => {
         expect(mockJobModel.findByMoverId).toHaveBeenCalled();
     });
 
-
-
+    // Mocked behavior: testUserId is set to null to simulate unauthenticated request
+    // Input: GET request without Authorization header
+    // Expected status code: 401
+    // Expected behavior: no database query executed
+    // Expected output: authentication error response
     test('should call next with error when user is not authenticated ', async () => {
         // Test authentication error via API endpoint
         // Set testUserId to null to simulate unauthenticated request
@@ -326,8 +363,8 @@ describe('GET /api/jobs/mover', () => {
         testUserId = null as any;
 
         try {
-            const response = await request(app)
-                .get('/api/jobs/mover')
+        const response = await request(app)
+            .get('/api/jobs/mover')
                 // No Authorization header - should trigger 401
                 .expect(401);
 
@@ -343,6 +380,11 @@ describe('GET /api/jobs/student', () => {
         jest.clearAllMocks();
     });
 
+    // Mocked behavior: jobModel.findByStudentId throws an error
+    // Input: GET request with valid authentication token
+    // Expected status code: 500
+    // Expected behavior: the error was handled gracefully
+    // Expected output: error response
     test('should handle database error in getStudentJobs (triggers controller catch block)', async () => {
         mockJobModel.findByStudentId.mockRejectedValue(new Error('Failed to get student jobs'));
 
@@ -354,8 +396,11 @@ describe('GET /api/jobs/student', () => {
         expect(mockJobModel.findByStudentId).toHaveBeenCalled();
     });
 
-
-
+    // Mocked behavior: testUserId is set to null to simulate unauthenticated request
+    // Input: GET request without Authorization header
+    // Expected status code: 401
+    // Expected behavior: no database query executed
+    // Expected output: authentication error response
     test('should call next with error when user is not authenticated ', async () => {
         // Test authentication error via API endpoint
         // Set testUserId to null to simulate unauthenticated request
@@ -363,8 +408,8 @@ describe('GET /api/jobs/student', () => {
         testUserId = null as any;
 
         try {
-            const response = await request(app)
-                .get('/api/jobs/student')
+        const response = await request(app)
+            .get('/api/jobs/student')
                 // No Authorization header - should trigger 401
                 .expect(401);
 
@@ -380,6 +425,11 @@ describe('GET /api/jobs/:id', () => {
         jest.clearAllMocks();
     });
 
+    // Mocked behavior: jobModel.findById throws an error
+    // Input: GET request with valid job ID and authentication token
+    // Expected status code: 500
+    // Expected behavior: the error was handled gracefully
+    // Expected output: error response
     test('should handle database error in getJobById (triggers controller catch block)', async () => {
         mockJobModel.findById.mockRejectedValue(new Error('Failed to get job'));
 
@@ -392,6 +442,11 @@ describe('GET /api/jobs/:id', () => {
         expect(mockJobModel.findById).toHaveBeenCalled();
     });
 
+    // Mocked behavior: jobModel.findById returns null
+    // Input: GET request with valid job ID and authentication token
+    // Expected status code: 404
+    // Expected behavior: JobNotFoundError is thrown and handled
+    // Expected output: job not found error response
     test('should handle JobNotFoundError in getJobById', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         mockJobModel.findById.mockResolvedValue(null as any);
@@ -404,8 +459,11 @@ describe('GET /api/jobs/:id', () => {
         expect(mockJobModel.findById).toHaveBeenCalled();
     });
 
-
-    // Test toJobResponse mapper coverage 
+    // Mocked behavior: jobModel.findById returns a mock job, JobMapper.toJobResponse uses actual implementation
+    // Input: GET request with valid job ID and authentication token
+    // Expected status code: 200
+    // Expected behavior: job is retrieved and mapped using toJobResponse
+    // Expected output: data.job object with all job details properly mapped
     test('should successfully get job by id and map response using toJobResponse', async () => {
         // Import actual mapper to test it
         const actualMapper = jest.requireActual('../../src/mappers/job.mapper') as typeof import('../../src/mappers/job.mapper');
@@ -454,7 +512,11 @@ describe('GET /api/jobs/:id', () => {
         expect(mockJobModel.findById).toHaveBeenCalledWith(jobId);
     });
 
-    // Test toJobResponse mapper with undefined moverId (covers moverId ternary branch)
+    // Mocked behavior: jobModel.findById returns a mock job with undefined moverId, JobMapper.toJobResponse uses actual implementation
+    // Input: GET request with valid job ID and authentication token
+    // Expected status code: 200
+    // Expected behavior: job is retrieved and mapped, moverId ternary branch is covered
+    // Expected output: data.job object with undefined moverId
     test('should get job by id with undefined moverId', async () => {
         const actualMapper = jest.requireActual('../../src/mappers/job.mapper') as typeof import('../../src/mappers/job.mapper');
         
@@ -492,7 +554,11 @@ describe('GET /api/jobs/:id', () => {
         expect(response.body.data.job.moverId).toBeUndefined();
     });
 
-    // Test toJobResponse mapper with string timestamps (covers date ternary branches)
+    // Mocked behavior: jobModel.findById returns a mock job with string timestamps, JobMapper.toJobResponse uses actual implementation
+    // Input: GET request with valid job ID and authentication token
+    // Expected status code: 200
+    // Expected behavior: job is retrieved and mapped, date ternary branches are covered
+    // Expected output: data.job object with string timestamps preserved
     test('should get job by id with string timestamps', async () => {
         const actualMapper = jest.requireActual('../../src/mappers/job.mapper') as typeof import('../../src/mappers/job.mapper');
         
@@ -538,6 +604,11 @@ describe('PATCH /api/jobs/:id/status', () => {
         jest.clearAllMocks();
     });
 
+    // Mocked behavior: jobModel.findById throws an error
+    // Input: PATCH request with valid job ID, status, and authentication token
+    // Expected status code: 500
+    // Expected behavior: the error was handled gracefully
+    // Expected output: error response
     test('should handle database error in updateJobStatus (triggers controller catch block)', async () => {
         mockJobModel.findById.mockRejectedValue(new Error('Failed to update job status'));
 
@@ -551,6 +622,11 @@ describe('PATCH /api/jobs/:id/status', () => {
         expect(mockJobModel.findById).toHaveBeenCalled();
     });
 
+    // Mocked behavior: jobModel.findById returns null
+    // Input: PATCH request with valid job ID, status: ACCEPTED, and authentication token
+    // Expected status code: 404
+    // Expected behavior: JobNotFoundError is thrown and handled
+    // Expected output: job not found error response
     test('should handle JobNotFoundError in updateJobStatus', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         mockJobModel.findById.mockResolvedValue(null as any);
@@ -564,6 +640,11 @@ describe('PATCH /api/jobs/:id/status', () => {
         expect(mockJobModel.findById).toHaveBeenCalled();
     });
 
+    // Mocked behavior: route parameter is empty (//status)
+    // Input: PATCH request with empty job ID in URL, status: ACCEPTED, and authentication token
+    // Expected status code: 400
+    // Expected behavior: validation error, no database query executed
+    // Expected output: validation error response
     test('should handle missing jobId ', async () => {
         const response = await request(app)
             .patch('/api/jobs//status')
@@ -573,6 +654,11 @@ describe('PATCH /api/jobs/:id/status', () => {
         expect(response.status).toBeGreaterThanOrEqual(400);
     });
 
+    // Mocked behavior: jobModel.findById returns a mock job, request body is empty (no status field)
+    // Input: PATCH request with valid job ID, empty request body, and authentication token
+    // Expected status code: 400
+    // Expected behavior: validation error, no job status updated
+    // Expected output: validation error response
     test('should handle missing status ', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         mockJobModel.findById.mockResolvedValue({
@@ -595,6 +681,11 @@ describe('PATCH /api/jobs/:id/status', () => {
         expect(response.status).toBeGreaterThanOrEqual(400);
     });
 
+    // Mocked behavior: jobModel.findById returns a mock job, jobModel.update returns null
+    // Input: PATCH request with valid job ID, status: PICKED_UP, and authentication token
+    // Expected status code: 500
+    // Expected behavior: job not found after update, error thrown
+    // Expected output: error response
     test('should handle job not found ', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         mockJobModel.findById.mockResolvedValue(null as any);
@@ -608,6 +699,11 @@ describe('PATCH /api/jobs/:id/status', () => {
         expect(mockJobModel.findById).toHaveBeenCalled();
     });
 
+    // Mocked behavior: jobModel.findById returns a mock job, jobModel.tryAcceptJob returns null (job already accepted)
+    // Input: PATCH request with valid job ID, status: ACCEPTED, moverId, and authentication token
+    // Expected status code: 400
+    // Expected behavior: job already accepted error, no job status updated
+    // Expected output: error response indicating job already accepted
     test('should handle job already accepted', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const moverId = new mongoose.Types.ObjectId().toString();
@@ -638,6 +734,11 @@ describe('PATCH /api/jobs/:id/status', () => {
         expect(mockJobModel.tryAcceptJob).toHaveBeenCalled();
     });
 
+    // Mocked behavior: jobModel.findById returns a mock job with null orderId, jobModel.tryAcceptJob returns updated job with null orderId
+    // Input: PATCH request with valid job ID, status: ACCEPTED, moverId, and authentication token
+    // Expected status code: 500
+    // Expected behavior: invalid orderId error thrown
+    // Expected output: error response
     test('should handle invalid orderId in ACCEPTED flow ', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const moverId = new mongoose.Types.ObjectId().toString();
@@ -674,6 +775,11 @@ describe('PATCH /api/jobs/:id/status', () => {
         expect(mockJobModel.tryAcceptJob).toHaveBeenCalled();
     });
 
+    // Mocked behavior: jobModel.findById returns a mock job, jobModel.tryAcceptJob returns updated job, orderService.updateOrderStatus throws an error
+    // Input: PATCH request with valid job ID, status: ACCEPTED, moverId, and authentication token
+    // Expected status code: 500
+    // Expected behavior: orderService error is thrown and handled
+    // Expected output: error response
     test('should handle orderService error in ACCEPTED flow ', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const moverId = new mongoose.Types.ObjectId().toString();
@@ -711,6 +817,11 @@ describe('PATCH /api/jobs/:id/status', () => {
         expect(mockOrderService.updateOrderStatus).toHaveBeenCalled();
     });
 
+    // Mocked behavior: jobModel.findById returns a mock job, jobModel.tryAcceptJob returns updated job, orderService.updateOrderStatus succeeds, EventEmitter.emitJobUpdated throws an error
+    // Input: PATCH request with valid job ID, status: ACCEPTED, moverId, and authentication token
+    // Expected status code: 200
+    // Expected behavior: EventEmitter error is caught and logged, request still succeeds
+    // Expected output: success response with updated job status
     test('should handle EventEmitter error in ACCEPTED flow ', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const moverId = new mongoose.Types.ObjectId().toString();
@@ -753,6 +864,11 @@ describe('PATCH /api/jobs/:id/status', () => {
         expect(mockEventEmitter.emitJobUpdated).toHaveBeenCalled();
     });
 
+    // Mocked behavior: jobModel.findById returns a mock RETURN job twice, jobModel.update returns updated job, orderService.updateOrderStatus succeeds
+    // Input: PATCH request with valid job ID, status: PICKED_UP, moverId, and authentication token
+    // Expected status code: 200
+    // Expected behavior: job status updated to PICKED_UP, order status updated
+    // Expected output: success response with status: PICKED_UP
     test('should handle RETURN job PICKED_UP flow ', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const moverId = new mongoose.Types.ObjectId().toString();
@@ -794,6 +910,11 @@ describe('PATCH /api/jobs/:id/status', () => {
         expect(mockOrderService.updateOrderStatus).toHaveBeenCalled();
     });
 
+    // Mocked behavior: jobModel.findById returns a mock job, jobModel.update returns null
+    // Input: PATCH request with valid job ID, status: PICKED_UP, and authentication token
+    // Expected status code: 500
+    // Expected behavior: job not found after update in else branch, error thrown
+    // Expected output: error response
     test('should handle job not found in else branch ', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const orderId = new mongoose.Types.ObjectId();
@@ -823,6 +944,11 @@ describe('PATCH /api/jobs/:id/status', () => {
         expect(mockJobModel.update).toHaveBeenCalled();
     });
 
+    // Mocked behavior: jobModel.findById returns a mock job, jobModel.update returns updated job, EventEmitter.emitJobUpdated throws an error
+    // Input: PATCH request with valid job ID, status: PICKED_UP, and authentication token
+    // Expected status code: 200
+    // Expected behavior: EventEmitter error is caught and logged, request still succeeds
+    // Expected output: success response with updated job status
     test('should handle EventEmitter error in else branch ', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const orderId = new mongoose.Types.ObjectId();
@@ -861,6 +987,11 @@ describe('PATCH /api/jobs/:id/status', () => {
         expect(mockEventEmitter.emitJobUpdated).toHaveBeenCalled();
     });
 
+    // Mocked behavior: jobModel.findById returns a mock job initially, jobModel.update returns updated job, jobModel.findById returns null on second call (in COMPLETED flow)
+    // Input: PATCH request with valid job ID, status: COMPLETED, and authentication token
+    // Expected status code: 404
+    // Expected behavior: job not found in COMPLETED flow check, error thrown
+    // Expected output: job not found error response
     test('should handle job not found in COMPLETED flow ', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const orderId = new mongoose.Types.ObjectId();
@@ -899,6 +1030,11 @@ describe('PATCH /api/jobs/:id/status', () => {
         expect(mockJobModel.findById).toHaveBeenCalled();
     });
 
+    // Mocked behavior: jobModel.findById returns a mock job with null orderId, jobModel.update returns updated job with null orderId
+    // Input: PATCH request with valid job ID, status: COMPLETED, and authentication token
+    // Expected status code: 500
+    // Expected behavior: invalid orderId error thrown
+    // Expected output: error response
     test('should handle invalid orderId in COMPLETED flow', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const studentId = new mongoose.Types.ObjectId();
@@ -933,6 +1069,11 @@ describe('PATCH /api/jobs/:id/status', () => {
         expect(mockJobModel.update).toHaveBeenCalled();
     });
 
+    // Mocked behavior: jobModel.findById returns a mock job, jobModel.update returns updated job, userModel.findByIdAndUpdate succeeds, orderService.updateOrderStatus throws an error
+    // Input: PATCH request with valid job ID, status: COMPLETED, and authentication token
+    // Expected status code: 500
+    // Expected behavior: orderService error is thrown and handled
+    // Expected output: error response
     test('should handle orderService error in COMPLETED flow ', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const orderId = new mongoose.Types.ObjectId();
@@ -970,7 +1111,11 @@ describe('PATCH /api/jobs/:id/status', () => {
         expect(mockOrderService.updateOrderStatus).toHaveBeenCalled();
     });
 
-
+    // Mocked behavior: jobModel.findById returns a mock job, jobModel.tryAcceptJob returns updated job, orderService is unmocked and uses real implementation, orderModel.update returns null
+    // Input: PATCH request with valid job ID, status: ACCEPTED, moverId, and authentication token
+    // Expected status code: 500
+    // Expected behavior: orderModel.update returns null, updateOrderStatus throws "Order not found" error
+    // Expected output: error response
     test('should orderModel.update returns null in updateOrderStatus', async () => {
         
         const jobId = new mongoose.Types.ObjectId().toString();
@@ -1028,6 +1173,11 @@ describe('PATCH /api/jobs/:id/status', () => {
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock job, jobModel.tryAcceptJob returns updated job, orderService is unmocked and uses real implementation, orderModel.update throws an error
+    // Input: PATCH request with valid job ID, status: ACCEPTED, moverId, and authentication token
+    // Expected status code: 500
+    // Expected behavior: orderModel.update throws error, catch block in updateOrderStatus is executed
+    // Expected output: error response
     test('should hit catch block in updateOrderStatus when orderModel.update throws', async () => {
         // Test to cover the catch block in updateOrderStatus (lines 436-441)
         const jobId = new mongoose.Types.ObjectId().toString();
@@ -1094,6 +1244,11 @@ describe('POST /api/jobs/:id/arrived', () => {
         jest.clearAllMocks();
     });
 
+    // Mocked behavior: jobModel.findById throws an error
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 500
+    // Expected behavior: the error was handled gracefully
+    // Expected output: error response
     test('should handle database error in requestPickupConfirmation (triggers controller catch block)', async () => {
         mockJobModel.findById.mockRejectedValue(new Error('Database error during pickup confirmation'));
 
@@ -1106,6 +1261,11 @@ describe('POST /api/jobs/:id/arrived', () => {
         expect(mockJobModel.findById).toHaveBeenCalled();
     });
 
+    // Mocked behavior: jobModel.findById returns null
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 404
+    // Expected behavior: JobNotFoundError is thrown and handled
+    // Expected output: job not found error response
     test('should handle JobNotFoundError in requestPickupConfirmation', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         mockJobModel.findById.mockResolvedValue(null as any);
@@ -1118,6 +1278,11 @@ describe('POST /api/jobs/:id/arrived', () => {
         expect(mockJobModel.findById).toHaveBeenCalled();
     });
 
+    // Mocked behavior: testUserId is set to null to simulate unauthenticated request
+    // Input: POST request without Authorization header
+    // Expected status code: 401
+    // Expected behavior: no database query executed
+    // Expected output: authentication error response
     test('should call next with error when user is not authenticated ', async () => {
         // Test authentication error via API endpoint
         const jobId = new mongoose.Types.ObjectId().toString();
@@ -1125,8 +1290,8 @@ describe('POST /api/jobs/:id/arrived', () => {
         testUserId = null as any;
 
         try {
-            const response = await request(app)
-                .post(`/api/jobs/${jobId}/arrived`)
+        const response = await request(app)
+            .post(`/api/jobs/${jobId}/arrived`)
                 // No Authorization header - should trigger 401
                 .expect(401);
 
@@ -1142,6 +1307,11 @@ describe('POST /api/jobs/:id/confirm-pickup', () => {
         jest.clearAllMocks();
     });
 
+    // Mocked behavior: jobModel.findById throws an error
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 500
+    // Expected behavior: the error was handled gracefully
+    // Expected output: error response
     test('should handle database error in confirmPickup (triggers controller catch block)', async () => {
         mockJobModel.findById.mockRejectedValue(new Error('Database error during pickup confirmation'));
 
@@ -1154,6 +1324,11 @@ describe('POST /api/jobs/:id/confirm-pickup', () => {
         expect(mockJobModel.findById).toHaveBeenCalled();
     });
 
+    // Mocked behavior: jobModel.findById returns null
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 404
+    // Expected behavior: JobNotFoundError is thrown and handled
+    // Expected output: job not found error response
     test('should handle JobNotFoundError in confirmPickup', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         mockJobModel.findById.mockResolvedValue(null as any);
@@ -1177,8 +1352,8 @@ describe('POST /api/jobs/:id/confirm-pickup', () => {
         testUserId = null as any;
 
         try {
-            const response = await request(app)
-                .post(`/api/jobs/${jobId}/confirm-pickup`)
+        const response = await request(app)
+            .post(`/api/jobs/${jobId}/confirm-pickup`)
                 // No Authorization header - should trigger 401
                 .expect(401);
 
@@ -1194,6 +1369,11 @@ describe('POST /api/jobs/:id/delivered', () => {
         jest.clearAllMocks();
     });
 
+    // Mocked behavior: jobModel.findById throws an error
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 500
+    // Expected behavior: the error was handled gracefully
+    // Expected output: error response
     test('should handle database error in requestDeliveryConfirmation (triggers controller catch block)', async () => {
         mockJobModel.findById.mockRejectedValue(new Error('Database error during delivery confirmation'));
 
@@ -1206,6 +1386,11 @@ describe('POST /api/jobs/:id/delivered', () => {
         expect(mockJobModel.findById).toHaveBeenCalled();
     });
 
+    // Mocked behavior: jobModel.findById returns null
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 404
+    // Expected behavior: JobNotFoundError is thrown and handled
+    // Expected output: job not found error response
     test('should handle JobNotFoundError in requestDeliveryConfirmation', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         mockJobModel.findById.mockResolvedValue(null as any);
@@ -1218,6 +1403,11 @@ describe('POST /api/jobs/:id/delivered', () => {
         expect(mockJobModel.findById).toHaveBeenCalled();
     });
 
+    // Mocked behavior: testUserId is set to null to simulate unauthenticated request
+    // Input: POST request without Authorization header
+    // Expected status code: 401
+    // Expected behavior: no database query executed
+    // Expected output: authentication error response
     test('should call next with error when user is not authenticated ', async () => {
         // Test authentication error via API endpoint
         const jobId = new mongoose.Types.ObjectId().toString();
@@ -1236,6 +1426,11 @@ describe('POST /api/jobs/:id/delivered', () => {
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock RETURN job, testUserId is set to wrongMoverId (different from job's moverId)
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 400
+    // Expected behavior: moverId validation fails, no job status updated
+    // Expected output: error response indicating only assigned mover can request confirmation
     test('should cover requestDeliveryConfirmation with wrong moverId (line 697)', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const correctMoverId = new mongoose.Types.ObjectId();
@@ -1267,8 +1462,8 @@ describe('POST /api/jobs/:id/delivered', () => {
 
         try {
             // Should return 400 or 500 because moverId doesn't match (line 697)
-            const response = await request(app)
-                .post(`/api/jobs/${jobId}/delivered`)
+        const response = await request(app)
+            .post(`/api/jobs/${jobId}/delivered`)
                 .set('Authorization', `Bearer fake-token`)
                 .expect(400);
 
@@ -1286,6 +1481,11 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
         jest.clearAllMocks();
     });
 
+    // Mocked behavior: jobModel.findById throws an error
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 500
+    // Expected behavior: the error was handled gracefully
+    // Expected output: error response
     test('should handle database error in confirmDelivery (triggers controller catch block)', async () => {
         mockJobModel.findById.mockRejectedValue(new Error('Database error during delivery confirmation'));
 
@@ -1298,6 +1498,11 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
         expect(mockJobModel.findById).toHaveBeenCalled();
     });
 
+    // Mocked behavior: jobModel.findById returns null
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 404
+    // Expected behavior: JobNotFoundError is thrown and handled
+    // Expected output: job not found error response
     test('should handle JobNotFoundError in confirmDelivery', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         mockJobModel.findById.mockResolvedValue(null as any);
@@ -1321,8 +1526,8 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
         testUserId = null as any;
 
         try {
-            const response = await request(app)
-                .post(`/api/jobs/${jobId}/confirm-delivery`)
+        const response = await request(app)
+            .post(`/api/jobs/${jobId}/confirm-delivery`)
                 // No Authorization header - should trigger 401
                 .expect(401);
 
@@ -1332,6 +1537,11 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock RETURN job, jobModel.update returns updated job, userModel methods succeed, orderService.updateOrderStatus succeeds, notificationService and EventEmitter succeed, testUserId matches job's studentId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 200
+    // Expected behavior: job status updated to COMPLETED, mover credits updated, order status updated, notifications sent, events emitted
+    // Expected output: success: true, data.status: COMPLETED
     test('should successfully confirm delivery with notification and event emission ', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const studentId = new mongoose.Types.ObjectId();
@@ -1378,8 +1588,8 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
         testUserRole = 'STUDENT';
 
         try {
-            const response = await request(app)
-                .post(`/api/jobs/${jobId}/confirm-delivery`)
+        const response = await request(app)
+            .post(`/api/jobs/${jobId}/confirm-delivery`)
                 .set('Authorization', `Bearer fake-token`)
                 .expect(200);
 
@@ -1391,7 +1601,7 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
                 expect.any(String)
             );
             expect(mockUserModel.findById).toHaveBeenCalledWith(moverId);
-            expect(mockEventEmitter.emitJobUpdated).toHaveBeenCalled();
+        expect(mockEventEmitter.emitJobUpdated).toHaveBeenCalled();
         } finally {
             testUserId = originalTestUserId;
             testUserRole = originalTestUserRole;
@@ -1447,6 +1657,11 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock RETURN job with null orderId, jobModel.update returns updated job with null orderId, testUserId matches job's studentId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 500
+    // Expected behavior: invalid orderId error thrown
+    // Expected output: error response
     test('should cover confirmDelivery with invalid orderId (line 779)', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const studentId = new mongoose.Types.ObjectId();
@@ -1503,6 +1718,11 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock RETURN job, jobModel.update returns updated job, userModel methods succeed, orderService.updateOrderStatus throws an error, testUserId matches job's studentId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 500
+    // Expected behavior: updateOrderStatus error caught in catch block (lines 791-795)
+    // Expected output: error response
     test('should cover confirmDelivery catch block when updateOrderStatus fails (lines 791-795)', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const studentId = new mongoose.Types.ObjectId();
@@ -1555,13 +1775,18 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
                 .expect(500);
 
             expect(response.status).toBe(500);
-            expect(mockOrderService.updateOrderStatus).toHaveBeenCalled();
+        expect(mockOrderService.updateOrderStatus).toHaveBeenCalled();
         } finally {
             testUserId = originalTestUserId;
             testUserRole = originalTestUserRole;
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock RETURN job, jobModel.update returns updated job, userModel methods succeed, orderService.updateOrderStatus succeeds, EventEmitter.emitJobUpdated throws an error, testUserId matches job's studentId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 200
+    // Expected behavior: EventEmitter error is caught and logged, request still succeeds
+    // Expected output: success: true, data.status: COMPLETED
     test('should handle EventEmitter error gracefully during confirmDelivery ', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const studentId = new mongoose.Types.ObjectId();
@@ -1609,7 +1834,7 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
         testUserRole = 'STUDENT';
 
         try {
-            // Should still succeed despite emitter error
+        // Should still succeed despite emitter error
             const response = await request(app)
                 .post(`/api/jobs/${jobId}/confirm-delivery`)
                 .set('Authorization', `Bearer fake-token`)
@@ -1623,6 +1848,11 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock RETURN job, jobModel.update returns updated job, userModel methods succeed, orderService.updateOrderStatus succeeds, EventEmitter succeeds, testUserId matches job's studentId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 200
+    // Expected behavior: job status updated to COMPLETED, all operations succeed
+    // Expected output: success: true, data with id and status: COMPLETED
     test('should return completed job details successfully ', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const studentId = new mongoose.Types.ObjectId();
@@ -1690,6 +1920,11 @@ describe('POST /api/jobs/:id/delivered - requestDeliveryConfirmation', () => {
         jest.clearAllMocks();
     });
 
+    // Mocked behavior: jobModel.findById returns a mock RETURN job, jobModel.update returns updated job, notificationService and EventEmitter succeed, testUserId matches job's moverId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 200
+    // Expected behavior: job status updated to AWAITING_STUDENT_CONFIRMATION, notification sent, event emitted
+    // Expected output: success: true, data.status: AWAITING_STUDENT_CONFIRMATION
     test('should successfully request delivery confirmation with notification', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const moverId = new mongoose.Types.ObjectId();
@@ -1735,17 +1970,22 @@ describe('POST /api/jobs/:id/delivered - requestDeliveryConfirmation', () => {
 
             expect(response.body.success).toBe(true);
             expect(response.body.data.status).toBe(JobStatus.AWAITING_STUDENT_CONFIRMATION);
-            expect(mockNotificationService.sendJobStatusNotification).toHaveBeenCalledWith(
-                expect.any(mongoose.Types.ObjectId),
-                JobStatus.AWAITING_STUDENT_CONFIRMATION
-            );
-            expect(mockEventEmitter.emitJobUpdated).toHaveBeenCalled();
+        expect(mockNotificationService.sendJobStatusNotification).toHaveBeenCalledWith(
+            expect.any(mongoose.Types.ObjectId),
+            JobStatus.AWAITING_STUDENT_CONFIRMATION
+        );
+        expect(mockEventEmitter.emitJobUpdated).toHaveBeenCalled();
         } finally {
             testUserId = originalTestUserId;
             testUserRole = originalTestUserRole;
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock RETURN job, jobModel.update returns updated job, notificationService succeeds, EventEmitter.emitJobUpdated throws an error, testUserId matches job's moverId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 200
+    // Expected behavior: EventEmitter error is caught and logged, request still succeeds
+    // Expected output: success: true, data.status: AWAITING_STUDENT_CONFIRMATION
     test('should handle EventEmitter error gracefully in requestDeliveryConfirmation', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const moverId = new mongoose.Types.ObjectId();
@@ -1786,7 +2026,7 @@ describe('POST /api/jobs/:id/delivered - requestDeliveryConfirmation', () => {
         testUserRole = 'MOVER';
 
         try {
-            // Should still succeed despite emitter error
+        // Should still succeed despite emitter error
             const response = await request(app)
                 .post(`/api/jobs/${jobId}/delivered`)
                 .set('Authorization', `Bearer fake-token`)
@@ -1800,10 +2040,15 @@ describe('POST /api/jobs/:id/delivered - requestDeliveryConfirmation', () => {
         }
     });
 
+    // Mocked behavior: route parameter is empty (//delivered), testUserId is set to moverId
+    // Input: POST request with empty job ID in URL and authentication token
+    // Expected status code: 400, 404, or 500
+    // Expected behavior: route validation error, no database query executed
+    // Expected output: error response
     test('should handle missing jobId in requestDeliveryConfirmation', async () => {
         // Test via API endpoint - empty jobId will result in 404 or 400
         const moverId = new mongoose.Types.ObjectId();
-        
+
         // Set testUserId to match moverId
         const originalTestUserId = testUserId;
         const originalTestUserRole = testUserRole;
@@ -1824,6 +2069,11 @@ describe('POST /api/jobs/:id/delivered - requestDeliveryConfirmation', () => {
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock STORAGE job (not RETURN), testUserId matches job's moverId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 400
+    // Expected behavior: job type validation fails, no job status updated
+    // Expected output: error response indicating endpoint only valid for RETURN jobs
     test('should handle non-RETURN job type in requestDeliveryConfirmation', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const moverId = new mongoose.Types.ObjectId();
@@ -1865,6 +2115,11 @@ describe('POST /api/jobs/:id/delivered - requestDeliveryConfirmation', () => {
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock RETURN job with status ACCEPTED (not PICKED_UP), testUserId matches job's moverId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 400
+    // Expected behavior: job status validation fails, no job status updated
+    // Expected output: error response indicating job must be PICKED_UP
     test('should handle wrong job status in requestDeliveryConfirmation', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const moverId = new mongoose.Types.ObjectId();
@@ -1912,10 +2167,15 @@ describe('POST /api/jobs/:id/confirm-delivery - Additional error cases', () => {
         jest.clearAllMocks();
     });
 
+    // Mocked behavior: route parameter is empty (//confirm-delivery), testUserId is set to studentId
+    // Input: POST request with empty job ID in URL and authentication token
+    // Expected status code: 400, 404, or 500
+    // Expected behavior: route validation error, no database query executed
+    // Expected output: error response
     test('should handle missing parameters in confirmDelivery', async () => {
         // Test via API endpoint - empty jobId will result in 404 or 400
         const studentId = new mongoose.Types.ObjectId();
-        
+
         // Set testUserId to match studentId
         const originalTestUserId = testUserId;
         const originalTestUserRole = testUserRole;
@@ -1936,6 +2196,11 @@ describe('POST /api/jobs/:id/confirm-delivery - Additional error cases', () => {
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock STORAGE job (not RETURN), testUserId matches job's studentId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 400
+    // Expected behavior: job type validation fails, no job status updated
+    // Expected output: error response indicating endpoint only valid for RETURN jobs
     test('should handle non-RETURN job type in confirmDelivery', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const studentId = new mongoose.Types.ObjectId();
@@ -1977,6 +2242,11 @@ describe('POST /api/jobs/:id/confirm-delivery - Additional error cases', () => {
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock RETURN job with status PICKED_UP (not AWAITING_STUDENT_CONFIRMATION), testUserId matches job's studentId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 400
+    // Expected behavior: job status validation fails, no job status updated
+    // Expected output: error response indicating job must be AWAITING_STUDENT_CONFIRMATION
     test('should handle wrong job status in confirmDelivery', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const studentId = new mongoose.Types.ObjectId();
@@ -2024,10 +2294,15 @@ describe('POST /api/jobs/:id/arrived - requestPickupConfirmation error cases', (
         jest.clearAllMocks();
     });
 
+    // Mocked behavior: route parameter is empty (//arrived), testUserId is set to moverId
+    // Input: POST request with empty job ID in URL and authentication token
+    // Expected status code: 400, 404, or 500
+    // Expected behavior: route validation error, no database query executed
+    // Expected output: error response
     test('should handle missing parameters in requestPickupConfirmation', async () => {
         // Test via API endpoint - empty jobId will result in 404 or 400
         const moverId = new mongoose.Types.ObjectId();
-        
+
         // Set testUserId to match moverId
         const originalTestUserId = testUserId;
         const originalTestUserRole = testUserRole;
@@ -2048,6 +2323,11 @@ describe('POST /api/jobs/:id/arrived - requestPickupConfirmation error cases', (
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock RETURN job (not STORAGE), testUserId matches job's moverId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 400
+    // Expected behavior: job type validation fails, no job status updated
+    // Expected output: error response indicating endpoint only valid for STORAGE jobs
     test('should handle non-STORAGE job type in requestPickupConfirmation', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const moverId = new mongoose.Types.ObjectId();
@@ -2089,6 +2369,11 @@ describe('POST /api/jobs/:id/arrived - requestPickupConfirmation error cases', (
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock STORAGE job, testUserId is set to different moverId (not matching job's moverId)
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 403
+    // Expected behavior: mover authorization fails, no job status updated
+    // Expected output: authorization error response
     test('should handle wrong mover in requestPickupConfirmation', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const moverId = new mongoose.Types.ObjectId();
@@ -2131,6 +2416,11 @@ describe('POST /api/jobs/:id/arrived - requestPickupConfirmation error cases', (
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock STORAGE job with status AVAILABLE (not ACCEPTED), testUserId matches job's moverId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 400
+    // Expected behavior: job status validation fails, no job status updated
+    // Expected output: error response indicating job must be ACCEPTED
     test('should handle wrong job status in requestPickupConfirmation', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const moverId = new mongoose.Types.ObjectId();
@@ -2178,10 +2468,15 @@ describe('POST /api/jobs/:id/confirm-pickup - confirmPickup error cases', () => 
         jest.clearAllMocks();
     });
 
+    // Mocked behavior: route parameter is empty (//confirm-pickup), testUserId is set to studentId
+    // Input: POST request with empty job ID in URL and authentication token
+    // Expected status code: 400, 404, or 500
+    // Expected behavior: route validation error, no database query executed
+    // Expected output: error response
     test('should handle missing parameters in confirmPickup', async () => {
         // Test via API endpoint - empty jobId will result in 404 or 400
         const studentId = new mongoose.Types.ObjectId();
-        
+
         // Set testUserId to match studentId
         const originalTestUserId = testUserId;
         const originalTestUserRole = testUserRole;
@@ -2202,6 +2497,11 @@ describe('POST /api/jobs/:id/confirm-pickup - confirmPickup error cases', () => 
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock RETURN job (not STORAGE), testUserId matches job's studentId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 400
+    // Expected behavior: job type validation fails, no job status updated
+    // Expected output: error response indicating endpoint only valid for STORAGE jobs
     test('should handle non-STORAGE job type in confirmPickup', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const studentId = new mongoose.Types.ObjectId();
@@ -2243,6 +2543,11 @@ describe('POST /api/jobs/:id/confirm-pickup - confirmPickup error cases', () => 
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock STORAGE job, testUserId is set to different studentId (not matching job's studentId)
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 403
+    // Expected behavior: student authorization fails, no job status updated
+    // Expected output: authorization error response
     test('should handle wrong student in confirmPickup', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const studentId = new mongoose.Types.ObjectId();
@@ -2285,6 +2590,11 @@ describe('POST /api/jobs/:id/confirm-pickup - confirmPickup error cases', () => 
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock STORAGE job with status ACCEPTED (not AWAITING_STUDENT_CONFIRMATION), testUserId matches job's studentId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 400
+    // Expected behavior: job status validation fails, no job status updated
+    // Expected output: error response indicating job must be AWAITING_STUDENT_CONFIRMATION
     test('should handle wrong job status in confirmPickup', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const studentId = new mongoose.Types.ObjectId();
@@ -2326,6 +2636,11 @@ describe('POST /api/jobs/:id/confirm-pickup - confirmPickup error cases', () => 
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock STORAGE job, jobModel.update returns null, testUserId matches job's studentId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 500
+    // Expected behavior: updatedJob is null immediately after update, error thrown
+    // Expected output: error response
     test('should cover confirmPickup with null updatedJob immediately after update (line 628)', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const studentId = new mongoose.Types.ObjectId();
@@ -2372,6 +2687,11 @@ describe('POST /api/jobs/:id/confirm-pickup - confirmPickup error cases', () => 
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock STORAGE job with null orderId, jobModel.update returns updated job with null orderId, testUserId matches job's studentId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 500
+    // Expected behavior: invalid orderId error thrown
+    // Expected output: error response
     test('should handle invalid orderId in confirmPickup', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const studentId = new mongoose.Types.ObjectId();
@@ -2419,6 +2739,11 @@ describe('POST /api/jobs/:id/confirm-pickup - confirmPickup error cases', () => 
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock STORAGE job, jobModel.update returns updated job, orderService.updateOrderStatus throws an error, testUserId matches job's studentId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 500
+    // Expected behavior: orderService error is thrown and handled
+    // Expected output: error response
     test('should handle orderService error in confirmPickup', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const studentId = new mongoose.Types.ObjectId();
@@ -2462,13 +2787,18 @@ describe('POST /api/jobs/:id/confirm-pickup - confirmPickup error cases', () => 
                 .expect(500);
 
             expect(response.status).toBe(500);
-            expect(mockOrderService.updateOrderStatus).toHaveBeenCalled();
+        expect(mockOrderService.updateOrderStatus).toHaveBeenCalled();
         } finally {
             testUserId = originalTestUserId;
             testUserRole = originalTestUserRole;
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock STORAGE job, jobModel.update returns updated job, orderService.updateOrderStatus succeeds, EventEmitter.emitJobUpdated throws an error, testUserId matches job's studentId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 200
+    // Expected behavior: EventEmitter error is caught and logged, request still succeeds
+    // Expected output: success: true, data.status: PICKED_UP
     test('should handle EventEmitter error in confirmPickup', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const studentId = new mongoose.Types.ObjectId();
@@ -2529,6 +2859,11 @@ describe('JobService - Additional Coverage Tests', () => {
         jest.clearAllMocks();
     });
 
+    // Mocked behavior: jobModel.findByStudentId returns a mock jobs array
+    // Input: GET request with valid authentication token
+    // Expected status code: 200
+    // Expected behavior: jobs are retrieved and mapped using mapper
+    // Expected output: data.jobs array with mapped job items
     test('should cover getStudentJobs mapper call (line 239)', async () => {
         const studentId = new mongoose.Types.ObjectId().toString();
         const mockJobs = [{
@@ -2558,6 +2893,11 @@ describe('JobService - Additional Coverage Tests', () => {
         expect(mockJobModel.findByStudentId).toHaveBeenCalled();
     });
 
+    // Mocked behavior: route parameter is a space character ( /status), testUserId is set
+    // Input: PATCH request with space character as job ID, status: ACCEPTED, and authentication token
+    // Expected status code: 400, 404, or 500
+    // Expected behavior: validation error for missing/invalid jobId
+    // Expected output: error response
     test('should cover updateJobStatus missing jobId validation (lines 272-273)', async () => {
         // Test via API endpoint - empty jobId will result in 404 or 400
         // Since Express routes won't match empty params, we'll test with a space or invalid ID
@@ -2578,6 +2918,11 @@ describe('JobService - Additional Coverage Tests', () => {
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock RETURN job, jobModel.update returns null
+    // Input: PATCH request with valid job ID, status: PICKED_UP, and authentication token
+    // Expected status code: 500
+    // Expected behavior: updatedJob is null, error thrown
+    // Expected output: error response
     test('should cover RETURN job PICKED_UP flow with null updatedJob (line 368)', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const orderId = new mongoose.Types.ObjectId();
@@ -2606,6 +2951,11 @@ describe('JobService - Additional Coverage Tests', () => {
             .expect(500);
     });
 
+    // Mocked behavior: jobModel.findById returns a mock RETURN job initially, jobModel.update returns updated job, jobModel.findById returns null on second call
+    // Input: PATCH request with valid job ID, status: PICKED_UP, and authentication token
+    // Expected status code: 404
+    // Expected behavior: job not found after update in RETURN PICKED_UP flow, error thrown
+    // Expected output: job not found error response
     test('should cover RETURN job PICKED_UP flow with job not found after update (line 384)', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const orderId = new mongoose.Types.ObjectId();
@@ -2641,6 +2991,11 @@ describe('JobService - Additional Coverage Tests', () => {
             .expect(404);
     });
 
+    // Mocked behavior: jobModel.findById returns a mock RETURN job with null orderId twice, jobModel.update returns updated job with null orderId
+    // Input: PATCH request with valid job ID, status: PICKED_UP, and authentication token
+    // Expected status code: 500
+    // Expected behavior: invalid orderId error thrown
+    // Expected output: error response
     test('should cover RETURN job PICKED_UP flow with invalid orderId (lines 392-393)', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const studentId = new mongoose.Types.ObjectId();
@@ -2675,6 +3030,11 @@ describe('JobService - Additional Coverage Tests', () => {
             .expect(500);
     });
 
+    // Mocked behavior: jobModel.findById returns a mock RETURN job twice, jobModel.update returns updated job, orderService.updateOrderStatus throws an error
+    // Input: PATCH request with valid job ID, status: PICKED_UP, and authentication token
+    // Expected status code: 200
+    // Expected behavior: orderService error is caught and logged, request still succeeds
+    // Expected output: success response with status: PICKED_UP
     test('should cover RETURN job PICKED_UP flow error handling (line 410)', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const orderId = new mongoose.Types.ObjectId();
@@ -2714,6 +3074,11 @@ describe('JobService - Additional Coverage Tests', () => {
         expect(response.body.status).toBe(JobStatus.PICKED_UP);
     });
 
+    // Mocked behavior: jobModel.findById returns a mock STORAGE job with null orderId, jobModel.update returns updated job with null orderId, userModel.findByIdAndUpdate succeeds
+    // Input: PATCH request with valid job ID, status: COMPLETED, and authentication token
+    // Expected status code: 500
+    // Expected behavior: invalid orderId error thrown
+    // Expected output: error response
     test('should cover COMPLETED flow with invalid orderId (lines 450-451)', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const studentId = new mongoose.Types.ObjectId();
@@ -2747,6 +3112,11 @@ describe('JobService - Additional Coverage Tests', () => {
             .expect(500);
     });
 
+    // Mocked behavior: jobModel.findById returns a mock RETURN job, jobModel.update returns updated job, userModel methods succeed, orderService.updateOrderStatus succeeds, notificationService succeeds
+    // Input: PATCH request with valid job ID, status: COMPLETED, and authentication token
+    // Expected status code: 200
+    // Expected behavior: job status updated to COMPLETED, mover credits updated, order status updated to RETURNED
+    // Expected output: success response with status: COMPLETED
     test('should cover RETURN job COMPLETED flow (lines 479-488)', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const orderId = new mongoose.Types.ObjectId();
@@ -2796,6 +3166,11 @@ describe('JobService - Additional Coverage Tests', () => {
         );
     });
 
+    // Mocked behavior: jobModel.findById returns a mock job, jobModel.update returns updated job with null orderId
+    // Input: PATCH request with valid job ID, status: PICKED_UP, and authentication token
+    // Expected status code: 500
+    // Expected behavior: invalid orderId error thrown at end of updateJobStatus
+    // Expected output: error response
     test('should cover invalid orderId at end of updateJobStatus (line 504)', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const studentId = new mongoose.Types.ObjectId();
@@ -2828,6 +3203,11 @@ describe('JobService - Additional Coverage Tests', () => {
             .expect(500);
     });
 
+    // Mocked behavior: extractObjectId is mocked to return valid ObjectId when field is null, jobModel.findById returns a mock STORAGE job, jobModel.update returns null, orderService and EventEmitter succeed
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 500
+    // Expected behavior: updatedJob is null, error thrown at line 661
+    // Expected output: error response
     test('should cover confirmPickup with null updatedJob (line 661)', async () => {
         // Mock extractObjectId to return a valid ObjectId even when updatedJob is null
         // This allows us to bypass the earlier throw and reach line 661
@@ -2873,6 +3253,11 @@ describe('JobService - Additional Coverage Tests', () => {
         mongooseUtil.extractObjectId = originalExtractObjectId;
     });
 
+    // Mocked behavior: extractObjectId is mocked to return valid ObjectId when field is null, jobModel.findById returns a mock RETURN job, jobModel.update returns null, userModel methods succeed, orderService and EventEmitter succeed
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 500
+    // Expected behavior: updatedJob is null, error thrown at line 812
+    // Expected output: error response
     test('should cover confirmDelivery with null updatedJob (line 812)', async () => {
         // Mock extractObjectId to return a valid ObjectId even when updatedJob is null
         // This allows us to bypass the earlier throw and reach line 812
@@ -2924,6 +3309,11 @@ describe('JobService - Additional Coverage Tests', () => {
         mongooseUtil.extractObjectId = originalExtractObjectId;
     });
 
+    // Mocked behavior: jobModel.findById returns a mock STORAGE job with invalid moverId object, jobModel.update returns updated job, userModel.findByIdAndUpdate succeeds, orderService and notificationService succeed
+    // Input: PATCH request with valid job ID, status: COMPLETED, and authentication token
+    // Expected status code: 200
+    // Expected behavior: invalid moverId is handled gracefully (extractObjectId returns null), request still succeeds
+    // Expected output: success response with status: COMPLETED
     test('should cover addCreditsToMover with invalid moverId (lines 43-44)', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const orderId = new mongoose.Types.ObjectId();
@@ -2963,6 +3353,11 @@ describe('JobService - Additional Coverage Tests', () => {
         expect(response.body.status).toBe(JobStatus.COMPLETED);
     });
 
+    // Mocked behavior: jobModel.findById returns a mock STORAGE job, jobModel.update returns updated job, userModel.findById throws an error, orderService and notificationService succeed
+    // Input: PATCH request with valid job ID, status: COMPLETED, and authentication token
+    // Expected status code: 200
+    // Expected behavior: credit error is caught and logged, request still succeeds
+    // Expected output: success response with status: COMPLETED
     test('should cover addCreditsToMover catch block (line 62)', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const orderId = new mongoose.Types.ObjectId();
@@ -3003,6 +3398,11 @@ describe('JobService - Additional Coverage Tests', () => {
         expect(response.body.status).toBe(JobStatus.COMPLETED);
     });
 
+    // Mocked behavior: orderService is unmocked and uses real implementation, orderModel.findActiveOrder returns a mock order, orderModel.update succeeds, jobModel.findByOrderId returns mock jobs array, jobModel.update succeeds for both jobs, paymentService.refundPayment succeeds, EventEmitter succeeds
+    // Input: DELETE request to /api/orders/cancel-order with valid authentication token
+    // Expected status code: 200
+    // Expected behavior: all jobs for the order are cancelled, order is cancelled, payment is refunded
+    // Expected output: success: true
     test('should cover cancelJobsForOrder method (lines 70-129) via order cancellation endpoint', async () => {
         const orderId = new mongoose.Types.ObjectId();
         const studentId = new mongoose.Types.ObjectId();
@@ -3096,7 +3496,11 @@ describe('JobService - Additional Coverage Tests', () => {
         }
     });
 
-
+    // Mocked behavior: orderService is unmocked and uses real implementation, orderModel methods succeed, jobModel.findByOrderId returns mock jobs array, jobModel.update returns null
+    // Input: DELETE request to /api/orders/cancel-order with valid authentication token
+    // Expected status code: 200
+    // Expected behavior: job update returns null (lines 100-104), error is logged but order cancellation still succeeds
+    // Expected output: success: true
     test('should cover cancelJobsForOrder with update returning null (lines 100-104)', async () => {
         const orderId = new mongoose.Types.ObjectId();
         const studentId = new mongoose.Types.ObjectId();
@@ -3163,6 +3567,11 @@ describe('JobService - Additional Coverage Tests', () => {
         }
     });
 
+    // Mocked behavior: orderService is unmocked and uses real implementation, orderModel methods succeed, jobModel.findByOrderId returns mock jobs array, first jobModel.update succeeds, second jobModel.update throws an error
+    // Input: DELETE request to /api/orders/cancel-order with valid authentication token
+    // Expected status code: 200
+    // Expected behavior: error in update loop (lines 118-123) is caught and logged, order cancellation still succeeds
+    // Expected output: success: true
     test('should cover cancelJobsForOrder with error in update loop (lines 118-123)', async () => {
         const orderId = new mongoose.Types.ObjectId();
         const studentId = new mongoose.Types.ObjectId();
@@ -3247,6 +3656,11 @@ describe('JobService - Additional Coverage Tests', () => {
         }
     });
 
+    // Mocked behavior: orderService is unmocked and uses real implementation, orderModel methods succeed, jobModel.findByOrderId throws an error
+    // Input: DELETE request to /api/orders/cancel-order with valid authentication token
+    // Expected status code: 200
+    // Expected behavior: catch block (lines 127-129) is executed, error is logged, order cancellation still succeeds
+    // Expected output: success: true
     test('should cover cancelJobsForOrder catch block (lines 127-129)', async () => {
         const orderId = new mongoose.Types.ObjectId();
         const studentId = new mongoose.Types.ObjectId();
@@ -3300,6 +3714,11 @@ describe('JobService - Additional Coverage Tests', () => {
         }
     });
 
+    // Mocked behavior: validation middleware is bypassed (shouldBypassValidation = true), jobModel.create is not called
+    // Input: POST request with empty orderId or empty studentId and authentication token
+    // Expected status code: 500
+    // Expected behavior: service-level validation fails for missing orderId/studentId
+    // Expected output: error response
     test('should cover createJob missing orderId/studentId validation (lines 135-139)', async () => {
         // Bypass validation middleware to reach service-level checks
         shouldBypassValidation = true;
@@ -3341,6 +3760,11 @@ describe('JobService - Additional Coverage Tests', () => {
         }
     });
 
+    // Mocked behavior: validation middleware is bypassed (shouldBypassValidation = true), jobModel.create is not called
+    // Input: POST request with volume = 0 or volume < 0 and authentication token
+    // Expected status code: 500
+    // Expected behavior: service-level validation fails for invalid volume
+    // Expected output: error response
     test('should cover createJob invalid volume validation (lines 143-144)', async () => {
         // Bypass validation middleware to reach service-level checks
         shouldBypassValidation = true;
@@ -3382,6 +3806,11 @@ describe('JobService - Additional Coverage Tests', () => {
         }
     });
 
+    // Mocked behavior: validation middleware is bypassed (shouldBypassValidation = true), jobModel.create is not called
+    // Input: POST request with price = 0 or price < 0 and authentication token
+    // Expected status code: 500
+    // Expected behavior: service-level validation fails for invalid price
+    // Expected output: error response
     test('should cover createJob invalid price validation (lines 148-149)', async () => {
         // Bypass validation middleware to reach service-level checks
         shouldBypassValidation = true;
@@ -3423,6 +3852,11 @@ describe('JobService - Additional Coverage Tests', () => {
         }
     });
 
+    // Mocked behavior: jobModel.findAllJobs returns a mock jobs array
+    // Input: GET request with valid authentication token
+    // Expected status code: 200
+    // Expected behavior: jobs are retrieved and mapped using mapper
+    // Expected output: data.jobs array with mapped job items
     test('should cover getAllJobs mapper call (line 196)', async () => {
         const mockJobs = [{
             _id: new mongoose.Types.ObjectId(),
@@ -3451,6 +3885,11 @@ describe('JobService - Additional Coverage Tests', () => {
         expect(mockJobModel.findAllJobs).toHaveBeenCalled();
     });
 
+    // Mocked behavior: jobModel.findAvailableJobs returns a mock jobs array
+    // Input: GET request with valid authentication token
+    // Expected status code: 200
+    // Expected behavior: available jobs are retrieved and mapped using mapper
+    // Expected output: data.jobs array with mapped job items
     test('should cover getAllAvailableJobs mapper call (lines 207-209)', async () => {
         const mockJobs = [{
             _id: new mongoose.Types.ObjectId(),
@@ -3479,6 +3918,11 @@ describe('JobService - Additional Coverage Tests', () => {
         expect(mockJobModel.findAvailableJobs).toHaveBeenCalled();
     });
 
+    // Mocked behavior: jobModel.findByMoverId returns a mock jobs array
+    // Input: GET request with valid authentication token
+    // Expected status code: 200
+    // Expected behavior: mover jobs are retrieved and mapped using mapper
+    // Expected output: data.jobs array with mapped job items
     test('should cover getMoverJobs mapper call (line 224)', async () => {
         const moverId = new mongoose.Types.ObjectId().toString();
         const mockJobs = [{
@@ -3509,6 +3953,11 @@ describe('JobService - Additional Coverage Tests', () => {
         expect(mockJobModel.findByMoverId).toHaveBeenCalled();
     });
 
+    // Mocked behavior: jobModel.findById returns a mock STORAGE job, jobModel.update returns updated job, notificationService and EventEmitter succeed, testUserId matches job's moverId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 200
+    // Expected behavior: job status updated to AWAITING_STUDENT_CONFIRMATION, notification sent, event emitted, all lines 560-584 executed
+    // Expected output: success: true, message: "Confirmation requested", data with id and status
     test('should cover requestPickupConfirmation successful path (lines 560-584)', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const moverId = new mongoose.Types.ObjectId();
@@ -3592,6 +4041,11 @@ describe('JobService - Additional Coverage Tests', () => {
         }
     });
 
+    // Mocked behavior: jobModel.findById returns a mock STORAGE job, jobModel.update returns updated job, notificationService succeeds, EventEmitter.emitJobUpdated throws an error, testUserId matches job's moverId
+    // Input: POST request with valid job ID and authentication token
+    // Expected status code: 200
+    // Expected behavior: EventEmitter error is caught and logged (lines 577-582), request still succeeds, all lines 560-584 executed
+    // Expected output: success: true, data with id and status: AWAITING_STUDENT_CONFIRMATION
     test('should cover requestPickupConfirmation with EventEmitter error (lines 560-584)', async () => {
         const jobId = new mongoose.Types.ObjectId().toString();
         const moverId = new mongoose.Types.ObjectId();
@@ -3670,6 +4124,11 @@ describe('NotificationService Coverage Tests', () => {
         mockFirebaseAdmin.messaging.mockReturnValue(mockFirebaseMessaging);
     });
 
+    // Mocked behavior: notificationService is unmocked and uses real implementation, jobModel.findById returns a mock job, userModel.findById returns a mock student with FCM token, Firebase messaging succeeds
+    // Input: jobId and JobStatus.ACCEPTED
+    // Expected status code: N/A (direct service call)
+    // Expected behavior: notification is sent with title "Job Accepted" and body "A mover has accepted your job!"
+    // Expected output: None (void function)
     test('should cover sendJobStatusNotification with ACCEPTED status', async () => {
         // Unmock notification service to test real implementation
         jest.unmock('../../src/services/notification.service');
@@ -3718,6 +4177,11 @@ describe('NotificationService Coverage Tests', () => {
         }
     });
 
+    // Mocked behavior: notificationService is unmocked and uses real implementation, jobModel.findById returns a mock job, userModel.findById returns a mock student with FCM token, Firebase messaging succeeds
+    // Input: jobId and JobStatus.PICKED_UP
+    // Expected status code: N/A (direct service call)
+    // Expected behavior: notification is sent with title "Job Update" and body "Your mover has picked up your items!"
+    // Expected output: None (void function)
     test('should cover sendJobStatusNotification with PICKED_UP status', async () => {
         jest.unmock('../../src/services/notification.service');
         const { notificationService: realNotificationService } = require('../../src/services/notification.service');
@@ -3760,6 +4224,11 @@ describe('NotificationService Coverage Tests', () => {
         }
     });
 
+    // Mocked behavior: notificationService is unmocked and uses real implementation, jobModel.findById returns a mock job, userModel.findById returns a mock student with FCM token, Firebase messaging succeeds
+    // Input: jobId and JobStatus.AWAITING_STUDENT_CONFIRMATION
+    // Expected status code: N/A (direct service call)
+    // Expected behavior: notification is sent with title "Your mover is here!" and body "Please meet your mover to begin the pickup."
+    // Expected output: None (void function)
     test('should cover sendJobStatusNotification with AWAITING_STUDENT_CONFIRMATION status', async () => {
         jest.unmock('../../src/services/notification.service');
         const { notificationService: realNotificationService } = require('../../src/services/notification.service');
@@ -3802,6 +4271,11 @@ describe('NotificationService Coverage Tests', () => {
         }
     });
 
+    // Mocked behavior: notificationService is unmocked and uses real implementation, jobModel.findById returns a mock STORAGE job, userModel.findById returns a mock student with FCM token, Firebase messaging succeeds
+    // Input: jobId and JobStatus.COMPLETED
+    // Expected status code: N/A (direct service call)
+    // Expected behavior: notification is sent with title "Delivery Update" and body "Your items have been moved to storage!"
+    // Expected output: None (void function)
     test('should cover sendJobStatusNotification with COMPLETED status for STORAGE job', async () => {
         jest.unmock('../../src/services/notification.service');
         const { notificationService: realNotificationService } = require('../../src/services/notification.service');
@@ -3844,6 +4318,11 @@ describe('NotificationService Coverage Tests', () => {
         }
     });
 
+    // Mocked behavior: notificationService is unmocked and uses real implementation, jobModel.findById returns a mock RETURN job, userModel.findById returns a mock student with FCM token, Firebase messaging succeeds
+    // Input: jobId and JobStatus.COMPLETED
+    // Expected status code: N/A (direct service call)
+    // Expected behavior: notification is sent with title "Delivery Update" and body "Your items have been returned to your address."
+    // Expected output: None (void function)
     test('should cover sendJobStatusNotification with COMPLETED status for RETURN job', async () => {
         jest.unmock('../../src/services/notification.service');
         const { notificationService: realNotificationService } = require('../../src/services/notification.service');
@@ -3886,6 +4365,11 @@ describe('NotificationService Coverage Tests', () => {
         }
     });
 
+    // Mocked behavior: notificationService is unmocked and uses real implementation, jobModel.findById returns null
+    // Input: jobId and JobStatus.ACCEPTED
+    // Expected status code: N/A (direct service call)
+    // Expected behavior: job not found, early return, no notification sent
+    // Expected output: None (void function)
     test('should cover sendJobStatusNotification when job not found', async () => {
         jest.unmock('../../src/services/notification.service');
         const { notificationService: realNotificationService } = require('../../src/services/notification.service');
@@ -3908,6 +4392,11 @@ describe('NotificationService Coverage Tests', () => {
         }
     });
 
+    // Mocked behavior: notificationService is unmocked and uses real implementation, jobModel.findById returns a mock job, userModel.findById returns null
+    // Input: jobId and JobStatus.ACCEPTED
+    // Expected status code: N/A (direct service call)
+    // Expected behavior: student not found, early return, no notification sent
+    // Expected output: None (void function)
     test('should cover sendJobStatusNotification when student not found', async () => {
         jest.unmock('../../src/services/notification.service');
         const { notificationService: realNotificationService } = require('../../src/services/notification.service');
@@ -3938,6 +4427,11 @@ describe('NotificationService Coverage Tests', () => {
         }
     });
 
+    // Mocked behavior: notificationService is unmocked and uses real implementation, jobModel.findById returns a mock job, userModel.findById returns a mock student with null fcmToken
+    // Input: jobId and JobStatus.ACCEPTED
+    // Expected status code: N/A (direct service call)
+    // Expected behavior: student has no FCM token, early return, no notification sent
+    // Expected output: None (void function)
     test('should cover sendJobStatusNotification when student has no FCM token', async () => {
         jest.unmock('../../src/services/notification.service');
         const { notificationService: realNotificationService } = require('../../src/services/notification.service');
@@ -3973,6 +4467,11 @@ describe('NotificationService Coverage Tests', () => {
         }
     });
 
+    // Mocked behavior: notificationService is unmocked and uses real implementation, Firebase messaging.send succeeds
+    // Input: notification payload with valid FCM token, title, body, and data
+    // Expected status code: N/A (direct service call)
+    // Expected behavior: notification is successfully sent via Firebase
+    // Expected output: None (void function)
     test('should cover sendNotificationToDevice success path', async () => {
         jest.unmock('../../src/services/notification.service');
         const { notificationService: realNotificationService } = require('../../src/services/notification.service');
@@ -4001,6 +4500,11 @@ describe('NotificationService Coverage Tests', () => {
         );
     });
 
+    // Mocked behavior: notificationService is unmocked and uses real implementation, Firebase messaging.send throws error with code 'messaging/registration-token-not-registered', userModel.clearInvalidFcmToken succeeds
+    // Input: notification payload with invalid FCM token
+    // Expected status code: N/A (direct service call)
+    // Expected behavior: error is caught, invalid token is cleared from database
+    // Expected output: None (void function)
     test('should cover sendNotificationToDevice with invalid token error (registration-token-not-registered)', async () => {
         jest.unmock('../../src/services/notification.service');
         const { notificationService: realNotificationService } = require('../../src/services/notification.service');
@@ -4027,6 +4531,11 @@ describe('NotificationService Coverage Tests', () => {
         expect(mockUserModel.clearInvalidFcmToken).toHaveBeenCalledWith(fcmToken);
     });
 
+    // Mocked behavior: notificationService is unmocked and uses real implementation, Firebase messaging.send throws error with code 'messaging/invalid-argument', userModel.clearInvalidFcmToken succeeds
+    // Input: notification payload with invalid FCM token
+    // Expected status code: N/A (direct service call)
+    // Expected behavior: error is caught, invalid token is cleared from database
+    // Expected output: None (void function)
     test('should cover sendNotificationToDevice with invalid argument error', async () => {
         jest.unmock('../../src/services/notification.service');
         const { notificationService: realNotificationService } = require('../../src/services/notification.service');
@@ -4053,6 +4562,11 @@ describe('NotificationService Coverage Tests', () => {
         expect(mockUserModel.clearInvalidFcmToken).toHaveBeenCalledWith(fcmToken);
     });
 
+    // Mocked behavior: notificationService is unmocked and uses real implementation, Firebase messaging.send throws error with code 'messaging/other-error' (not token-related)
+    // Input: notification payload with valid FCM token
+    // Expected status code: N/A (direct service call)
+    // Expected behavior: error is caught and logged, token is not cleared
+    // Expected output: None (void function)
     test('should cover sendNotificationToDevice with other error (not token-related)', async () => {
         jest.unmock('../../src/services/notification.service');
         const { notificationService: realNotificationService } = require('../../src/services/notification.service');
@@ -4078,6 +4592,11 @@ describe('NotificationService Coverage Tests', () => {
         expect(mockUserModel.clearInvalidFcmToken).not.toHaveBeenCalled();
     });
 
+    // Mocked behavior: notificationService is unmocked and uses real implementation, Firebase messaging.send throws error with code 'messaging/registration-token-not-registered', userModel.clearInvalidFcmToken throws an error
+    // Input: notification payload with invalid FCM token
+    // Expected status code: N/A (direct service call)
+    // Expected behavior: error is caught, clearInvalidFcmToken error is caught and logged
+    // Expected output: None (void function)
     test('should cover sendNotificationToDevice when clearInvalidFcmToken fails', async () => {
         jest.unmock('../../src/services/notification.service');
         const { notificationService: realNotificationService } = require('../../src/services/notification.service');
@@ -4104,6 +4623,11 @@ describe('NotificationService Coverage Tests', () => {
         expect(mockUserModel.clearInvalidFcmToken).toHaveBeenCalledWith(fcmToken);
     });
 
+    // Mocked behavior: notificationService is unmocked and uses real implementation, jobModel.findById throws an error
+    // Input: jobId and JobStatus.ACCEPTED
+    // Expected status code: N/A (direct service call)
+    // Expected behavior: error is caught and logged, no notification sent
+    // Expected output: None (void function)
     test('should cover sendJobStatusNotification catch block', async () => {
         jest.unmock('../../src/services/notification.service');
         const { notificationService: realNotificationService } = require('../../src/services/notification.service');
