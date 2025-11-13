@@ -95,14 +95,6 @@ afterAll(async () => {
 
 describe('POST /api/payment/create-intent - Create Payment Intent (Mocked)', () => {
   test('should handle missing STRIPE_SECRET_KEY in initializeStripe via endpoint', async () => {
-    // This test covers the error path in stripe.service.ts by calling the frontend-exposed endpoint:
-    // - Line 18-21: Check for missing STRIPE_SECRET_KEY in initializeStripe()
-    // - Line 21: throw new Error('STRIPE_SECRET_KEY environment variable is required')
-    // - Line 71-74: Catch block in createPaymentIntent that wraps the error
-    // The error propagates: initializeStripe() -> createPaymentIntent() -> paymentService -> controller -> endpoint
-    
-    // Mock the stripe service to throw the exact error that would be thrown by initializeStripe
-    // when STRIPE_SECRET_KEY is missing (simulating line 21 in stripe.service.ts)
     mockStripeService.createPaymentIntent.mockRejectedValue(
       new Error('Failed to create payment intent: STRIPE_SECRET_KEY environment variable is required')
     );
