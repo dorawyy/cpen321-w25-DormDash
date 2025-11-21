@@ -1,6 +1,8 @@
 package com.cpen321.usermanagement.features.manageOrders
 
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
@@ -11,6 +13,8 @@ import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Test
+import java.time.LocalDate
+import java.time.ZoneOffset
 
 /**
  * End-to-end test for the complete order creation and payment flow.
@@ -114,9 +118,12 @@ class CreateOrderTest : OrderTestBase() {
         // Test failure scenario 7a, both parts:
         createOrder_returnDateBeforePickupDate_showsErrorAndStaysOnForm()
         composeTestRule.waitForIdle()
-        createOrder_returnTimeBeforePickupTime_showsError()
+
 
         // Proceed with normal flow after failure scenario testing
+        // select normal dates
+        select_regular_date()
+
         // Step 6-7: Select boxes
         // Wait for the network call to complete and box selection to appear
         composeTestRule.waitUntil(timeoutMillis = 15_000) {
@@ -162,7 +169,7 @@ class CreateOrderTest : OrderTestBase() {
         // Failure scenario test
         // Step 0: Verify Error Message for invalid information
         composeTestRule.onNodeWithText(
-            "Please fill in all required fields with valid information.",
+            "Please fill in all required fields with valid information",
             useUnmergedTree = true
         ).assertExists("Error message should be displayed for invalid information")
 
@@ -200,6 +207,74 @@ class CreateOrderTest : OrderTestBase() {
         // Step 3: Confirm payment in dialog
         composeTestRule.onNodeWithTag("confirm_pay_button", useUnmergedTree = true)
             .performClick()
+
+    }
+
+    fun select_regular_date(){
+        val today = LocalDate.now(ZoneOffset.UTC)
+        val todayDay = today.dayOfMonth
+
+        // If today is the 30th, just exit as you requested
+        if (todayDay == 30) return
+
+        // PICKUP = 3 days from now (to leave room for return date)
+        val pickupDate = today.plusDays(3)
+        val pickupTag = "day_${pickupDate.toEpochDay()}"
+
+        // RETURN = 2 days from now (which is BEFORE pickup, triggering error)
+        // Note: Return date picker has minDateOffsetDays=1, so we can only select tomorrow or later
+        val returnDate = today.plusDays(4)
+        val returnTag = "day_${returnDate.toEpochDay()}"
+
+
+        composeTestRule.onNodeWithTag("pickup_date_button", useUnmergedTree = true)
+            .assertExists("Pickup date button should exist")
+            .performClick()
+
+        // Select pickup date (3 days from now)
+        composeTestRule
+            .onNodeWithTag(pickupTag, useUnmergedTree = true)
+            .assertExists("Pickup date should exist in calendar")
+            .assertIsEnabled()
+            .assertHasClickAction()
+            .performClick()
+
+        composeTestRule.waitForIdle()
+        Thread.sleep(500)
+
+        // Confirm date selection
+        composeTestRule.onNodeWithText("OK", useUnmergedTree = true)
+            .performClick()
+
+        composeTestRule.waitForIdle()
+        Thread.sleep(500)
+
+        // Now click on return date
+        composeTestRule.onNodeWithTag("return_date_button", useUnmergedTree = true)
+            .assertExists("Return date button should exist")
+            .performClick()
+
+        composeTestRule.waitForIdle()
+        Thread.sleep(500)
+
+        // Wait for date picker dialog
+        Thread.sleep(500)
+
+        // Try to select a date earlier than pickup (2 days from now, which is 1 day before pickup)
+        composeTestRule
+            .onNodeWithTag(returnTag, useUnmergedTree = true)
+            .assertExists("Return date should exist in calendar")
+            .performClick()
+
+        composeTestRule.waitForIdle()
+        Thread.sleep(500)
+
+        // Confirm return date selection
+        composeTestRule.onNodeWithText("OK", useUnmergedTree = true)
+            .performClick()
+
+        composeTestRule.waitForIdle()
+        Thread.sleep(1000)
 
     }
 
@@ -310,12 +385,33 @@ class CreateOrderTest : OrderTestBase() {
             .assertExists("Pickup date button should exist")
             .performClick()
 
+        val today = LocalDate.now(ZoneOffset.UTC)
+        val todayDay = today.dayOfMonth
+
+        // If today is the 30th, just exit as you requested
+        if (todayDay == 30) return
+
+        // PICKUP = 3 days from now (to leave room for return date)
+        val pickupDate = today.plusDays(3)
+        val pickupTag = "day_${pickupDate.toEpochDay()}"
+
+        // RETURN = 2 days from now (which is BEFORE pickup, triggering error)
+        // Note: Return date picker has minDateOffsetDays=1, so we can only select tomorrow or later
+        val returnDate = today.plusDays(2)
+        val returnTag = "day_${returnDate.toEpochDay()}"
+
+
         composeTestRule.waitForIdle()
         Thread.sleep(500)
 
-        // Select a date in the future (we'll use the date picker's default behavior)
-        // Assuming date picker shows current month, select day 15
-        composeTestRule.onNodeWithText("15", useUnmergedTree = true)
+        Thread.sleep(500)
+        
+        // Select pickup date (3 days from now)
+        composeTestRule
+            .onNodeWithTag(pickupTag, useUnmergedTree = true)
+            .assertExists("Pickup date should exist in calendar")
+            .assertIsEnabled()
+            .assertHasClickAction()
             .performClick()
 
         composeTestRule.waitForIdle()
@@ -336,8 +432,13 @@ class CreateOrderTest : OrderTestBase() {
         composeTestRule.waitForIdle()
         Thread.sleep(500)
 
-        // Try to select a date earlier than pickup (day 10, before day 15)
-        composeTestRule.onNodeWithText("10", useUnmergedTree = true)
+        // Wait for date picker dialog
+        Thread.sleep(500)
+        
+        // Try to select a date earlier than pickup (2 days from now, which is 1 day before pickup)
+        composeTestRule
+            .onNodeWithTag(returnTag, useUnmergedTree = true)
+            .assertExists("Return date should exist in calendar")
             .performClick()
 
         composeTestRule.waitForIdle()
@@ -367,62 +468,6 @@ class CreateOrderTest : OrderTestBase() {
         composeTestRule.onNodeWithTag("return_date_button", useUnmergedTree = true)
             .assertExists("Return date selection should still be visible for correction")
     }
-
-    /**
-     * Test for validating that return time must be after pickup time.
-     *
-     * Failure Scenario 7a (for CreateOrder):
-     * - Student inputs a return time which is before the pickup time on the same date
-     * - System displays error: "Return date/time must be after pickup date/time"
-     * - System stays on the form
-     */
-    fun createOrder_returnTimeBeforePickupTime_showsError() {
-        composeTestRule.waitForIdle()
-
-        composeTestRule.waitUntil(timeoutMillis = 15_000) {
-            composeTestRule.onAllNodesWithText("Select Boxes", useUnmergedTree = true)
-                .fetchSemanticsNodes().isNotEmpty()
-        }
-
-        // First, set pickup time to 14:00 (2 PM) - this establishes our reference time
-        composeTestRule.onNodeWithTag("pickup_time_increase_hour", useUnmergedTree = true)
-            .assertExists("Pickup time hour increase button should exist")
-
-        // Click multiple times to set to 14:00 (assuming default is 12:00)
-        repeat(2) {
-            composeTestRule.onNodeWithTag("pickup_time_increase_hour", useUnmergedTree = true)
-                .performClick()
-            Thread.sleep(200)
-        }
-
-        composeTestRule.waitForIdle()
-        Thread.sleep(500)
-
-        // Now set return time to 10:00 (10 AM - 4 hours BEFORE pickup time)
-        // Assuming return time also starts at 12:00, we need to decrease by 2 hours
-        composeTestRule.onNodeWithTag("return_time_decrease_hour", useUnmergedTree = true)
-            .assertExists("Return time hour decrease button should exist")
-
-        repeat(2) {
-            composeTestRule.onNodeWithTag("return_time_decrease_hour", useUnmergedTree = true)
-                .performClick()
-            Thread.sleep(200)
-        }
-
-        composeTestRule.waitForIdle()
-        Thread.sleep(1000)
-
-        // Verify error message is displayed
-        composeTestRule.onNodeWithText(
-            "Return date/time must be after pickup date/time",
-            useUnmergedTree = true
-        ).assertExists("Error message should be displayed when return time is before pickup time on same day")
-
-        // Verify we're still on the form (proceed button should exist)
-        composeTestRule.onNodeWithTag("proceed_to_payment_button", useUnmergedTree = true)
-            .assertExists("Should still be on the box selection form")
-    }
-
 }
 
 

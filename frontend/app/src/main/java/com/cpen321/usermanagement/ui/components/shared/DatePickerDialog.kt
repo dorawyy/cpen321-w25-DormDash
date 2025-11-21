@@ -1,32 +1,24 @@
 package com.cpen321.usermanagement.ui.components.shared
 
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.SelectableDates
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.runtime.Composable
-import java.util.Calendar
-import java.util.TimeZone
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import java.time.*
+import java.util.*
 
-/**
- * A reusable date picker dialog component that properly handles UTC timezone.
- * 
- * Material3's DatePicker operates entirely in UTC timezone:
- * - Returns selectedDateMillis as UTC milliseconds (midnight UTC)
- * - Expects selectableDates validation in UTC
- * 
- * This component ensures all date operations use UTC timezone to avoid
- * off-by-one day bugs that occur when mixing UTC and local timezones.
- *
- * @param onDateSelected Callback invoked with selected date in UTC milliseconds
- * @param onDismiss Callback invoked when dialog is dismissed
- * @param title Title text for the dialog (e.g., "Select Pickup Date")
- * @param initialDateMillis Initial date to display in UTC milliseconds (default: today)
- * @param minDateOffsetDays Minimum selectable date offset from today in days (default: 0 = today)
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DatePickerDialog(
@@ -36,53 +28,120 @@ fun DatePickerDialog(
     initialDateMillis: Long? = null,
     minDateOffsetDays: Int = 0
 ) {
-    // Get today's date at midnight in UTC timezone
-    val today = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+    // ----- UTC today -----
+    val todayUTC = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
         set(Calendar.HOUR_OF_DAY, 0)
         set(Calendar.MINUTE, 0)
         set(Calendar.SECOND, 0)
         set(Calendar.MILLISECOND, 0)
     }.timeInMillis
 
-    // Calculate minimum selectable date in UTC
-    val minSelectableDate = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
-        timeInMillis = today
+    val minSelectableUTC = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+        timeInMillis = todayUTC
         add(Calendar.DAY_OF_YEAR, minDateOffsetDays)
     }.timeInMillis
 
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = initialDateMillis ?: today,
-        selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                // Note: Parameter is explicitly named utcTimeMillis in Material3 API
-                // This confirms the DatePicker operates in UTC timezone
-                return utcTimeMillis >= minSelectableDate
-            }
-        }
-    )
+    // ----- Convert millis -> LocalDate (UTC) -----
+    val initialDate = initialDateMillis ?: todayUTC
+    val initialLocalDate = Instant.ofEpochMilli(initialDate)
+        .atZone(ZoneOffset.UTC).toLocalDate()
 
-    DatePickerDialog(
+    var selectedDate by remember { mutableStateOf(initialLocalDate) }
+    val visibleMonth by remember { mutableStateOf(initialLocalDate.withDayOfMonth(1)) }
+
+    // Helper: convert LocalDate -> UTC millis
+    fun LocalDate.toUtcMillis(): Long =
+        this.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+
+    // ---- Build calendar grid ----
+    val daysInMonth = visibleMonth.lengthOfMonth()
+    val firstDayOfWeekOffset = visibleMonth.dayOfWeek.value % 7
+
+    val days = buildList {
+        repeat(firstDayOfWeekOffset) { add(null) }
+        for (d in 1..daysInMonth) add(LocalDate.of(visibleMonth.year, visibleMonth.month, d))
+    }
+
+    androidx.compose.material3.DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(
                 onClick = {
-                    datePickerState.selectedDateMillis?.let { selectedMillis ->
-                        onDateSelected(selectedMillis)
-                    }
+                    onDateSelected(selectedDate.toUtcMillis())
                 }
-            ) {
-                Text("OK")
-            }
+            ) { Text("OK") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
+            TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     ) {
-        DatePicker(
-            state = datePickerState,
-            title = { Text(title) }
-        )
+        Column(Modifier.padding(16.dp)) {
+            Text(title, style = MaterialTheme.typography.titleLarge)
+
+            Spacer(Modifier.height(16.dp))
+
+            // --- Month / Year ---
+            Text(
+                "${visibleMonth.month} ${visibleMonth.year}",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            // --- Days Grid ---
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(7),
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(4.dp)
+            ) {
+                items(days) { date ->
+                    if (date == null) {
+                        Spacer(Modifier.size(40.dp))
+                    } else {
+                        val utc = date.toUtcMillis()
+                        val enabled = utc >= minSelectableUTC
+                        val isSelected = date == selectedDate
+
+                        // Choose colors based on state
+                        val backgroundColor = when {
+                            isSelected -> MaterialTheme.colorScheme.primary
+                            else       -> androidx.compose.ui.graphics.Color.Transparent
+                        }
+                        val textColor = when {
+                            !enabled   -> MaterialTheme.colorScheme.onSurfaceVariant
+                            isSelected -> MaterialTheme.colorScheme.onPrimary
+                            else       -> MaterialTheme.colorScheme.onSurface
+                        }
+
+                        Box(
+                            modifier = Modifier
+                            .size(40.dp)
+                            .background(
+                                color = backgroundColor,
+                                shape = CircleShape
+                            )                                       // ✅ background first
+                            .testTag("day_${date.toEpochDay()}")   // stays on the same node
+                            .semantics {
+                                if (!enabled) disabled()
+                            }
+                            .let { base ->
+                                if (enabled) {
+                                    base.clickable {
+                                        selectedDate = date
+                                    }
+                                } else base
+                            },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = date.dayOfMonth.toString(),
+                                textAlign = TextAlign.Center,
+                                color = textColor,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }

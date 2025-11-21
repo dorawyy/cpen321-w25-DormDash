@@ -51,5 +51,7 @@ class ConfirmMoverArrivalTest: OrderTestBase() {
         composeTestRule.onNodeWithTag("confirm arrival button", useUnmergedTree = true)
             .assertExists("No confirm button. Mover must first accept job and mark arrival.")
             .performClick()
+
+        composeTestRule.onNodeWithText("Mover has picked up your items")
     }
 }

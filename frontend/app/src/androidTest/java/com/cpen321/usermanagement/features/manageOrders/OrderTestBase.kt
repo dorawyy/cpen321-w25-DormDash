@@ -299,6 +299,8 @@ abstract class OrderTestBase {
      */
     fun signIn() {
 
+        setupTestAccount()
+
         composeTestRule.waitForIdle()
 
         val isNotAuthenticated = composeTestRule
