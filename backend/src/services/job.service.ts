@@ -19,7 +19,7 @@ import logger from '../utils/logger.util';
 import { emitJobCreated, emitJobUpdated } from '../utils/eventEmitter.util';
 import { toJobResponse } from '../mappers/job.mapper';
 import { extractObjectId, extractObjectIdString } from '../utils/mongoose.util';
-import { JobNotFoundError, InternalServerError } from '../utils/errors.util';
+import { JobNotFoundError, InternalServerError, BadRequestError } from '../utils/errors.util';
 import { OrderService } from './order.service';
 
 export class JobService {
@@ -246,6 +246,12 @@ export class JobService {
 
   async getJobById(jobId: string): Promise<GetJobResponse> {
     try {
+      
+      // return 400 for invalid jobId
+      if (!mongoose.Types.ObjectId.isValid(jobId)) {
+        throw new BadRequestError(`Invalid jobId: ${jobId}`);
+      }
+
       const job = await jobModel.findById(new mongoose.Types.ObjectId(jobId));
 
       if (!job) {
@@ -258,7 +264,7 @@ export class JobService {
       };
     } catch (error) {
       logger.error('Error in getJobById service:', error);
-      if (error instanceof JobNotFoundError) throw error;
+      if (error instanceof JobNotFoundError || error instanceof BadRequestError) throw error;
       throw new InternalServerError('Internal server error', error as Error);
     }
   }

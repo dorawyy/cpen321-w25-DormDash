@@ -36,6 +36,15 @@ export class JobNotFoundError extends NotFoundError {
 }
 
 /**
+ * 400 - Bad request errors
+ */
+export class BadRequestError extends AppError {
+  constructor(message: string) {
+    super(message, 400, 'BAD_REQUEST');
+  }
+}
+
+/**
  * 500 - Internal server errors
  */
 export class InternalServerError extends AppError {
