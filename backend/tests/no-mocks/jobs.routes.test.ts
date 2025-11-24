@@ -103,7 +103,7 @@ describe('POST /api/jobs', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString()
+            scheduledTime: new Date()
         };
 
         const response = await request(app)
@@ -130,7 +130,7 @@ describe('POST /api/jobs', () => {
             price: 75,
             pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
-            scheduledTime: new Date().toISOString()
+            scheduledTime: new Date()
         };
 
         const response = await request(app)
@@ -157,7 +157,7 @@ describe('POST /api/jobs', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString()
+            scheduledTime: new Date()
         };
 
         await request(app)
@@ -179,7 +179,7 @@ describe('POST /api/jobs', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString()
+            scheduledTime: new Date()
         };
 
         await request(app)
@@ -201,7 +201,7 @@ describe('POST /api/jobs', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString()
+            scheduledTime: new Date()
         };
 
         await request(app)
@@ -224,7 +224,7 @@ describe('POST /api/jobs', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString()
+            scheduledTime: new Date()
         };
 
         await request(app)
@@ -247,7 +247,7 @@ describe('POST /api/jobs', () => {
             price: 0,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString()
+            scheduledTime: new Date()
         };
 
         await request(app)
@@ -270,7 +270,7 @@ describe('POST /api/jobs', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString()
+            scheduledTime: new Date()
         };
 
         await request(app)
@@ -293,7 +293,7 @@ describe('POST /api/jobs', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString()
+            scheduledTime: new Date()
         };
 
         await request(app)
@@ -316,7 +316,7 @@ describe('POST /api/jobs', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString()
+            scheduledTime: new Date()
         };
 
         await request(app)
@@ -334,6 +334,7 @@ describe('GET /api/jobs', () => {
     test('should get all jobs', async () => {
         // Create a test job first
         const job1 = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: new mongoose.Types.ObjectId(),
             studentId: testUserId,
             jobType: JobType.STORAGE,
@@ -342,12 +343,13 @@ describe('GET /api/jobs', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
 
         const job2 = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: new mongoose.Types.ObjectId(),
             studentId: testUserId,
             jobType: JobType.RETURN,
@@ -356,7 +358,7 @@ describe('GET /api/jobs', () => {
             price: 50,
             pickupAddress: { lat: 50.2827, lon: -120.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 47.2827, lon: -100.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -393,8 +395,10 @@ describe('GET /api/jobs/available', () => {
     // Expected behavior: only AVAILABLE jobs are retrieved from database
     // Expected output: data.jobs array containing 1 job with status AVAILABLE
     test('should get only available jobs', async () => {
+
         // Create available job
         await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: new mongoose.Types.ObjectId(),
             studentId: testUserId,
             jobType: JobType.STORAGE,
@@ -403,13 +407,14 @@ describe('GET /api/jobs/available', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
 
         // Create accepted job (should not appear)
         await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: new mongoose.Types.ObjectId(),
             studentId: testUserId,
             jobType: JobType.RETURN,
@@ -419,7 +424,7 @@ describe('GET /api/jobs/available', () => {
             price: 75,
             pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -444,6 +449,7 @@ describe('GET /api/jobs/mover', () => {
     test('should get jobs accepted by authenticated mover', async () => {
         // Create job accepted by the mover
         const acceptedJob = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: new mongoose.Types.ObjectId(),
             studentId: testUserId,
             moverId: testMoverId,
@@ -453,7 +459,7 @@ describe('GET /api/jobs/mover', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -461,6 +467,7 @@ describe('GET /api/jobs/mover', () => {
         // Create job accepted by different mover (should not appear)
         const otherMoverId = new mongoose.Types.ObjectId();
         await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: new mongoose.Types.ObjectId(),
             studentId: testUserId,
             moverId: otherMoverId,
@@ -470,7 +477,7 @@ describe('GET /api/jobs/mover', () => {
             price: 75,
             pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -518,6 +525,7 @@ describe('GET /api/jobs/student', () => {
     test('should get jobs for authenticated student', async () => {
         // Create job for the student
         const studentJob = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: new mongoose.Types.ObjectId(),
             studentId: testUserId,
             jobType: JobType.STORAGE,
@@ -526,7 +534,7 @@ describe('GET /api/jobs/student', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -534,6 +542,7 @@ describe('GET /api/jobs/student', () => {
         // Create job for different student (should not appear)
         const otherStudentId = new mongoose.Types.ObjectId();
         await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: new mongoose.Types.ObjectId(),
             studentId: otherStudentId,
             jobType: JobType.RETURN,
@@ -542,7 +551,7 @@ describe('GET /api/jobs/student', () => {
             price: 75,
             pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -589,6 +598,7 @@ describe('GET /api/jobs/:id', () => {
     // Expected output: data.job object with job details matching the requested ID
     test('should get job by ID', async () => {
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: new mongoose.Types.ObjectId(),
             studentId: testUserId,
             jobType: JobType.STORAGE,
@@ -597,7 +607,7 @@ describe('GET /api/jobs/:id', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -657,6 +667,7 @@ describe('PATCH /api/jobs/:id/status', () => {
 
         // Create a job with the order ID
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: order._id,
             studentId: testUserId,
             jobType: JobType.STORAGE,
@@ -665,7 +676,7 @@ describe('PATCH /api/jobs/:id/status', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -685,6 +696,7 @@ describe('PATCH /api/jobs/:id/status', () => {
     // Expected output: data.status: PICKED_UP
     test('should update job status to PICKED_UP', async () => {
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: new mongoose.Types.ObjectId(),
             studentId: testUserId,
             moverId: testMoverId,
@@ -694,7 +706,7 @@ describe('PATCH /api/jobs/:id/status', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -725,6 +737,7 @@ describe('PATCH /api/jobs/:id/status', () => {
         } as any);
 
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: order._id,
             studentId: testUserId,
             moverId: testMoverId,
@@ -734,7 +747,7 @@ describe('PATCH /api/jobs/:id/status', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -768,6 +781,7 @@ describe('PATCH /api/jobs/:id/status', () => {
         } as any);
 
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: order._id,
             studentId: testUserId,
             moverId: testMoverId,
@@ -777,7 +791,7 @@ describe('PATCH /api/jobs/:id/status', () => {
             price: 75,
             pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -800,6 +814,7 @@ describe('PATCH /api/jobs/:id/status', () => {
     // Expected output: validation error response
     test('should return 400 for invalid status', async () => {
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: new mongoose.Types.ObjectId(),
             studentId: testUserId,
             jobType: JobType.STORAGE,
@@ -808,7 +823,7 @@ describe('PATCH /api/jobs/:id/status', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -826,6 +841,7 @@ describe('PATCH /api/jobs/:id/status', () => {
     // Expected output: validation error response
     test('should return 400 for missing status', async () => {
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: new mongoose.Types.ObjectId(),
             studentId: testUserId,
             jobType: JobType.STORAGE,
@@ -834,7 +850,7 @@ describe('PATCH /api/jobs/:id/status', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -876,6 +892,7 @@ describe('PATCH /api/jobs/:id/status', () => {
         } as any);
 
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: order._id,
             studentId: testUserId,
             moverId: testMoverId,
@@ -885,7 +902,7 @@ describe('PATCH /api/jobs/:id/status', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -906,6 +923,7 @@ describe('POST /api/jobs/:id/arrived', () => {
     // Expected output: success: true, message: "Confirmation requested"
     test('should request pickup confirmation when mover arrives', async () => {
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: new mongoose.Types.ObjectId(),
             studentId: testUserId,
             moverId: testMoverId,
@@ -915,7 +933,7 @@ describe('POST /api/jobs/:id/arrived', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -936,6 +954,7 @@ describe('POST /api/jobs/:id/arrived', () => {
     test('should return error if mover is not assigned to job', async () => {
         const otherMoverId = new mongoose.Types.ObjectId();
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: new mongoose.Types.ObjectId(),
             studentId: testUserId,
             moverId: otherMoverId,
@@ -945,7 +964,7 @@ describe('POST /api/jobs/:id/arrived', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -974,6 +993,7 @@ describe('POST /api/jobs/:id/arrived', () => {
     // Expected output: error response indicating endpoint only valid for STORAGE jobs
     test('should return 400 for RETURN job type', async () => {
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: new mongoose.Types.ObjectId(),
             studentId: testUserId,
             moverId: testMoverId,
@@ -983,7 +1003,7 @@ describe('POST /api/jobs/:id/arrived', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -1000,6 +1020,7 @@ describe('POST /api/jobs/:id/arrived', () => {
     // Expected output: error response indicating job must be ACCEPTED
     test('should return 400 if job status is not ACCEPTED', async () => {
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: new mongoose.Types.ObjectId(),
             studentId: testUserId,
             moverId: testMoverId,
@@ -1009,7 +1030,7 @@ describe('POST /api/jobs/:id/arrived', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -1040,6 +1061,7 @@ describe('POST /api/jobs/:id/confirm-pickup', () => {
         } as any);
 
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: order._id,
             studentId: testUserId,
             moverId: testMoverId,
@@ -1049,7 +1071,7 @@ describe('POST /api/jobs/:id/confirm-pickup', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             verificationRequestedAt: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
@@ -1080,6 +1102,7 @@ describe('POST /api/jobs/:id/confirm-pickup', () => {
         } as any);
 
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: order._id,
             studentId: otherStudentId,
             moverId: testMoverId,
@@ -1089,7 +1112,7 @@ describe('POST /api/jobs/:id/confirm-pickup', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             verificationRequestedAt: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
@@ -1130,6 +1153,7 @@ describe('POST /api/jobs/:id/confirm-pickup', () => {
         } as any);
 
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: order._id,
             studentId: testUserId,
             moverId: testMoverId,
@@ -1139,7 +1163,7 @@ describe('POST /api/jobs/:id/confirm-pickup', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             verificationRequestedAt: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
@@ -1168,6 +1192,7 @@ describe('POST /api/jobs/:id/confirm-pickup', () => {
         } as any);
 
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: order._id,
             studentId: testUserId,
             moverId: testMoverId,
@@ -1177,7 +1202,7 @@ describe('POST /api/jobs/:id/confirm-pickup', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -1231,6 +1256,7 @@ describe('POST /api/jobs/:id/delivered', () => {
         } as any);
 
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: order._id,
             studentId: testUserId,
             moverId: testMoverId,
@@ -1240,7 +1266,7 @@ describe('POST /api/jobs/:id/delivered', () => {
             price: 75,
             pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -1274,6 +1300,7 @@ describe('POST /api/jobs/:id/delivered', () => {
         } as any);
 
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: order._id,
             studentId: testUserId,
             moverId: otherMoverId,
@@ -1283,7 +1310,7 @@ describe('POST /api/jobs/:id/delivered', () => {
             price: 75,
             pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -1323,6 +1350,7 @@ describe('POST /api/jobs/:id/delivered', () => {
         } as any);
 
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: order._id,
             studentId: testUserId,
             moverId: testMoverId,
@@ -1332,7 +1360,7 @@ describe('POST /api/jobs/:id/delivered', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -1360,6 +1388,7 @@ describe('POST /api/jobs/:id/delivered', () => {
         } as any);
 
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: order._id,
             studentId: testUserId,
             moverId: testMoverId,
@@ -1369,7 +1398,7 @@ describe('POST /api/jobs/:id/delivered', () => {
             price: 75,
             pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -1400,6 +1429,7 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
         } as any);
 
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: order._id,
             studentId: testUserId,
             moverId: testMoverId,
@@ -1409,7 +1439,7 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
             price: 75,
             pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             verificationRequestedAt: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
@@ -1444,6 +1474,7 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
         } as any);
 
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: order._id,
             studentId: otherStudentId,
             moverId: testMoverId,
@@ -1453,7 +1484,7 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
             price: 75,
             pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             verificationRequestedAt: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
@@ -1494,6 +1525,7 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
         } as any);
 
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: order._id,
             studentId: testUserId,
             moverId: testMoverId,
@@ -1503,7 +1535,7 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             verificationRequestedAt: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
@@ -1532,6 +1564,7 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
         } as any);
 
         const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
             orderId: order._id,
             studentId: testUserId,
             moverId: testMoverId,
@@ -1541,7 +1574,7 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
             price: 75,
             pickupAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
             dropoffAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Return Address' },
-            scheduledTime: new Date().toISOString(),
+            scheduledTime: new Date(),
             createdAt: new Date(),
             updatedAt: new Date()
         });
