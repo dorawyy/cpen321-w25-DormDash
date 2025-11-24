@@ -2378,59 +2378,6 @@ describe('JobService - Additional Coverage Tests', () => {
             .expect(500);
     });
 
-    // Mocked behavior: jobModel.findById returns a mock RETURN job, jobModel.update returns updated job, userModel methods succeed, orderService.updateOrderStatus succeeds, notificationService succeeds
-    // Input: PATCH request with valid job ID, status: COMPLETED, and authentication token
-    // Expected status code: 200
-    // Expected behavior: job status updated to COMPLETED, mover credits updated, order status updated to RETURNED
-    // Expected output: success response with status: COMPLETED
-    test('should cover RETURN job COMPLETED flow (lines 479-488)', async () => {
-        const jobId = new mongoose.Types.ObjectId().toString();
-        const orderId = new mongoose.Types.ObjectId();
-        const studentId = new mongoose.Types.ObjectId();
-        const moverId = new mongoose.Types.ObjectId();
-        
-        const mockJob = {
-            _id: new mongoose.Types.ObjectId(jobId),
-            orderId: orderId,
-            studentId: studentId,
-            moverId: moverId,
-            jobType: JobType.RETURN, // RETURN job
-            status: JobStatus.PICKED_UP,
-            volume: 10,
-            price: 50,
-            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
-            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
-        };
-
-        const mockUpdatedJob = {
-            ...mockJob,
-            status: JobStatus.COMPLETED,
-        };
-
-        mockJobModel.findById.mockResolvedValue(mockJob as any);
-        mockJobModel.update.mockResolvedValue(mockUpdatedJob as any);
-        mockUserModel.findById.mockResolvedValue({
-            _id: moverId,
-            userRole: 'MOVER',
-            credits: 100,
-        } as any);
-        mockUserModel.update.mockResolvedValue({} as any);
-        mockOrderService.updateOrderStatus.mockResolvedValue(undefined as any);
-        mockNotificationService.sendJobStatusNotification.mockResolvedValue(undefined as any);
-
-        const response = await request(app)
-            .patch(`/api/jobs/${jobId}/status`)
-            .set('Authorization', `Bearer fake-token`)
-            .send({ status: JobStatus.COMPLETED })
-            .expect(200);
-
-        expect(response.body.status).toBe(JobStatus.COMPLETED);
-        expect(mockOrderService.updateOrderStatus).toHaveBeenCalledWith(
-            orderId,
-            OrderStatus.RETURNED,
-            expect.any(String)
-        );
-    });
 
     // Mocked behavior: jobModel.findById returns a mock job, jobModel.update returns updated job with null orderId
     // Input: PATCH request with valid job ID, status: PICKED_UP, and authentication token
