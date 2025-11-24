@@ -611,7 +611,7 @@ export class JobService {
       const job = await jobModel.findById(new mongoose.Types.ObjectId(jobId));
       if (!job) throw new JobNotFoundError(jobId);
       if (job.jobType !== JobType.STORAGE)
-        throw new Error('Confirm pickup only valid for storage jobs');
+        throw new BadRequestError('Confirm pickup only valid for storage jobs');
 
       // Extract and validate studentId
       const jobStudentIdStr = extractObjectIdString(job.studentId);
@@ -620,7 +620,7 @@ export class JobService {
       );
 
       if (!jobStudentIdStr || jobStudentIdStr !== studentId) {
-        throw new Error('Only the student can confirm pickup');
+        throw new ForbiddenError('Only the student can confirm pickup');
       }
 
       if (job.status !== JobStatus.AWAITING_STUDENT_CONFIRMATION)
@@ -769,7 +769,7 @@ export class JobService {
       );
 
       if (!jobStudentIdStr || jobStudentIdStr !== studentId) {
-        throw new Error('Only the student can confirm delivery');
+        throw new ForbiddenError('Only the student can confirm delivery');
       }
 
       if (job.status !== JobStatus.AWAITING_STUDENT_CONFIRMATION)
