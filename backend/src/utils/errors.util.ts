@@ -45,6 +45,15 @@ export class BadRequestError extends AppError {
 }
 
 /**
+ * 403 - Forbidden errors
+ */
+export class ForbiddenError extends AppError {
+  constructor(message: string) {
+    super(message, 403, 'FORBIDDEN');
+  }
+}
+
+/**
  * 500 - Internal server errors
  */
 export class InternalServerError extends AppError {

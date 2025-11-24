@@ -19,7 +19,7 @@ import logger from '../utils/logger.util';
 import { emitJobCreated, emitJobUpdated } from '../utils/eventEmitter.util';
 import { toJobResponse } from '../mappers/job.mapper';
 import { extractObjectId, extractObjectIdString } from '../utils/mongoose.util';
-import { JobNotFoundError, InternalServerError, BadRequestError } from '../utils/errors.util';
+import { JobNotFoundError, InternalServerError, BadRequestError, ForbiddenError } from '../utils/errors.util';
 import { OrderService } from './order.service';
 
 export class JobService {
@@ -553,16 +553,16 @@ export class JobService {
       const job = await jobModel.findById(new mongoose.Types.ObjectId(jobId));
       if (!job) throw new JobNotFoundError(jobId);
       if (job.jobType !== JobType.STORAGE)
-        throw new Error('Arrival confirmation only valid for storage jobs');
+        throw new BadRequestError('Arrival confirmation only valid for storage jobs');
 
       // Extract and validate moverId
       const jobMoverIdStr = extractObjectIdString(job.moverId);
       if (!jobMoverIdStr || jobMoverIdStr !== moverId) {
-        throw new Error('Only assigned mover can request confirmation');
+        throw new ForbiddenError('Only assigned mover can request confirmation');
       }
 
       if (job.status !== JobStatus.ACCEPTED)
-        throw new Error('Job must be ACCEPTED to request confirmation');
+        throw new BadRequestError('Job must be ACCEPTED to request confirmation');
 
       const updatedJob = await jobModel.update(job._id, {
         status: JobStatus.AWAITING_STUDENT_CONFIRMATION,
@@ -624,7 +624,7 @@ export class JobService {
       }
 
       if (job.status !== JobStatus.AWAITING_STUDENT_CONFIRMATION)
-        throw new Error('Job must be awaiting student confirmation');
+        throw new BadRequestError('Job must be awaiting student confirmation');
 
       const updatedJob = await jobModel.update(job._id, {
         status: JobStatus.PICKED_UP,
@@ -700,16 +700,16 @@ export class JobService {
       const job = await jobModel.findById(new mongoose.Types.ObjectId(jobId));
       if (!job) throw new JobNotFoundError(jobId);
       if (job.jobType !== JobType.RETURN)
-        throw new Error('Delivery confirmation only valid for return jobs');
+        throw new BadRequestError('Delivery confirmation only valid for return jobs');
 
       // Extract and validate moverId
       const jobMoverIdStr = extractObjectIdString(job.moverId);
       if (!jobMoverIdStr || jobMoverIdStr !== moverId) {
-        throw new Error('Only assigned mover can request confirmation');
+        throw new ForbiddenError('Only assigned mover can request confirmation');
       }
 
       if (job.status !== JobStatus.PICKED_UP)
-        throw new Error(
+        throw new BadRequestError(
           'Job must be PICKED_UP (since its a return job) to request confirmation'
         );
 
@@ -760,7 +760,7 @@ export class JobService {
       const job = await jobModel.findById(new mongoose.Types.ObjectId(jobId));
       if (!job) throw new JobNotFoundError(jobId);
       if (job.jobType !== JobType.RETURN)
-        throw new Error('Confirm delivery only valid for return jobs');
+        throw new BadRequestError('Confirm delivery only valid for return jobs');
 
       // Extract and validate studentId
       const jobStudentIdStr = extractObjectIdString(job.studentId);
@@ -773,7 +773,7 @@ export class JobService {
       }
 
       if (job.status !== JobStatus.AWAITING_STUDENT_CONFIRMATION)
-        throw new Error('Job must be awaiting student confirmation');
+        throw new BadRequestError('Job must be awaiting student confirmation');
 
       const updatedJob = await jobModel.update(job._id, {
         status: JobStatus.COMPLETED,
