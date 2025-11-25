@@ -532,6 +532,9 @@ describe('PATCH /api/jobs/:id/status', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
 
         const mockUpdatedJob = {
@@ -574,6 +577,9 @@ describe('PATCH /api/jobs/:id/status', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
 
         const mockUpdatedJob = {
@@ -616,6 +622,9 @@ describe('PATCH /api/jobs/:id/status', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
 
         const mockUpdatedJob = {
@@ -628,6 +637,8 @@ describe('PATCH /api/jobs/:id/status', () => {
         mockJobModel.tryAcceptJob.mockResolvedValue(mockUpdatedJob as any);
         mockOrderService.updateOrderStatus.mockResolvedValue(undefined as any);
         mockNotificationService.sendJobStatusNotification.mockResolvedValue(undefined as any);
+        
+        mockEventEmitter.emitJobUpdated.mockReset();
         mockEventEmitter.emitJobUpdated.mockImplementation(() => {
             throw new Error('EventEmitter error');
         });
@@ -640,6 +651,7 @@ describe('PATCH /api/jobs/:id/status', () => {
 
         expect(response.status).toBe(200);
         expect(mockEventEmitter.emitJobUpdated).toHaveBeenCalled();
+        expect(mockNotificationService.sendJobStatusNotification).toHaveBeenCalled();
     });
 
     // Mocked behavior: jobModel.findById returns a mock RETURN job twice, jobModel.update returns updated job, orderService.updateOrderStatus succeeds
@@ -664,6 +676,9 @@ describe('PATCH /api/jobs/:id/status', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
 
         const mockUpdatedJob = {
@@ -708,6 +723,9 @@ describe('PATCH /api/jobs/:id/status', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
 
         mockJobModel.findById.mockResolvedValue(mockJob as any);
@@ -742,6 +760,9 @@ describe('PATCH /api/jobs/:id/status', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
 
         const mockUpdatedJob = {
@@ -786,6 +807,9 @@ describe('PATCH /api/jobs/:id/status', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
 
         const mockUpdatedJob = {
@@ -826,6 +850,9 @@ describe('PATCH /api/jobs/:id/status', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
 
         const mockUpdatedJob = {
@@ -932,6 +959,9 @@ describe('PATCH /api/jobs/:id/status', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
 
         const mockUpdatedJob = {
@@ -2205,6 +2235,9 @@ describe('JobService - Additional Coverage Tests', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
 
         mockJobModel.findById.mockResolvedValue(mockJob as any);
@@ -2238,6 +2271,9 @@ describe('JobService - Additional Coverage Tests', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
 
         const mockUpdatedJob = {
@@ -2277,6 +2313,9 @@ describe('JobService - Additional Coverage Tests', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
 
         const mockUpdatedJob = {
@@ -2317,6 +2356,9 @@ describe('JobService - Additional Coverage Tests', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
 
         const mockUpdatedJob = {
@@ -2360,6 +2402,9 @@ describe('JobService - Additional Coverage Tests', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
 
         const mockUpdatedJob = {
@@ -2450,6 +2495,9 @@ describe('JobService - Additional Coverage Tests', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
 
         mockJobModel.findById.mockResolvedValue(mockJob as any);
@@ -2500,6 +2548,9 @@ describe('JobService - Additional Coverage Tests', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
 
         mockJobModel.findById.mockResolvedValue(mockJob as any);
@@ -2543,6 +2594,9 @@ describe('JobService - Additional Coverage Tests', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
 
         const mockUpdatedJob = {
@@ -2588,6 +2642,9 @@ describe('JobService - Additional Coverage Tests', () => {
             price: 50,
             pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup' },
             dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
 
         const mockUpdatedJob = {
