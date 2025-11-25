@@ -129,6 +129,8 @@ export interface Order {
 export interface CancelOrderResponse {
   success: boolean;
   message: string;
+  // Optional status of the order when cancellation failed (helps controller map HTTP codes)
+  orderStatus?: OrderStatus;
 }
 
 export interface GetAllOrdersResponse {

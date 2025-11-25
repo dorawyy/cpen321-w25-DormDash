@@ -138,6 +138,18 @@ export class OrderModel {
     }
   }
 
+  // Find the most recently created order for a student regardless of status
+  async findLatestOrder(studentId: ObjectId | undefined): Promise<Order | null> {
+    try {
+      return await this.order
+        .findOne({ studentId })
+        .sort({ createdAt: -1 });
+    } catch (error) {
+      logger.error('Error finding latest order:', error);
+      throw new Error('Failed to find latest order');
+    }
+  }
+
 
 
 }
