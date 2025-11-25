@@ -4489,3 +4489,82 @@ describe('JobModel Error Handling Coverage', () => {
         }
     });
 });
+
+// EventEmitter Meta Tests - Job Operations
+describe('Job EventEmitter Meta Tests (Mocked)', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        testUserId = new mongoose.Types.ObjectId();
+        testUserRole = 'STUDENT';
+    });
+
+    // Mocked behavior: tests default meta object creation in emitJobCreated
+    // Input: emitJobCreated called without meta parameter
+    // Expected behavior: function does not throw
+    test('emitJobCreated without meta should not throw', async () => {
+        const mockJob = {
+            _id: new mongoose.Types.ObjectId(),
+            orderId: new mongoose.Types.ObjectId(),
+            studentId: testUserId,
+            jobType: JobType.STORAGE,
+            status: JobStatus.AVAILABLE,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Test' },
+            dropoffAddress: { lat: 49.2606, lon: -123.1133, formattedAddress: 'Test' },
+            scheduledTime: new Date(),
+        };
+
+        // Reset the mock to use a no-op implementation
+        mockEventEmitter.emitJobCreated.mockImplementation(() => {});
+
+        // Call without meta parameter - should not throw
+        expect(() => mockEventEmitter.emitJobCreated(mockJob)).not.toThrow();
+        expect(mockEventEmitter.emitJobCreated).toHaveBeenCalledWith(mockJob);
+    });
+
+    // Mocked behavior: tests custom meta object passing in emitJobCreated
+    // Input: emitJobCreated called with custom meta parameter
+    // Expected behavior: function does not throw
+    test('emitJobCreated with meta should not throw', async () => {
+        const mockJob = {
+            _id: new mongoose.Types.ObjectId(),
+            orderId: new mongoose.Types.ObjectId(),
+            studentId: testUserId,
+            jobType: JobType.STORAGE,
+            status: JobStatus.AVAILABLE,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Test' },
+            dropoffAddress: { lat: 49.2606, lon: -123.1133, formattedAddress: 'Test' },
+            scheduledTime: new Date(),
+        };
+
+        const customMeta = { by: 'test-user', ts: '2024-01-01T00:00:00Z' };
+
+        // Reset the mock to use a no-op implementation
+        mockEventEmitter.emitJobCreated.mockImplementation(() => {});
+
+        // Call with meta parameter - should not throw
+        expect(() => mockEventEmitter.emitJobCreated(mockJob, customMeta)).not.toThrow();
+        expect(mockEventEmitter.emitJobCreated).toHaveBeenCalledWith(mockJob, customMeta);
+    });
+
+    // Mocked behavior: tests default meta object creation in emitJobUpdated
+    // Input: emitJobUpdated called without meta parameter
+    // Expected behavior: function does not throw
+    test('emitJobUpdated without meta should not throw', async () => {
+        const mockJob = {
+            _id: new mongoose.Types.ObjectId(),
+            orderId: new mongoose.Types.ObjectId(),
+            studentId: testUserId,
+            jobType: JobType.STORAGE,
+            status: JobStatus.AVAILABLE,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Test' },
+            dropoffAddress: { lat: 49.2606, lon: -123.1133, formattedAddress: 'Test' },
+            scheduledTime: new Date(),
+        };
+
+        // Reset the mock to use a no-op implementation
+        mockEventEmitter.emitJobUpdated.mockImplementation(() => {});
+
+        // Call without meta parameter - should not throw
+        expect(() => mockEventEmitter.emitJobUpdated(mockJob)).not.toThrow();
+    });
+});

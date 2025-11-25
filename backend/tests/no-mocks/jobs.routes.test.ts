@@ -1761,6 +1761,124 @@ describe('Job Socket Events', () => {
         }
     });
 
+    // Test that job status updates to PICKED_UP via mover arrived endpoint
+    test('job status should update when mover indicates arrival (STORAGE job)', async () => {
+        // Create order and job with ACCEPTED status
+        const order = await orderModel.create({
+            studentId: testUserId,
+            moverId: testMoverId,
+            status: OrderStatus.ACCEPTED,
+            volume: 100,
+            price: 50.0,
+            studentAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Student Address' },
+            warehouseAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
+            pickupTime: new Date(Date.now() + 3600000).toISOString(),
+            returnTime: new Date(Date.now() + 86400000).toISOString()
+        } as any);
+
+        const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
+            orderId: order._id,
+            studentId: testUserId,
+            moverId: testMoverId,
+            jobType: JobType.STORAGE,
+            status: JobStatus.ACCEPTED,
+            volume: 100,
+            price: 30.0,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
+            dropoffAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Dropoff Address' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
+
+        // Set up listener for job.updated event
+        const eventPromise = waitForSocketEventOptional(studentSocket!, 'job.updated', 3000);
+
+        // Mover indicates arrival
+        const response = await request(`http://localhost:${SOCKET_TEST_PORT}`)
+            .post(`/api/jobs/${job._id.toString()}/arrived`)
+            .set('Authorization', `Bearer ${moverAuthToken}`);
+
+        expect(response.status).toBe(200);
+
+        // Wait for socket event
+        const jobUpdatedEvent = await eventPromise;
+
+        // Verify the event was received with job data
+        if (jobUpdatedEvent) {
+            expect(jobUpdatedEvent).toHaveProperty('job');
+            expect(jobUpdatedEvent.job).toHaveProperty('status', JobStatus.AWAITING_STUDENT_CONFIRMATION);
+        }
+
+        // Verify job was updated in database
+        const db = mongoose.connection.db;
+        if (db) {
+            const updatedJob = await db.collection('jobs').findOne({ _id: job._id });
+            expect(updatedJob?.status).toBe(JobStatus.AWAITING_STUDENT_CONFIRMATION);
+        }
+    }, 15000);
+
+    // Test that job status updates to PICKED_UP when student confirms pickup
+    test('job status should update to PICKED_UP when student confirms pickup (STORAGE job)', async () => {
+        // Create order and job with AWAITING_STUDENT_CONFIRMATION status
+        const order = await orderModel.create({
+            studentId: testUserId,
+            moverId: testMoverId,
+            status: OrderStatus.ACCEPTED,
+            volume: 100,
+            price: 50.0,
+            studentAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Student Address' },
+            warehouseAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
+            pickupTime: new Date(Date.now() + 3600000).toISOString(),
+            returnTime: new Date(Date.now() + 86400000).toISOString()
+        } as any);
+
+        const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
+            orderId: order._id,
+            studentId: testUserId,
+            moverId: testMoverId,
+            jobType: JobType.STORAGE,
+            status: JobStatus.AWAITING_STUDENT_CONFIRMATION,
+            volume: 100,
+            price: 30.0,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
+            dropoffAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Dropoff Address' },
+            scheduledTime: new Date(),
+            verificationRequestedAt: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
+
+        // Set up listener for job.updated event
+        const eventPromise = waitForSocketEventOptional(moverSocket!, 'job.updated', 3000);
+
+        // Student confirms pickup
+        const response = await request(`http://localhost:${SOCKET_TEST_PORT}`)
+            .post(`/api/jobs/${job._id.toString()}/confirm-pickup`)
+            .set('Authorization', `Bearer ${authToken}`);
+
+        expect(response.status).toBe(200);
+
+        // Wait for socket event
+        const jobUpdatedEvent = await eventPromise;
+
+        // Verify the event was received with job data
+        if (jobUpdatedEvent) {
+            expect(jobUpdatedEvent).toHaveProperty('job');
+            // After confirm-pickup on STORAGE job, job status goes to PICKED_UP
+            expect(jobUpdatedEvent.job.status).toBe(JobStatus.PICKED_UP);
+        }
+
+        // Verify job status is PICKED_UP in database
+        const db = mongoose.connection.db;
+        if (db) {
+            const updatedJob = await db.collection('jobs').findOne({ _id: job._id });
+            expect(updatedJob?.status).toBe(JobStatus.PICKED_UP);
+        }
+    }, 15000);
+
     // Test socket connectivity for student
     test('student socket should be connected', () => {
         expect(studentSocket).not.toBeNull();

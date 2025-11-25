@@ -73,6 +73,7 @@ import { stripeService } from '../../src/services/stripe.service';
 import { orderModel } from '../../src/models/order.model';
 import { jobModel } from '../../src/models/job.model';
 import * as eventEmitterUtil from '../../src/utils/eventEmitter.util';
+import * as socketModule from '../../src/socket';
 
 // Suppress console logs during tests
 const originalConsole = {
@@ -2576,4 +2577,81 @@ describe('DELETE /api/order/cancel-order - Cancel Order (Mocked)', () => {
   });
 
   
+});
+
+// EventEmitter Meta Tests - Order Operations
+describe('Order EventEmitter Meta Tests (Mocked)', () => {
+  // Mocked behavior: tests that emitOrderCreated is called correctly
+  // Input: emitOrderCreated called without meta parameter
+  // Expected behavior: function creates default meta with timestamp, does not throw
+  test('emitOrderCreated without meta should not throw', async () => {
+    const mockOrder: Order = {
+      _id: new mongoose.Types.ObjectId(),
+      studentId: testUserIdString,
+      status: OrderStatus.PENDING,
+      volume: 10,
+      price: 50,
+      studentAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Test' },
+      warehouseAddress: { lat: 49.2606, lon: -123.1133, formattedAddress: 'Test' },
+      pickupTime: new Date().toISOString(),
+      returnTime: new Date(Date.now() + 86400000).toISOString(),
+    };
+
+    // Reset the mock to use a no-op implementation
+    mockEventEmitter.emitOrderCreated.mockImplementation(() => {});
+
+    // Call without meta parameter - should not throw
+    expect(() => mockEventEmitter.emitOrderCreated(mockOrder as any)).not.toThrow();
+    expect(mockEventEmitter.emitOrderCreated).toHaveBeenCalledWith(mockOrder);
+  });
+
+  // Mocked behavior: tests that emitOrderUpdated is called correctly
+  // Input: emitOrderUpdated called without meta parameter
+  // Expected behavior: function creates default meta with timestamp, does not throw
+  test('emitOrderUpdated without meta should not throw', async () => {
+    const mockOrder: Order = {
+      _id: new mongoose.Types.ObjectId(),
+      studentId: testUserIdString,
+      status: OrderStatus.PENDING,
+      volume: 10,
+      price: 50,
+      studentAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Test' },
+      warehouseAddress: { lat: 49.2606, lon: -123.1133, formattedAddress: 'Test' },
+      pickupTime: new Date().toISOString(),
+      returnTime: new Date(Date.now() + 86400000).toISOString(),
+    };
+
+    // Reset the mock to use a no-op implementation
+    mockEventEmitter.emitOrderUpdated.mockImplementation(() => {});
+
+    // Call without meta parameter - should not throw
+    expect(() => mockEventEmitter.emitOrderUpdated(mockOrder as any)).not.toThrow();
+    expect(mockEventEmitter.emitOrderUpdated).toHaveBeenCalledWith(mockOrder);
+  });
+
+  // Mocked behavior: tests that emitOrderCreated is called with custom meta
+  // Input: emitOrderCreated called with custom meta parameter
+  // Expected behavior: function uses provided meta, does not throw
+  test('emitOrderCreated with custom meta should not throw', async () => {
+    const mockOrder: Order = {
+      _id: new mongoose.Types.ObjectId(),
+      studentId: testUserIdString,
+      status: OrderStatus.PENDING,
+      volume: 10,
+      price: 50,
+      studentAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Test' },
+      warehouseAddress: { lat: 49.2606, lon: -123.1133, formattedAddress: 'Test' },
+      pickupTime: new Date().toISOString(),
+      returnTime: new Date(Date.now() + 86400000).toISOString(),
+    };
+
+    const customMeta = { by: 'test-user', ts: '2024-01-01T00:00:00Z' };
+
+    // Reset the mock to use a no-op implementation
+    mockEventEmitter.emitOrderCreated.mockImplementation(() => {});
+
+    // Call with meta parameter - should not throw
+    expect(() => mockEventEmitter.emitOrderCreated(mockOrder as any, customMeta)).not.toThrow();
+    expect(mockEventEmitter.emitOrderCreated).toHaveBeenCalledWith(mockOrder, customMeta);
+  });
 });

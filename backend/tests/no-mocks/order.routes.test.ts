@@ -4,11 +4,15 @@ import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
-import { Socket as ClientSocket } from 'socket.io-client';
+import { Socket as ClientSocket, io as ioClient } from 'socket.io-client';
 import app from '../../src/app';
 import { connectDB, disconnectDB } from '../../src/config/database';
 import { userModel } from '../../src/models/user.model';
+import { jobModel } from '../../src/models/job.model';
+import { orderModel } from '../../src/models/order.model';
 import { initSocket } from '../../src/socket';
+import { JobStatus, JobType } from '../../src/types/job.type';
+import { OrderStatus } from '../../src/types/order.types';
 import {
   SocketTestContext,
   createStudentSocket,
@@ -1125,4 +1129,344 @@ describe('Unmocked Order Socket Events', () => {
     expect(moverSocket).not.toBeNull();
     expect(moverSocket!.connected).toBe(true);
   });
+});
+
+// Socket.IO - Order Status Updates via Job Transitions
+describe('Unmocked Order Status Updates via Job Transitions', () => {
+  // Input: PATCH /api/jobs/:jobId/status with status=ACCEPTED, student socket listening for order.updated
+  // Expected status code: 200
+  // Expected behavior: job status updates, order status updates to ACCEPTED, socket event emitted to student
+  // Expected output: order.updated event with order data and ACCEPTED status
+  test('Order status should update to ACCEPTED when mover accepts STORAGE job', async () => {
+    // Create order and job
+    const order = await orderModel.create({
+      studentId: testUserId,
+      status: OrderStatus.PENDING,
+      volume: 100,
+      price: 50.0,
+      studentAddress: {
+        lat: 49.2827,
+        lon: -123.1207,
+        formattedAddress: '123 Test St, Vancouver, BC V6T 1Z4'
+      },
+      warehouseAddress: {
+        lat: 49.2500,
+        lon: -123.1000,
+        formattedAddress: '456 Warehouse Ave, Vancouver, BC V6T 2A1'
+      },
+      pickupTime: new Date(Date.now() + 3600000).toISOString(),
+      returnTime: new Date(Date.now() + 86400000).toISOString(),
+    } as any);
+
+    const job = await jobModel.create({
+      _id: new mongoose.Types.ObjectId(),
+      orderId: order._id,
+      studentId: testUserId,
+      jobType: JobType.STORAGE,
+      status: JobStatus.AVAILABLE,
+      volume: 100,
+      price: 30.0,
+      pickupAddress: {
+        lat: 49.2827,
+        lon: -123.1207,
+        formattedAddress: '123 Test St, Vancouver, BC V6T 1Z4'
+      },
+      dropoffAddress: {
+        lat: 49.2500,
+        lon: -123.1000,
+        formattedAddress: '456 Warehouse Ave, Vancouver, BC V6T 2A1'
+      },
+      scheduledTime: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    // Listen for order.updated event
+    const orderUpdatePromise = waitForSocketEventOptional(studentSocket!, 'order.updated', 5000);
+
+    // Mover accepts the job via HTTP endpoint
+    const response = await request(`http://localhost:${SOCKET_TEST_PORT}`)
+      .patch(`/api/jobs/${job._id.toString()}/status`)
+      .set('Authorization', `Bearer ${moverAuthToken}`)
+      .send({ status: JobStatus.ACCEPTED });
+
+    expect(response.status).toBe(200);
+
+    // Wait for the socket event
+    const eventData = await orderUpdatePromise;
+
+    // Verify event data if received
+    if (eventData) {
+      expect(eventData).toHaveProperty('order');
+      expect(eventData.order.id).toBe(order._id.toString());
+      expect(eventData.order.status).toBe(OrderStatus.ACCEPTED);
+    }
+
+    // Verify order was updated in database
+    const db = mongoose.connection.db;
+    if (db) {
+      const updatedOrder = await db.collection('orders').findOne({ _id: order._id });
+      expect(updatedOrder?.status).toBe(OrderStatus.ACCEPTED);
+    }
+  }, 15000);
+
+  // Input: PATCH /api/jobs/:jobId/status with status=COMPLETED on STORAGE job
+  // Expected status code: 200
+  // Expected behavior: job status updates to COMPLETED, order status updates to IN_STORAGE
+  // Expected output: order.updated event with order data and IN_STORAGE status
+  test('Order status should update to IN_STORAGE when mover completes STORAGE job', async () => {
+    // Create order with PICKED_UP status (items already picked up from student)
+    const order = await orderModel.create({
+      studentId: testUserId,
+      moverId: testMoverId,
+      status: OrderStatus.PICKED_UP,
+      volume: 100,
+      price: 50.0,
+      studentAddress: {
+        lat: 49.2827,
+        lon: -123.1207,
+        formattedAddress: '123 Test St, Vancouver, BC V6T 1Z4'
+      },
+      warehouseAddress: {
+        lat: 49.2500,
+        lon: -123.1000,
+        formattedAddress: '456 Warehouse Ave, Vancouver, BC V6T 2A1'
+      },
+      pickupTime: new Date(Date.now() + 3600000).toISOString(),
+      returnTime: new Date(Date.now() + 86400000).toISOString(),
+    } as any);
+
+    // Create job with PICKED_UP status (mover has items, ready to deliver to warehouse)
+    const job = await jobModel.create({
+      _id: new mongoose.Types.ObjectId(),
+      orderId: order._id,
+      studentId: testUserId,
+      moverId: testMoverId,
+      jobType: JobType.STORAGE,
+      status: JobStatus.PICKED_UP,
+      volume: 100,
+      price: 30.0,
+      pickupAddress: {
+        lat: 49.2827,
+        lon: -123.1207,
+        formattedAddress: '123 Test St, Vancouver, BC V6T 1Z4'
+      },
+      dropoffAddress: {
+        lat: 49.2500,
+        lon: -123.1000,
+        formattedAddress: '456 Warehouse Ave, Vancouver, BC V6T 2A1'
+      },
+      scheduledTime: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    // Listen for order.updated event
+    const orderUpdatePromise = waitForSocketEventOptional(studentSocket!, 'order.updated', 5000);
+
+    // Mover updates job status to COMPLETED (delivered to warehouse)
+    const response = await request(`http://localhost:${SOCKET_TEST_PORT}`)
+      .patch(`/api/jobs/${job._id.toString()}/status`)
+      .set('Authorization', `Bearer ${moverAuthToken}`)
+      .send({ status: JobStatus.COMPLETED });
+
+    expect(response.status).toBe(200);
+
+    // Wait for the socket event
+    const eventData = await orderUpdatePromise;
+
+    // Verify event data if received
+    if (eventData) {
+      expect(eventData).toHaveProperty('order');
+      expect(eventData.order.status).toBe(OrderStatus.IN_STORAGE);
+    }
+
+    // Verify order was updated in database
+    const db = mongoose.connection.db;
+    if (db) {
+      const updatedOrder = await db.collection('orders').findOne({ _id: order._id });
+      expect(updatedOrder?.status).toBe(OrderStatus.IN_STORAGE);
+    }
+  }, 15000);
+
+  // Input: Student confirms delivery of RETURN job
+  // Expected status code: 200
+  // Expected behavior: job status updates to COMPLETED, order status updates to COMPLETED
+  // Expected output: order.updated event with order data and COMPLETED status
+  test('Order status should update to COMPLETED when student confirms RETURN job delivery', async () => {
+    // Create order with IN_STORAGE status
+    const order = await orderModel.create({
+      studentId: testUserId,
+      moverId: testMoverId,
+      status: OrderStatus.IN_STORAGE,
+      volume: 100,
+      price: 50.0,
+      studentAddress: {
+        lat: 49.2827,
+        lon: -123.1207,
+        formattedAddress: '123 Test St, Vancouver, BC V6T 1Z4'
+      },
+      warehouseAddress: {
+        lat: 49.2500,
+        lon: -123.1000,
+        formattedAddress: '456 Warehouse Ave, Vancouver, BC V6T 2A1'
+      },
+      returnAddress: {
+        lat: 49.2827,
+        lon: -123.1207,
+        formattedAddress: '123 Test St, Vancouver, BC V6T 1Z4'
+      },
+      pickupTime: new Date(Date.now() - 86400000).toISOString(),
+      returnTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    } as any);
+
+    const job = await jobModel.create({
+      _id: new mongoose.Types.ObjectId(),
+      orderId: order._id,
+      studentId: testUserId,
+      moverId: testMoverId,
+      jobType: JobType.RETURN,
+      status: JobStatus.AWAITING_STUDENT_CONFIRMATION,
+      volume: 100,
+      price: 30.0,
+      pickupAddress: {
+        lat: 49.2500,
+        lon: -123.1000,
+        formattedAddress: '456 Warehouse Ave, Vancouver, BC V6T 2A1'
+      },
+      dropoffAddress: {
+        lat: 49.2827,
+        lon: -123.1207,
+        formattedAddress: '123 Test St, Vancouver, BC V6T 1Z4'
+      },
+      scheduledTime: new Date(),
+      verificationRequestedAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    // Listen for order.updated event
+    const orderUpdatePromise = waitForSocketEventOptional(studentSocket!, 'order.updated', 5000);
+
+    // Student confirms delivery (which completes the RETURN job)
+    const response = await request(`http://localhost:${SOCKET_TEST_PORT}`)
+      .post(`/api/jobs/${job._id.toString()}/confirm-delivery`)
+      .set('Authorization', `Bearer ${authToken}`);
+
+    expect(response.status).toBe(200);
+
+    // Wait for the socket event
+    const eventData = await orderUpdatePromise;
+
+    // Verify event data if received
+    if (eventData) {
+      expect(eventData).toHaveProperty('order');
+      expect(eventData.order.status).toBe(OrderStatus.COMPLETED);
+    }
+
+    // Verify order was updated in database
+    const db = mongoose.connection.db;
+    if (db) {
+      const updatedOrder = await db.collection('orders').findOne({ _id: order._id });
+      expect(updatedOrder?.status).toBe(OrderStatus.COMPLETED);
+    }
+  }, 15000);
+});
+
+// Socket.IO - Authentication Tests
+describe('Unmocked Socket Authentication', () => {
+  // Input: Socket connection with expired JWT token
+  // Expected behavior: connection rejected due to token expiration
+  test('should reject connection with expired token', async () => {
+    const expiredToken = jwt.sign(
+      { id: testUserId },
+      process.env.JWT_SECRET || 'default-secret',
+      { expiresIn: '-1s' }
+    );
+
+    await expect(
+      new Promise((resolve, reject) => {
+        const socket = ioClient(`http://localhost:${SOCKET_TEST_PORT}`, {
+          auth: { token: `Bearer ${expiredToken}` },
+          transports: ['websocket'],
+          forceNew: true,
+          reconnection: false
+        });
+
+        socket.on('connect', () => {
+          socket.disconnect();
+          resolve(true);
+        });
+        
+        socket.on('connect_error', (err) => {
+          socket.disconnect();
+          reject(err);
+        });
+
+        setTimeout(() => {
+          socket.disconnect();
+          reject(new Error('Timeout'));
+        }, 5000);
+      })
+    ).rejects.toThrow();
+  }, 10000);
+
+  // Input: Socket connection with malformed JWT token
+  // Expected behavior: connection rejected due to invalid token format
+  test('should reject connection with malformed token', async () => {
+    await expect(
+      new Promise((resolve, reject) => {
+        const socket = ioClient(`http://localhost:${SOCKET_TEST_PORT}`, {
+          auth: { token: 'Bearer invalid.malformed.token' },
+          transports: ['websocket'],
+          forceNew: true,
+          reconnection: false
+        });
+
+        socket.on('connect', () => {
+          socket.disconnect();
+          resolve(true);
+        });
+        
+        socket.on('connect_error', (err) => {
+          socket.disconnect();
+          reject(err);
+        });
+
+        setTimeout(() => {
+          socket.disconnect();
+          reject(new Error('Timeout'));
+        }, 5000);
+      })
+    ).rejects.toThrow();
+  }, 10000);
+
+  // Input: Socket connection without token
+  // Expected behavior: connection rejected due to missing token
+  test('should reject connection without token', async () => {
+    await expect(
+      new Promise((resolve, reject) => {
+        const socket = ioClient(`http://localhost:${SOCKET_TEST_PORT}`, {
+          transports: ['websocket'],
+          forceNew: true,
+          reconnection: false
+        });
+
+        socket.on('connect', () => {
+          socket.disconnect();
+          resolve(true);
+        });
+        
+        socket.on('connect_error', (err) => {
+          socket.disconnect();
+          reject(err);
+        });
+
+        setTimeout(() => {
+          socket.disconnect();
+          reject(new Error('Timeout'));
+        }, 5000);
+      })
+    ).rejects.toThrow();
+  }, 10000);
 });
