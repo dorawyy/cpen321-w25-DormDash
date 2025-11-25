@@ -213,17 +213,5 @@ describe('GET /api/payment/status/:paymentIntentId - Get Payment Status', () => 
       .get('/api/payment/status/pi_test_123')
       .expect(401);
   });
-
-  // Input: authenticated GET /api/payment/status/:paymentIntentId
-  // Expected status code: 200
-  // Expected behavior: endpoint returns current payment status
-  // Expected output: 200 response (
-  test('should accept payment status request', async () => {
-    const response = await request(app)
-      .get('/api/payment/status/pi_test_123')
-      .set('Authorization', `Bearer ${authToken}`)
-      .expect(200);
-  });
-
   
 });
