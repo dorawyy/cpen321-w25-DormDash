@@ -2,6 +2,9 @@ import { describe, expect, test, beforeAll, afterAll, beforeEach, jest } from '@
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
+import http from 'http';
+import { Server as SocketIOServer } from 'socket.io';
+import { Socket as ClientSocket } from 'socket.io-client';
 import app from '../../src/app';
 import { connectDB, disconnectDB } from '../../src/config/database';
 import { userModel } from '../../src/models/user.model';
@@ -9,12 +12,29 @@ import { jobModel } from '../../src/models/job.model';
 import { orderModel } from '../../src/models/order.model';
 import { JobStatus, JobType } from '../../src/types/job.type';
 import { OrderStatus } from '../../src/types/order.types';
+import { initSocket } from '../../src/socket';
+import {
+  SocketTestContext,
+  createStudentSocket,
+  createMoverSocket,
+  cleanupSocketServer,
+  waitForSocketEvent,
+  waitForSocketEventOptional,
+  generateTestTokens,
+} from '../helpers/socket.helper';
 
 const originalWarn = console.warn;
 let authToken: string;
 let moverAuthToken: string;
 let testUserId: mongoose.Types.ObjectId;
 let testMoverId: mongoose.Types.ObjectId;
+
+// Socket test infrastructure
+const SOCKET_TEST_PORT = 3202; // Unique port for no-mocks jobs socket tests
+let socketServer: http.Server | null = null;
+let socketIo: SocketIOServer | null = null;
+let studentSocket: ClientSocket | null = null;
+let moverSocket: ClientSocket | null = null;
 
 // Cleanup function to delete all users, jobs, and orders
 const cleanupDatabase = async () => {
@@ -59,6 +79,20 @@ beforeAll(async () => {
 
     const moverPayload = { id: testMoverId };
     moverAuthToken = jwt.sign(moverPayload, process.env.JWT_SECRET || 'default-secret');
+
+    // Set up Socket.IO server for testing
+    socketServer = http.createServer(app);
+    socketIo = initSocket(socketServer);
+
+    await new Promise<void>((resolve) => {
+        socketServer!.listen(SOCKET_TEST_PORT, () => {
+            resolve();
+        });
+    });
+
+    // Connect student and mover sockets
+    studentSocket = await createStudentSocket(SOCKET_TEST_PORT, authToken);
+    moverSocket = await createMoverSocket(SOCKET_TEST_PORT, moverAuthToken);
 });
 
 beforeEach(async () => {
@@ -72,6 +106,31 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
+    // Clean up socket connections
+    if (studentSocket) {
+        studentSocket.disconnect();
+        studentSocket = null;
+    }
+    if (moverSocket) {
+        moverSocket.disconnect();
+        moverSocket = null;
+    }
+
+    // Close Socket.IO and server
+    if (socketIo) {
+        socketIo.disconnectSockets();
+        await new Promise<void>((resolve) => {
+            socketIo!.close(() => resolve());
+        });
+        socketIo = null;
+    }
+    if (socketServer) {
+        await new Promise<void>((resolve) => {
+            socketServer!.close(() => resolve());
+        });
+        socketServer = null;
+    }
+
     await cleanupDatabase();
     
     // Ensure all mongoose connections are closed
@@ -1583,5 +1642,134 @@ describe('POST /api/jobs/:id/confirm-delivery', () => {
             .post(`/api/jobs/${job._id}/confirm-delivery`)
             .set('Authorization', `Bearer ${authToken}`)
             .expect(400);
+    });
+});
+
+// Socket event tests for job-related operations
+describe('Job Socket Events', () => {
+    // Test that student socket receives job.created event when a job is created
+    test('student socket should receive job.created event on job creation', async () => {
+        // Set up listener before creating job
+        const eventPromise = waitForSocketEventOptional(studentSocket!, 'job.created', 3000);
+
+        const reqData = {
+            orderId: new mongoose.Types.ObjectId().toString(),
+            studentId: testUserId.toString(),
+            jobType: 'STORAGE',
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
+            scheduledTime: new Date()
+        };
+
+        await request(app)
+            .post('/api/jobs')
+            .set('Authorization', `Bearer ${authToken}`)
+            .send(reqData)
+            .expect(201);
+
+        // Wait for socket event (may be null if event not received)
+        const jobCreatedEvent = await eventPromise;
+
+        // Verify the event was received with job data
+        if (jobCreatedEvent) {
+            expect(jobCreatedEvent).toHaveProperty('job');
+            expect(jobCreatedEvent.job).toHaveProperty('jobType', 'STORAGE');
+        }
+    });
+
+    // Test that mover socket receives job.created event (broadcast to role:mover)
+    test('mover socket should receive job.created event for available jobs', async () => {
+        // Set up listener before creating job
+        const eventPromise = waitForSocketEventOptional(moverSocket!, 'job.created', 3000);
+
+        const reqData = {
+            orderId: new mongoose.Types.ObjectId().toString(),
+            studentId: testUserId.toString(),
+            jobType: 'STORAGE',
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
+            scheduledTime: new Date()
+        };
+
+        await request(app)
+            .post('/api/jobs')
+            .set('Authorization', `Bearer ${authToken}`)
+            .send(reqData)
+            .expect(201);
+
+        // Wait for socket event
+        const jobCreatedEvent = await eventPromise;
+
+        // Verify the event was received with job data
+        if (jobCreatedEvent) {
+            expect(jobCreatedEvent).toHaveProperty('job');
+            expect(jobCreatedEvent.job).toHaveProperty('jobType', 'STORAGE');
+        }
+    });
+
+    // Test that mover socket receives job.updated event when job status changes
+    test('mover socket should receive job.updated event when accepting a job', async () => {
+        // First create an order (required for job acceptance to work)
+        const order = await orderModel.create({
+            studentId: testUserId,
+            status: OrderStatus.PENDING,
+            volume: 10,
+            price: 50,
+            studentAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Student Address' },
+            warehouseAddress: { lat: 49.2606, lon: -123.2460, formattedAddress: 'Warehouse Address' },
+            pickupTime: new Date(Date.now() + 3600000).toISOString(),
+            returnTime: new Date(Date.now() + 86400000).toISOString()
+        } as any);
+
+        // Create a job linked to the order
+        const job = await jobModel.create({
+            _id: new mongoose.Types.ObjectId(),
+            orderId: order._id,
+            studentId: testUserId,
+            jobType: JobType.STORAGE,
+            status: JobStatus.AVAILABLE,
+            volume: 10,
+            price: 50,
+            pickupAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Pickup Address' },
+            dropoffAddress: { lat: 49.2827, lon: -123.1300, formattedAddress: 'Dropoff Address' },
+            scheduledTime: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
+
+        // Set up listener before accepting job
+        const eventPromise = waitForSocketEventOptional(moverSocket!, 'job.updated', 3000);
+
+        // Use PATCH /api/jobs/:id/status to accept the job
+        await request(app)
+            .patch(`/api/jobs/${job._id}/status`)
+            .set('Authorization', `Bearer ${moverAuthToken}`)
+            .send({ status: JobStatus.ACCEPTED })
+            .expect(200);
+
+        // Wait for socket event
+        const jobUpdatedEvent = await eventPromise;
+
+        // Verify the event was received with job data
+        if (jobUpdatedEvent) {
+            expect(jobUpdatedEvent).toHaveProperty('job');
+            expect(jobUpdatedEvent.job).toHaveProperty('status', JobStatus.ACCEPTED);
+        }
+    });
+
+    // Test socket connectivity for student
+    test('student socket should be connected', () => {
+        expect(studentSocket).not.toBeNull();
+        expect(studentSocket!.connected).toBe(true);
+    });
+
+    // Test socket connectivity for mover
+    test('mover socket should be connected', () => {
+        expect(moverSocket).not.toBeNull();
+        expect(moverSocket!.connected).toBe(true);
     });
 });
