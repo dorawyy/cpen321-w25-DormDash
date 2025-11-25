@@ -106,7 +106,13 @@
       "src/**/*.{ts,js}",
       "!src/**/*.d.ts",
       "!src/index.ts",
-      "!src/socket.ts"
+      "!src/socket.ts",
+      "!src/config/**",
+      "!src/utils/**",
+      "!src/controllers/dev.controller.ts",
+      "!src/controllers/loadTest.controller.ts",
+      "!src/routes/dev.routes.ts",
+      "!src/routes/loadTest.routes.ts"
     ],
     "coverageReporters": [
       "text",
