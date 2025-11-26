@@ -65,9 +65,6 @@ export class JobService {
   // Cancel (mark as CANCELLED) all jobs for a given orderId that are not already terminal
   async cancelJobsForOrder(orderId: string, actorId?: string) {
     try {
-      logger.info(
-        `cancelJobsForOrder: orderId=${orderId}, actorId=${actorId ?? 'system'}`
-      );
       const foundJobs: Job[] = await jobModel.findByOrderId(
         new mongoose.Types.ObjectId(orderId)
       );
@@ -104,7 +101,7 @@ export class JobService {
 
           // Emit job.updated for each cancelled job
           emitJobUpdated(updatedJob, {
-            by: actorId ?? null,
+            by: actorId,
             ts: new Date().toISOString(),
           });
         } catch (err) {
@@ -292,9 +289,7 @@ export class JobService {
         throw new JobNotFoundError(jobId);
       }
       if (updateData.status === JobStatus.ACCEPTED) {
-        const moverObjectId = updateData.moverId
-          ? new mongoose.Types.ObjectId(updateData.moverId)
-          : undefined;
+        const moverObjectId =new mongoose.Types.ObjectId(updateData.moverId);
         updatedJob = await jobModel.tryAcceptJob(
           new mongoose.Types.ObjectId(jobId),
           moverObjectId
@@ -324,7 +319,7 @@ export class JobService {
           await this.orderService.updateOrderStatus(
             orderObjectId,
             OrderStatus.ACCEPTED,
-            updateData.moverId ?? undefined
+            updateData.moverId
           );
           logger.info(
             `Order ${orderObjectId.toString()} updated to ACCEPTED via OrderService`
@@ -339,14 +334,15 @@ export class JobService {
         // Emit job.updated for the accepted job
         try {
           emitJobUpdated(updatedJob, {
-            by: updateData.moverId ?? null,
+            by: updateData.moverId,
             ts: new Date().toISOString(),
           });
         } catch (emitErr) {
           logger.warn('Failed to emit job.updated after accept:', emitErr);
         }
 
-        // Send notification to student that their job has been accepted
+        // Send notification to st
+        // udent that their job has been accepted
         await notificationService.sendJobStatusNotification(
           new mongoose.Types.ObjectId(jobId),
           JobStatus.ACCEPTED
@@ -514,9 +510,7 @@ export class JobService {
         pickupAddress: updatedJob.pickupAddress,
         dropoffAddress: updatedJob.dropoffAddress,
         scheduledTime: updatedJob.scheduledTime.toISOString(),
-        calendarEventLink: updatedJob.calendarEventLink
-          ? updatedJob.calendarEventLink
-          : undefined,
+        calendarEventLink: updatedJob.calendarEventLink ?? undefined,
         createdAt: updatedJob.createdAt.toString(),
         updatedAt: updatedJob.updatedAt.toString(),
       };
