@@ -346,8 +346,8 @@ export class OrderService {
 
       if (!order) {
         // Differentiate only if helper exists (avoid TypeError in mocked model)
-        if (typeof (orderModel as any).findLatestOrder === 'function') {
-          const latestOrder = await (orderModel as any).findLatestOrder(studentId);
+        if ('findLatestOrder' in orderModel && typeof orderModel.findLatestOrder === 'function') {
+          const latestOrder = await orderModel.findLatestOrder(studentId);
           if (latestOrder && latestOrder.status === OrderStatus.CANCELLED) {
             return {
               success: false,
