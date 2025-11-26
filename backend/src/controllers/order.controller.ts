@@ -11,6 +11,7 @@ import {
   CreateReturnJobRequest,
   CreateOrderRequest,
   CreateOrderRequestWithIdempotency,
+  OrderStatus,
 } from '../types/order.types';
 import { ObjectId } from 'mongoose';
 
@@ -130,15 +131,15 @@ export class OrderController {
       }
 
       // Failure cases
-      if (result.orderStatus === 'ACCEPTED') {
+      if (result.orderStatus === OrderStatus.ACCEPTED) {
         res.status(400).json(result);
         return;
       }
-      if (result.orderStatus === 'IN_STORAGE') {
+      if (result.orderStatus === OrderStatus.IN_STORAGE) {
         res.status(401).json(result);
         return;
       }
-      if (result.orderStatus === 'CANCELLED') {
+      if (result.orderStatus === OrderStatus.CANCELLED) {
         // Second cancellation attempt
         res.status(401).json(result);
         return;
