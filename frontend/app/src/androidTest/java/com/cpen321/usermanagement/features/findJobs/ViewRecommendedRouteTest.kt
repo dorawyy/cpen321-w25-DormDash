@@ -59,7 +59,7 @@ class ViewRecommendedRouteTest : FindJobsTestBase() {
 
         // Add 9:00-17:00 time slots for standard days
         standardDays.forEach { day ->
-            addTimeSlot(
+            addAvailabilityTimeSlot(
                 day = day,
                 startTime = "09:00",
                 endTime = "17:00"
@@ -213,7 +213,7 @@ class ViewRecommendedRouteTest : FindJobsTestBase() {
 
         // Add unlimited time slots (00:00-23:59) for all days
         allDays.forEach { day ->
-            addTimeSlot(
+            addAvailabilityTimeSlot(
                 day = day,
                 startTime = "00:00",
                 endTime = "23:59"

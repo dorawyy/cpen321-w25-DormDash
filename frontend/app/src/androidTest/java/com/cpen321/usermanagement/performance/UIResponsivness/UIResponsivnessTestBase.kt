@@ -1,33 +1,27 @@
 package com.cpen321.usermanagement.performance.UIResponsivness
 
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.*
 import android.content.Intent
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
-import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import com.cpen321.usermanagement.MainActivity
-import dagger.hilt.android.testing.HiltAndroidRule
+import com.cpen321.usermanagement.utils.BaseTestSetup
+import com.cpen321.usermanagement.utils.TestAccountHelper
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before
-import org.junit.Rule
 import org.junit.After
 
 
+/**
+ * Base class for UI responsiveness tests.
+ */
 @HiltAndroidTest
-abstract class UIResponsivnessTestBase {
+abstract class UIResponsivnessTestBase : BaseTestSetup() {
 
-    @get:Rule(order = 0)
-    val hiltRule = HiltAndroidRule(this)
-
-    @get:Rule(order = 1)
-    val composeTestRule = createAndroidComposeRule<MainActivity>()
-
-    protected lateinit var device: UiDevice
     protected val appPackage = "com.cpen321.usermanagement"
     private val launchTimeout = 5000L
-    protected val timeout = 100L // 0.1 seconds time out for elements to appear
+    protected val timeout = 100L // 0.1 seconds timeout for elements to appear
 
     companion object {
         @Volatile
@@ -36,10 +30,9 @@ abstract class UIResponsivnessTestBase {
     }
 
     @Before
-    fun baseSetup() {
-        // Initialize device and inject for this test instance
-        device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-        hiltRule.inject()
+    override fun baseSetup() {
+        // Call parent setup first (initializes device, hilt injection)
+        super.baseSetup()
         
         if (isSetupDone) return
         
@@ -65,19 +58,16 @@ abstract class UIResponsivnessTestBase {
 
             composeTestRule.waitForIdle()
 
-            grantNotificationPermission()
-            SignIn()
+            // Sign in with the first available account (for performance testing)
+            signIn()
         }
     }
 
-    protected fun grantNotificationPermission() {
-        device.wait(
-            Until.findObject(By.text("Allow")),
-            5000
-        )?.click()
-    }
-
-    protected fun SignIn() {
+    /**
+     * Signs in with the first available Google account.
+     * For performance tests, we use a simplified sign-in that picks the first account.
+     */
+    private fun signIn() {
         composeTestRule.onNodeWithText("Sign in with Google", useUnmergedTree = true)
             .performClick()
 
