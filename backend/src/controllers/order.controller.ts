@@ -13,7 +13,6 @@ import {
   CreateOrderRequestWithIdempotency,
   OrderStatus,
 } from '../types/order.types';
-import { IUser } from '../types/user.types';
 import { ObjectId } from 'mongoose';
 
 export class OrderController {
@@ -58,7 +57,7 @@ export class OrderController {
     next: NextFunction
   ) {
     try {
-      const studentId = (req.user as IUser)._id as unknown as ObjectId;
+      const studentId = (req as unknown as { user?: { _id: unknown } }).user?._id;
       
       const returnJobRequest = req.body as CreateReturnJobRequest;
       
@@ -80,7 +79,7 @@ export class OrderController {
   ) {
     try {
       const result = await this.orderService.getAllOrders(
-        (req.user as IUser)._id as unknown as ObjectId
+        (req as unknown as { user?: { _id: unknown } }).user?._id
       );
       res.status(200).json(result);
     } catch (error) {
