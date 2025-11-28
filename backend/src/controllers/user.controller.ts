@@ -6,7 +6,12 @@ import { userModel } from '../models/user.model';
 
 export class UserController {
   getProfile(req: Request, res: Response<GetProfileResponse>) {
-    const user = (req as unknown as { user?: { _id: unknown } }).user as IUser;
+    if (!req.user) {
+      return res.status(401).json({
+        message: 'User not authenticated',
+      });
+    }
+    const user = req.user;
 
     res.status(200).json({
       message: 'Profile fetched successfully',
@@ -21,7 +26,12 @@ export class UserController {
     next: NextFunction
   ) {
     try {
-      const user = req.user as IUser;
+      if (!req.user) {
+        return res.status(401).json({
+          message: 'User not authenticated',
+        });
+      }
+      const user = req.user;
 
       // Explicitly type req.body as Partial<IUser>
       const updatedUser = await userModel.update(user._id, req.body as Partial<IUser>);
@@ -51,7 +61,12 @@ export class UserController {
 
   async deleteProfile(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = req.user as IUser;
+      if (!req.user) {
+        return res.status(401).json({
+          message: 'User not authenticated',
+        });
+      }
+      const user = req.user;
 
       await userModel.delete(user._id);
 
@@ -73,7 +88,12 @@ export class UserController {
 
   async cashOut(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = req.user as IUser;
+      if (!req.user) {
+        return res.status(401).json({
+          message: 'User not authenticated',
+        });
+      }
+      const user = req.user;
 
       // Only movers can cash out
       if (user.userRole !== 'MOVER') {

@@ -58,7 +58,15 @@ export class OrderController {
     next: NextFunction
   ) {
     try {
-      const studentId = (req as unknown as { user?: { _id: unknown } }).user?._id as unknown as ObjectId;
+      if (!req.user?._id) {
+        res.status(401).json({ 
+          success: false,
+          message: 'Authentication required. Please log in.',
+        } as CreateReturnJobResponse);
+        return;
+      }
+
+      const studentId = req.user._id as unknown as ObjectId;
       
       const returnJobRequest = req.body as CreateReturnJobRequest;
       

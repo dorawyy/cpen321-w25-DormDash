@@ -96,8 +96,68 @@ afterAll(async () => {
   console.info = originalConsole.info;
 });
 
+// Interface GET /api/user/profile
+describe('GET /api/user/profile - Get User Profile (Mocked)', () => {
+  // Mocked behavior: UserController.getProfile called with req.user = undefined
+  // Input: authenticated request but controller simulates missing req.user
+  // Expected status code: 401
+  // Expected behavior: detects missing user authentication in controller
+  // Expected output: error message 'User not authenticated'
+  test('should return 401 when req.user is undefined ', async () => {
+    const { UserController } = require('../../src/controllers/user.controller');
+    const controllerProto = UserController.prototype;
+    const originalMethod = controllerProto.getProfile;
+    
+    controllerProto.getProfile = jest.fn().mockImplementation((req: any, res: any) => {
+      req.user = undefined;
+      return originalMethod.call(controllerProto, req, res);
+    });
+
+    try {
+      const response = await request(app)
+        .get('/api/user/profile')
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(response.status).toBe(401);
+      expect(response.body.message).toBe('User not authenticated');
+      expect(controllerProto.getProfile).toHaveBeenCalled();
+    } finally {
+      controllerProto.getProfile = originalMethod;
+    }
+  });
+});
+
 // Interface POST /api/user/profile
 describe('POST /api/user/profile - Update User Profile (Mocked)', () => {
+  // Mocked behavior: UserController.updateProfile called with req.user = undefined
+  // Input: authenticated request with name update but controller simulates missing req.user
+  // Expected status code: 401
+  // Expected behavior: detects missing user authentication in controller
+  // Expected output: error message 'User not authenticated'
+  test('should return 401 when req.user is undefined ', async () => {
+    const { UserController } = require('../../src/controllers/user.controller');
+    const controllerProto = UserController.prototype;
+    const originalMethod = controllerProto.updateProfile;
+    
+    controllerProto.updateProfile = jest.fn().mockImplementation(async (req: any, res: any, next: any) => {
+      req.user = undefined;
+      return originalMethod.call(controllerProto, req, res, next);
+    });
+
+    try {
+      const response = await request(app)
+        .post('/api/user/profile')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ name: 'Should Fail' });
+
+      expect(response.status).toBe(401);
+      expect(response.body.message).toBe('User not authenticated');
+      expect(controllerProto.updateProfile).toHaveBeenCalled();
+    } finally {
+      controllerProto.updateProfile = originalMethod;
+    }
+  });
+  
   // Mocked behavior: UserController.updateProfile rejects with error
   // Input: authenticated student request with name update
   // Expected status code: 500
@@ -246,6 +306,34 @@ describe('POST /api/user/profile - Update User Profile (Mocked)', () => {
 
 // Interface POST /api/user/cash-out
 describe('POST /api/user/cash-out - Cash Out (Mocked)', () => {
+  // Mocked behavior: UserController.cashOut called with req.user = undefined
+  // Input: authenticated mover request but controller simulates missing req.user
+  // Expected status code: 401
+  // Expected behavior: detects missing user authentication in controller
+  // Expected output: error message 'User not authenticated'
+  test('should return 401 when req.user is undefined ', async () => {
+    const { UserController } = require('../../src/controllers/user.controller');
+    const controllerProto = UserController.prototype;
+    const originalMethod = controllerProto.cashOut;
+    
+    // Create a spy that calls the original but with req.user = undefined
+    controllerProto.cashOut = jest.fn().mockImplementation(async (req: any, res: any, next: any) => {
+      req.user = undefined; // Simulate missing user
+      return originalMethod.call(controllerProto, req, res, next);
+    });
+
+    try {
+      const response = await request(app)
+        .post('/api/user/cash-out')
+        .set('Authorization', `Bearer ${moverAuthToken}`);
+      expect(response.status).toBe(401);
+      expect(response.body.message).toBe('User not authenticated');
+      expect(controllerProto.cashOut).toHaveBeenCalled();
+    } finally {
+      controllerProto.cashOut = originalMethod;
+    }
+  });
+
   // Mocked behavior: userModel.update resolves with mover having credits set to 0
   // Input: authenticated mover request
   // Expected status code: 200
@@ -399,6 +487,35 @@ describe('DELETE /api/user/profile - Delete User Profile (Mocked)', () => {
     expect(controllerProto.deleteProfile).toHaveBeenCalled();
 
     controllerProto.deleteProfile = originalMethod;
+  });
+
+  // Mocked behavior: UserController.deleteProfile called with req.user = undefined
+  // Input: authenticated request but controller simulates missing req.user
+  // Expected status code: 401
+  // Expected behavior: detects missing user authentication in controller
+  // Expected output: error message 'User not authenticated'
+  test('should return 401 when req.user is undefined', async () => {
+    const { UserController } = require('../../src/controllers/user.controller');
+    const controllerProto = UserController.prototype;
+    const originalMethod = controllerProto.deleteProfile;
+    
+    // Create a spy that calls the original but with req.user = undefined
+    controllerProto.deleteProfile = jest.fn().mockImplementation(async (req: any, res: any, next: any) => {
+      req.user = undefined; // Simulate missing user
+      return originalMethod.call(controllerProto, req, res, next);
+    });
+
+    try {
+      const response = await request(app)
+        .delete('/api/user/profile')
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(response.status).toBe(401);
+      expect(response.body.message).toBe('User not authenticated');
+      expect(controllerProto.deleteProfile).toHaveBeenCalled();
+    } finally {
+      controllerProto.deleteProfile = originalMethod;
+    }
   });
 
   // Mocked behavior: userModel.delete rejects with database error

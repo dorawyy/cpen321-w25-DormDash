@@ -1179,6 +1179,85 @@ describe('POST /api/order/create-return-Job - Create Return Job (Mocked)', () =>
     controllerProto.createReturnJob = originalMethod;
   });
 
+  // Mocked behavior: none (direct controller test with undefined user)
+  // Input: request with returnAddress but req.user is undefined
+  // Expected status code: 401
+  // Expected behavior: controller checks authentication, rejects unauthenticated request
+  // Expected output: error message 'Authentication required. Please log in.'
+  test('should return 401 when user is not authenticated in createReturnJob', async () => {
+    // Directly test the controller with no user
+    const { OrderController } = require('../../src/controllers/order.controller');
+    const orderService = require('../../src/services/order.service').OrderService;
+    const controller = new OrderController(new orderService());
+
+    const mockReq: any = {
+      user: undefined, // No user
+      body: {
+        returnAddress: {
+          lat: 49.2606,
+          lon: -123.1133,
+          formattedAddress: '123 Return St, Vancouver, BC'
+        }
+      }
+    };
+
+    const mockRes: any = {
+      status: (jest.fn() as any).mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    const mockNext = jest.fn();
+
+    await controller.createReturnJob(mockReq, mockRes, mockNext);
+
+    expect(mockRes.status).toHaveBeenCalledWith(401);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      success: false,
+      message: 'Authentication required. Please log in.',
+    });
+    expect(mockNext).not.toHaveBeenCalled();
+  });
+
+  // Mocked behavior: none (direct controller test with user object lacking _id)
+  // Input: request with returnAddress, req.user exists but has no _id field
+  // Expected status code: 401
+  // Expected behavior: controller checks for user._id, rejects when missing
+  // Expected output: error message 'Authentication required. Please log in.'
+  test('should return 401 when user._id is missing in createReturnJob', async () => {
+    // Directly test the controller with user but no _id
+    const { OrderController } = require('../../src/controllers/order.controller');
+    const orderService = require('../../src/services/order.service').OrderService;
+    const controller = new OrderController(new orderService());
+
+    const mockReq: any = {
+      user: {}, // User exists but no _id
+      body: {
+        returnAddress: {
+          lat: 49.2606,
+          lon: -123.1133,
+          formattedAddress: '123 Return St, Vancouver, BC'
+        }
+      }
+    };
+
+    const mockRes: any = {
+      status: (jest.fn() as any).mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    const mockNext = jest.fn();
+
+    await controller.createReturnJob(mockReq, mockRes, mockNext);
+
+    expect(mockRes.status).toHaveBeenCalledWith(401);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      success: false,
+      message: 'Authentication required. Please log in.',
+    });
+    expect(mockNext).not.toHaveBeenCalled();
+  });
+
+
   // Mocked behavior: orderModel returns order with paymentIntentId, paymentService.refundPayment succeeds, jobService.createJob succeeds
   // Input: authenticated request with actualReturnDate 3 days before scheduled returnTime
   // Expected status code: 201
