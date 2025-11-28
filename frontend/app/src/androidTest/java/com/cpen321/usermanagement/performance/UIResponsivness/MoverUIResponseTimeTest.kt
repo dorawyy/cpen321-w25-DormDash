@@ -5,7 +5,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.SemanticsNodeInteractionCollection
+import androidx.compose.ui.test.junit4.ComposeTestRule
 import com.cpen321.usermanagement.utils.TestAccountHelper
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Test
@@ -17,7 +17,7 @@ class MoverUIResponseTimeTest : UIResponsivnessTestBase() {
 
     override fun getTestEmail(): String = TestAccountHelper.getMoverEmail()
     override fun getTestPassword(): String = TestAccountHelper.getMoverPassword()
-    override fun getRoleSelector(): (SemanticsNodeInteractionCollection) -> Unit = 
+    override fun getRoleSelector(): (ComposeTestRule) -> Unit =
         { TestAccountHelper.selectMoverRole(it) }
 
     @Test
@@ -25,8 +25,11 @@ class MoverUIResponseTimeTest : UIResponsivnessTestBase() {
         composeTestRule.waitForIdle()
         Thread.sleep(3000)
 
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Find Jobs").fetchSemanticsNodes().isNotEmpty()
+        }
+
         composeTestRule.onNodeWithText("Find Jobs", useUnmergedTree = true)
-            .assertExists("Find Jobs button should exist")
             .performClick()
 
         composeTestRule.waitForIdle()

@@ -2,6 +2,7 @@ package com.cpen321.usermanagement.performance.UIResponsivness
 
 import androidx.compose.ui.test.*
 import android.content.Intent
+import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Until
@@ -41,7 +42,7 @@ abstract class UIResponsivnessTestBase : BaseTestSetup() {
     /**
      * Return the role selector function for this role.
      */
-    protected abstract fun getRoleSelector(): (SemanticsNodeInteractionCollection) -> Unit
+    protected abstract fun getRoleSelector(): (ComposeTestRule) -> Unit
 
     @Before
     override fun baseSetup() {
