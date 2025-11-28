@@ -14,19 +14,26 @@ jest.mock('../../src/socket', () => ({
   initSocket: jest.fn(),
 }));
 
-// Mock the Stripe service which is called by payment service
-jest.mock('../../src/services/stripe.service', () => ({
-  stripeService: {
-    createPaymentIntent: jest.fn(),
-    confirmPayment: jest.fn(),
-    getPaymentIntent: jest.fn(),
-    refundPayment: jest.fn(),
-  }
-}));
+// Mock the Stripe SDK at the network boundary
+// This allows us to test the real stripeService implementation through HTTP endpoints
+const mockStripeClient: any = {
+  paymentIntents: {
+    create: jest.fn(),
+    confirm: jest.fn(),
+  },
+  refunds: {
+    create: jest.fn(),
+  },
+};
+
+jest.mock('stripe', () => {
+  return jest.fn().mockImplementation(() => {
+    return mockStripeClient;
+  });
+});
 
 // Import app after mocks are set up
 import app from '../../src/app';
-import { stripeService } from '../../src/services/stripe.service';
 
 // Suppress console logs during tests
 const originalConsole = {
@@ -39,8 +46,8 @@ const originalConsole = {
 let authToken: string;
 const testUserId = new mongoose.Types.ObjectId(); // Generate unique ID
 
-// Get reference to the mocked Stripe service
-const mockStripeService = stripeService as jest.Mocked<typeof stripeService>;
+// Set STRIPE_SECRET_KEY for tests (required by stripeService.initializeStripe)
+process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || 'sk_test_mock_key';
 
 beforeAll(async () => {
   // Suppress all console output during tests for clean test output
@@ -74,6 +81,10 @@ beforeAll(async () => {
 beforeEach(() => {
   // Clear all mock calls before each test
   jest.clearAllMocks();
+  
+  // Reset the stripe instance in stripeService to force re-initialization with mocked Stripe SDK
+  const { stripeService: realStripeService } = require('../../src/services/stripe.service');
+  (realStripeService as any).stripe = undefined;
 });
 
 afterAll(async () => {
@@ -101,9 +112,13 @@ describe('POST /api/payment/create-intent - Create Payment Intent (Mocked)', () 
   // Expected behavior: surfaces configuration error when Stripe API key is missing
   // Expected output: error message containing 'STRIPE_SECRET_KEY'
   test('should handle missing STRIPE_SECRET_KEY in initializeStripe via endpoint', async () => {
-    mockStripeService.createPaymentIntent.mockRejectedValue(
-      new Error('Failed to create payment intent: STRIPE_SECRET_KEY environment variable is required')
-    );
+    // Temporarily remove STRIPE_SECRET_KEY to trigger line 21
+    const originalKey = process.env.STRIPE_SECRET_KEY;
+    delete process.env.STRIPE_SECRET_KEY;
+    
+    // Reset stripe instance to force re-initialization
+    const { stripeService: realStripeService } = require('../../src/services/stripe.service');
+    (realStripeService as any).stripe = undefined;
 
     // Call the frontend-exposed API endpoint
     const response = await request(app)
@@ -118,6 +133,14 @@ describe('POST /api/payment/create-intent - Create Payment Intent (Mocked)', () 
     expect(response.status).toBe(500);
     expect(response.body).toHaveProperty('message');
     expect(response.body.message).toContain('STRIPE_SECRET_KEY');
+    
+    // Restore original key
+    if (originalKey) {
+      process.env.STRIPE_SECRET_KEY = originalKey;
+    } else {
+      process.env.STRIPE_SECRET_KEY = 'sk_test_mock_key';
+    }
+    (realStripeService as any).stripe = undefined;
   });
 
   // Mocked behavior: stripeService.createPaymentIntent rejects with rate limit error
@@ -126,9 +149,9 @@ describe('POST /api/payment/create-intent - Create Payment Intent (Mocked)', () 
   // Expected behavior: handles Stripe API rate limiting gracefully
   // Expected output: 500 error response with message
   test('should handle Stripe rate limiting errors', async () => {
-    // Mock service to throw a rate limit error
-    mockStripeService.createPaymentIntent.mockRejectedValue(
-      new Error('Failed to create payment intent: Rate limit exceeded')
+    // Mock Stripe SDK to throw a rate limit error
+    mockStripeClient.paymentIntents.create.mockRejectedValue(
+      new Error('Rate limit exceeded')
     );
 
     const response = await request(app)
@@ -149,9 +172,9 @@ describe('POST /api/payment/create-intent - Create Payment Intent (Mocked)', () 
   // Expected behavior: handles network timeouts during payment intent creation
   // Expected output: 500 error response with message
   test('should handle network timeout errors', async () => {
-    // Mock service to throw a network timeout error
-    mockStripeService.createPaymentIntent.mockRejectedValue(
-      new Error('Failed to create payment intent: Request timeout')
+    // Mock Stripe SDK to throw a network timeout error
+    mockStripeClient.paymentIntents.create.mockRejectedValue(
+      new Error('Request timeout')
     );
 
     const response = await request(app)
@@ -172,15 +195,14 @@ describe('POST /api/payment/create-intent - Create Payment Intent (Mocked)', () 
   // Expected behavior: successfully creates payment intent with very large amount
   // Expected output: payment intent with id, amount 999999, currency CAD
   test('should handle very large amounts', async () => {
-    const mockPaymentIntent: PaymentIntent = {
+    // Mock Stripe SDK to return payment intent
+    mockStripeClient.paymentIntents.create.mockResolvedValue({
       id: 'pi_mock_large_amount',
-      amount: 999999,
-      currency: 'CAD',
-      clientSecret: 'pi_mock_large_amount_secret',
-      status: 'requires_payment_method' as any,
-    };
-
-    mockStripeService.createPaymentIntent.mockResolvedValue(mockPaymentIntent);
+      amount: 99999900, // in cents
+      currency: 'cad',
+      status: 'requires_payment_method',
+      client_secret: 'pi_mock_large_amount_secret',
+    } as any);
 
     const response = await request(app)
       .post('/api/payment/create-intent')
@@ -201,9 +223,9 @@ describe('POST /api/payment/create-intent - Create Payment Intent (Mocked)', () 
   // Expected behavior: handles currency conversion errors
   // Expected output: 500 error response with message
   test('should handle currency conversion errors', async () => {
-    // Mock service to throw a currency error
-    mockStripeService.createPaymentIntent.mockRejectedValue(
-      new Error('Failed to create payment intent: Unsupported currency')
+    // Mock Stripe SDK to throw a currency error
+    mockStripeClient.paymentIntents.create.mockRejectedValue(
+      new Error('Unsupported currency')
     );
 
     const response = await request(app)
@@ -228,7 +250,9 @@ describe('POST /api/payment/create-intent - Create Payment Intent (Mocked)', () 
     const controllerProto = PaymentController.prototype;
     const originalMethod = controllerProto.createPaymentIntent;
 
-    controllerProto.createPaymentIntent = jest.fn().mockRejectedValue(new Error('Controller error'));
+    controllerProto.createPaymentIntent = jest.fn().mockImplementation(() => {
+      return Promise.reject(new Error('Controller error'));
+    }) as any;
     
     const response = await request(app)
         .post('/api/payment/create-intent')
@@ -254,16 +278,16 @@ describe('POST /api/payment/process - Process Payment (Mocked)', () => {
   // Expected behavior: processes payment, returns failed status with failure reason
   // Expected output: status FAILED, failureReason containing 'insufficient funds'
   test('should handle insufficient funds error', async () => {
-    // Mock a failed payment due to insufficient funds
-    const mockFailedResult: PaymentResult = {
-      paymentId: 'pi_mock_insufficient',
-      status: PaymentStatus.FAILED,
-      amount: 5000,
-      currency: 'CAD',
-      failureReason: 'Your card has insufficient funds',
-    };
-
-    mockStripeService.confirmPayment.mockResolvedValue(mockFailedResult);
+    // Mock Stripe SDK to return failed payment due to insufficient funds
+    mockStripeClient.paymentIntents.confirm.mockResolvedValue({
+      id: 'pi_mock_insufficient',
+      amount: 500000, // in cents
+      currency: 'cad',
+      status: 'failed',
+      last_payment_error: {
+        message: 'Your card has insufficient funds',
+      },
+    } as any);
 
     const response = await request(app)
       .post('/api/payment/process')
@@ -285,16 +309,16 @@ describe('POST /api/payment/process - Process Payment (Mocked)', () => {
   // Expected behavior: processes payment, returns failed status with decline reason
   // Expected output: status FAILED, failureReason 'Your card was declined'
   test('should handle card declined error', async () => {
-    // Mock a failed payment due to card declined
-    const mockFailedResult: PaymentResult = {
-      paymentId: 'pi_mock_declined',
-      status: PaymentStatus.FAILED,
-      amount: 5000,
-      currency: 'CAD',
-      failureReason: 'Your card was declined',
-    };
-
-    mockStripeService.confirmPayment.mockResolvedValue(mockFailedResult);
+    // Mock Stripe SDK to return failed payment due to card declined
+    mockStripeClient.paymentIntents.confirm.mockResolvedValue({
+      id: 'pi_mock_declined',
+      amount: 500000, // in cents
+      currency: 'cad',
+      status: 'failed',
+      last_payment_error: {
+        message: 'Your card was declined',
+      },
+    } as any);
 
     const response = await request(app)
       .post('/api/payment/process')
@@ -315,16 +339,16 @@ describe('POST /api/payment/process - Process Payment (Mocked)', () => {
   // Expected behavior: processes payment, returns failed status with expiration reason
   // Expected output: status FAILED, failureReason containing 'expired'
   test('should handle expired card error', async () => {
-    // Mock a failed payment due to expired card
-    const mockFailedResult: PaymentResult = {
-      paymentId: 'pi_mock_expired',
-      status: PaymentStatus.FAILED,
-      amount: 3000,
-      currency: 'CAD',
-      failureReason: 'Your card has expired',
-    };
-
-    mockStripeService.confirmPayment.mockResolvedValue(mockFailedResult);
+    // Mock Stripe SDK to return failed payment due to expired card
+    mockStripeClient.paymentIntents.confirm.mockResolvedValue({
+      id: 'pi_mock_expired',
+      amount: 300000, // in cents
+      currency: 'cad',
+      status: 'failed',
+      last_payment_error: {
+        message: 'Your card has expired',
+      },
+    } as any);
 
     const response = await request(app)
       .post('/api/payment/process')
@@ -345,16 +369,16 @@ describe('POST /api/payment/process - Process Payment (Mocked)', () => {
   // Expected behavior: processes payment, returns failed status with CVC error
   // Expected output: status FAILED, failureReason containing 'security code'
   test('should handle incorrect CVC error', async () => {
-    // Mock a failed payment due to incorrect CVC
-    const mockFailedResult: PaymentResult = {
-      paymentId: 'pi_mock_cvc',
-      status: PaymentStatus.FAILED,
-      amount: 2500,
-      currency: 'CAD',
-      failureReason: 'Your card\'s security code is incorrect',
-    };
-
-    mockStripeService.confirmPayment.mockResolvedValue(mockFailedResult);
+    // Mock Stripe SDK to return failed payment due to incorrect CVC
+    mockStripeClient.paymentIntents.confirm.mockResolvedValue({
+      id: 'pi_mock_cvc',
+      amount: 250000, // in cents
+      currency: 'cad',
+      status: 'failed',
+      last_payment_error: {
+        message: 'Your card\'s security code is incorrect',
+      },
+    } as any);
 
     const response = await request(app)
       .post('/api/payment/process')
@@ -375,16 +399,16 @@ describe('POST /api/payment/process - Process Payment (Mocked)', () => {
   // Expected behavior: processes payment, returns failed status with generic processing error
   // Expected output: status FAILED, failureReason present
   test('should handle processing error from Stripe', async () => {
-    // Mock a processing error
-    const mockFailedResult: PaymentResult = {
-      paymentId: 'pi_mock_processing_error',
-      status: PaymentStatus.FAILED,
-      amount: 5000,
-      currency: 'CAD',
-      failureReason: 'An error occurred while processing your card',
-    };
-
-    mockStripeService.confirmPayment.mockResolvedValue(mockFailedResult);
+    // Mock Stripe SDK to return processing error
+    mockStripeClient.paymentIntents.confirm.mockResolvedValue({
+      id: 'pi_mock_processing_error',
+      amount: 500000, // in cents
+      currency: 'cad',
+      status: 'failed',
+      last_payment_error: {
+        message: 'An error occurred while processing your card',
+      },
+    } as any);
 
     const response = await request(app)
       .post('/api/payment/process')
@@ -399,15 +423,15 @@ describe('POST /api/payment/process - Process Payment (Mocked)', () => {
     expect(response.body).toHaveProperty('failureReason');
   });
 
-  // Mocked behavior: stripeService.confirmPayment rejects with 'No such payment_intent' error
+  // Mocked behavior: stripeService.confirmPayment catches 'No such payment_intent' error and returns FAILED status
   // Input: authenticated request with invalid paymentIntentId 'pi_invalid_12345'
-  // Expected status code: 500
-  // Expected behavior: handles invalid payment intent ID error
-  // Expected output: 500 error response with message
+  // Expected status code: 200
+  // Expected behavior: handles invalid payment intent ID error, returns FAILED status (stripe.service.ts lines 106-117)
+  // Expected output: 200 response with FAILED status and failureReason
   test('should handle invalid payment intent ID', async () => {
-    // Mock service to throw an error for invalid payment intent
-    mockStripeService.confirmPayment.mockRejectedValue(
-      new Error('Payment confirmation failed: No such payment_intent')
+    // Mock Stripe SDK to throw an error for invalid payment intent
+    mockStripeClient.paymentIntents.confirm.mockRejectedValue(
+      new Error('No such payment_intent')
     );
 
     const response = await request(app)
@@ -417,20 +441,22 @@ describe('POST /api/payment/process - Process Payment (Mocked)', () => {
         paymentIntentId: 'pi_invalid_12345',
         paymentMethodId: 'pm_valid_method'
       })
-      .expect(500);
+      .expect(200);
 
-    expect(response.body).toHaveProperty('message');
+    expect(response.body).toHaveProperty('status', PaymentStatus.FAILED);
+    expect(response.body).toHaveProperty('failureReason');
+    expect(response.body.failureReason).toContain('No such payment_intent');
   });
 
-  // Mocked behavior: stripeService.confirmPayment rejects with network connection error
+  // Mocked behavior: stripeService.confirmPayment catches network connection error and returns FAILED status
   // Input: authenticated request with paymentIntentId, paymentMethodId
-  // Expected status code: 500
-  // Expected behavior: handles network failures during payment confirmation
-  // Expected output: 500 error response with message
+  // Expected status code: 200
+  // Expected behavior: handles network failures during payment confirmation, returns FAILED status (stripe.service.ts lines 106-117)
+  // Expected output: 200 response with FAILED status and failureReason
   test('should handle network failures during payment processing', async () => {
-    // Mock service to throw a network error
-    mockStripeService.confirmPayment.mockRejectedValue(
-      new Error('Payment confirmation failed: Network connection lost')
+    // Mock Stripe SDK to throw a network error
+    mockStripeClient.paymentIntents.confirm.mockRejectedValue(
+      new Error('Network connection lost')
     );
 
     const response = await request(app)
@@ -440,9 +466,11 @@ describe('POST /api/payment/process - Process Payment (Mocked)', () => {
         paymentIntentId: 'pi_mock_network_fail',
         paymentMethodId: 'pm_card_visa'
       })
-      .expect(500);
+      .expect(200);
 
-    expect(response.body).toHaveProperty('message');
+    expect(response.body).toHaveProperty('status', PaymentStatus.FAILED);
+    expect(response.body).toHaveProperty('failureReason');
+    expect(response.body.failureReason).toContain('Network connection lost');
   });
 
   // Mocked behavior: stripeService.confirmPayment resolves with FAILED status for suspected fraud
@@ -451,16 +479,16 @@ describe('POST /api/payment/process - Process Payment (Mocked)', () => {
   // Expected behavior: processes payment, returns failed status with fraud detection reason
   // Expected output: status FAILED, failureReason containing 'fraud'
   test('should handle fraud detection blocking payment', async () => {
-    // Mock a failed payment due to fraud detection
-    const mockFailedResult: PaymentResult = {
-      paymentId: 'pi_mock_fraud',
-      status: PaymentStatus.FAILED,
-      amount: 10000,
-      currency: 'CAD',
-      failureReason: 'Your card was declined due to suspected fraud',
-    };
-
-    mockStripeService.confirmPayment.mockResolvedValue(mockFailedResult);
+    // Mock Stripe SDK to return failed payment due to fraud detection
+    mockStripeClient.paymentIntents.confirm.mockResolvedValue({
+      id: 'pi_mock_fraud',
+      amount: 1000000, // in cents
+      currency: 'cad',
+      status: 'failed',
+      last_payment_error: {
+        message: 'Your card was declined due to suspected fraud',
+      },
+    } as any);
 
     const response = await request(app)
       .post('/api/payment/process')
@@ -485,7 +513,9 @@ describe('POST /api/payment/process - Process Payment (Mocked)', () => {
     const controllerProto = PaymentController.prototype;
     const originalMethod = controllerProto.processPayment;
 
-    controllerProto.processPayment = jest.fn().mockRejectedValue(new Error('Controller error'));
+    controllerProto.processPayment = jest.fn().mockImplementation(() => {
+      return Promise.reject(new Error('Controller error'));
+    }) as any;
 
     const response = await request(app)
         .post('/api/payment/process')
@@ -526,9 +556,21 @@ describe('Payment Edge Cases and Error Handling (Mocked)', () => {
       status: 'requires_payment_method' as any,
     };
 
-    mockStripeService.createPaymentIntent
-      .mockResolvedValueOnce(mockPaymentIntent1)
-      .mockResolvedValueOnce(mockPaymentIntent2);
+    mockStripeClient.paymentIntents.create
+      .mockResolvedValueOnce({
+        id: 'pi_mock_concurrent_1',
+        amount: 500000, // in cents
+        currency: 'cad',
+        status: 'requires_payment_method',
+        client_secret: 'pi_mock_concurrent_1_secret',
+      } as any)
+      .mockResolvedValueOnce({
+        id: 'pi_mock_concurrent_2',
+        amount: 300000, // in cents
+        currency: 'cad',
+        status: 'requires_payment_method',
+        client_secret: 'pi_mock_concurrent_2_secret',
+      } as any);
 
     // Make two concurrent requests
     const [response1, response2] = await Promise.all([
@@ -566,15 +608,15 @@ describe('Payment Edge Cases and Error Handling (Mocked)', () => {
     expect(response.body).toHaveProperty('message');
   });
 
-  // Mocked behavior: stripeService.confirmPayment rejects with timeout error
+  // Mocked behavior: stripeService.confirmPayment catches timeout error and returns FAILED status
   // Input: authenticated request with paymentIntentId 'pi_timeout_test', paymentMethodId
-  // Expected status code: 500
-  // Expected behavior: handles payment processing timeout after 30 seconds
-  // Expected output: 500 error response with message
+  // Expected status code: 200
+  // Expected behavior: handles payment processing timeout, returns FAILED status (stripe.service.ts lines 106-117)
+  // Expected output: 200 response with FAILED status and failureReason
   test('should handle payment processing timeout', async () => {
-    // Mock service to throw a timeout error
-    mockStripeService.confirmPayment.mockRejectedValue(
-      new Error('Payment confirmation failed: Request timed out after 30 seconds')
+    // Mock Stripe SDK to throw a timeout error
+    mockStripeClient.paymentIntents.confirm.mockRejectedValue(
+      new Error('Request timed out after 30 seconds')
     );
 
     const response = await request(app)
@@ -584,9 +626,11 @@ describe('Payment Edge Cases and Error Handling (Mocked)', () => {
         paymentIntentId: 'pi_timeout_test',
         paymentMethodId: 'pm_card_visa'
       })
-      .expect(500);
+      .expect(200);
 
-    expect(response.body).toHaveProperty('message');
+    expect(response.body).toHaveProperty('status', PaymentStatus.FAILED);
+    expect(response.body).toHaveProperty('failureReason');
+    expect(response.body.failureReason).toContain('Request timed out');
   });
 
   // Mocked behavior: stripeService.createPaymentIntent rejects with missing API key error
@@ -595,10 +639,13 @@ describe('Payment Edge Cases and Error Handling (Mocked)', () => {
   // Expected behavior: handles missing Stripe API key configuration
   // Expected output: 500 error response with message
   test('should handle missing Stripe API key', async () => {
-    // Mock service to throw an API key error
-    mockStripeService.createPaymentIntent.mockRejectedValue(
-      new Error('Failed to create payment intent: STRIPE_SECRET_KEY environment variable is required')
-    );
+    // Temporarily remove STRIPE_SECRET_KEY to trigger line 21
+    const originalKey = process.env.STRIPE_SECRET_KEY;
+    delete process.env.STRIPE_SECRET_KEY;
+    
+    // Reset stripe instance to force re-initialization
+    const { stripeService: realStripeService } = require('../../src/services/stripe.service');
+    (realStripeService as any).stripe = undefined;
 
     const response = await request(app)
       .post('/api/payment/create-intent')
@@ -610,6 +657,14 @@ describe('Payment Edge Cases and Error Handling (Mocked)', () => {
       .expect(500);
 
     expect(response.body).toHaveProperty('message');
+    
+    // Restore original key
+    if (originalKey) {
+      process.env.STRIPE_SECRET_KEY = originalKey;
+    } else {
+      process.env.STRIPE_SECRET_KEY = 'sk_test_mock_key';
+    }
+    (realStripeService as any).stripe = undefined;
   });
 
   // Mocked behavior: stripeService.confirmPayment resolves with PENDING status for 3D Secure
@@ -618,16 +673,16 @@ describe('Payment Edge Cases and Error Handling (Mocked)', () => {
   // Expected behavior: processes payment, returns pending status requiring additional authentication
   // Expected output: status PENDING, failureReason containing 'authentication'
   test('should handle 3D Secure authentication required', async () => {
-    // Mock a payment that requires 3D Secure authentication
-    const mockPendingResult: PaymentResult = {
-      paymentId: 'pi_mock_3ds_required',
-      status: PaymentStatus.PENDING,
-      amount: 5000,
-      currency: 'CAD',
-      failureReason: 'Additional authentication required',
-    };
-
-    mockStripeService.confirmPayment.mockResolvedValue(mockPendingResult);
+    // Mock Stripe SDK to return payment requiring 3D Secure authentication
+    mockStripeClient.paymentIntents.confirm.mockResolvedValue({
+      id: 'pi_mock_3ds_required',
+      amount: 500000, // in cents
+      currency: 'cad',
+      status: 'requires_confirmation', // Maps to PENDING
+      last_payment_error: {
+        message: 'Additional authentication required',
+      },
+    } as any);
 
     const response = await request(app)
       .post('/api/payment/process')
@@ -648,15 +703,13 @@ describe('Payment Edge Cases and Error Handling (Mocked)', () => {
   // Expected behavior: handles duplicate payment processing idempotently
   // Expected output: both responses show status SUCCEEDED
   test('should handle duplicate payment processing attempt', async () => {
-    // Mock a payment that's already been processed
-    const mockSucceededResult: PaymentResult = {
-      paymentId: 'pi_mock_already_processed',
-      status: PaymentStatus.SUCCEEDED,
-      amount: 5000,
-      currency: 'CAD',
-    };
-
-    mockStripeService.confirmPayment.mockResolvedValue(mockSucceededResult);
+    // Mock Stripe SDK to return succeeded payment
+    mockStripeClient.paymentIntents.confirm.mockResolvedValue({
+      id: 'pi_mock_already_processed',
+      amount: 500000, // in cents
+      currency: 'cad',
+      status: 'succeeded',
+    } as any);
 
     // First attempt
     const response1 = await request(app)
@@ -688,16 +741,16 @@ describe('Payment Edge Cases and Error Handling (Mocked)', () => {
   // Expected behavior: processes payment, returns failed status for unsupported card type
   // Expected output: status FAILED, failureReason containing 'does not support'
   test('should handle international card with insufficient international support', async () => {
-    // Mock a failed payment due to card not supporting international transactions
-    const mockFailedResult: PaymentResult = {
-      paymentId: 'pi_mock_intl_fail',
-      status: PaymentStatus.FAILED,
-      amount: 5000,
-      currency: 'CAD',
-      failureReason: 'Your card does not support this type of purchase',
-    };
-
-    mockStripeService.confirmPayment.mockResolvedValue(mockFailedResult);
+    // Mock Stripe SDK to return failed payment
+    mockStripeClient.paymentIntents.confirm.mockResolvedValue({
+      id: 'pi_mock_intl_fail',
+      amount: 500000, // in cents
+      currency: 'cad',
+      status: 'failed',
+      last_payment_error: {
+        message: 'Your card does not support this type of purchase',
+      },
+    } as any);
 
     const response = await request(app)
       .post('/api/payment/process')
@@ -718,9 +771,9 @@ describe('Payment Edge Cases and Error Handling (Mocked)', () => {
   // Expected behavior: handles metadata exceeding Stripe's size limits
   // Expected output: 500 error response with message
   test('should handle payment with metadata exceeding limits', async () => {
-    // Mock service to throw an error for metadata exceeding limits
-    mockStripeService.createPaymentIntent.mockRejectedValue(
-      new Error('Failed to create payment intent: Metadata exceeds maximum size')
+    // Mock Stripe SDK to throw an error for metadata exceeding limits
+    mockStripeClient.paymentIntents.create.mockRejectedValue(
+      new Error('Metadata exceeds maximum size')
     );
 
     const response = await request(app)
@@ -734,5 +787,303 @@ describe('Payment Edge Cases and Error Handling (Mocked)', () => {
       .expect(500);
 
     expect(response.body).toHaveProperty('message');
+  });
+});
+
+// Tests to cover specific lines in stripe.service.ts
+describe('Stripe Service Line Coverage Tests', () => {
+  // Cover line 58: Payment intent without client_secret check
+  // Input: HTTP request to create payment intent, mocked Stripe SDK returns payment intent without client_secret
+  // Expected status code: 500
+  // Expected behavior: stripe service throws error when client_secret is missing (line 58)
+  // Expected output: error message about missing client secret
+  test('should cover line 58 - payment intent without client_secret', async () => {
+    // Mock Stripe SDK to return payment intent without client_secret
+    mockStripeClient.paymentIntents.create.mockResolvedValue({
+      id: 'pi_test_no_secret',
+      amount: 500000, // in cents
+      currency: 'cad',
+      status: 'requires_payment_method',
+      // Intentionally missing client_secret to trigger line 58
+    } as any);
+
+    // Call HTTP endpoint - this should trigger line 58
+    const response = await request(app)
+      .post('/api/payment/create-intent')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        amount: 5000,
+        currency: 'CAD'
+      });
+
+    expect(response.status).toBe(500);
+    expect(response.body).toHaveProperty('message');
+    expect(response.body.message).toContain('client secret');
+  });
+
+  // Cover lines 161-165: Refund payment success path
+  // Input: HTTP request to cancel order with paymentIntentId, mocked Stripe SDK returns successful refund
+  // Expected status code: 200
+  // Expected behavior: refundPayment executes success path with logging (lines 161-163) and return (line 165)
+  // Expected output: order cancelled successfully
+  test('should cover lines 161-165 - refund payment success path', async () => {
+    // Mock Stripe SDK to return successful refund
+    mockStripeClient.refunds.create.mockResolvedValue({
+      id: 're_test_refund_success',
+      amount: 500000, // in cents
+      currency: 'cad',
+      status: 'succeeded',
+    } as any);
+
+    // Create payment intent first
+    mockStripeClient.paymentIntents.create.mockResolvedValueOnce({
+      id: 'pi_test_refund',
+      amount: 500000,
+      currency: 'cad',
+      status: 'requires_payment_method',
+      client_secret: 'pi_test_refund_secret',
+    } as any);
+
+    const paymentResponse = await request(app)
+      .post('/api/payment/create-intent')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        amount: 5000,
+        currency: 'CAD'
+      })
+      .expect(200);
+
+    const paymentIntentId = paymentResponse.body.id;
+
+    // Create order with paymentIntentId
+    const pickupTime = new Date(Date.now() + 3600000).toISOString();
+    const returnTime = new Date(Date.now() + 86400000).toISOString();
+
+    await request(app)
+      .post('/api/order')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        studentId: testUserId.toString(),
+        volume: 5,
+        totalPrice: 50,
+        studentAddress: { lat: 49.2827, lon: -123.1207, formattedAddress: 'Test' },
+        warehouseAddress: { lat: 49.2606, lon: -123.1133, formattedAddress: 'Test' },
+        pickupTime: pickupTime,
+        returnTime: returnTime,
+        paymentIntentId: paymentIntentId,
+      })
+      .expect(201);
+
+    // Cancel order - this triggers refundPayment (lines 161-165)
+    const cancelResponse = await request(app)
+      .delete('/api/order/cancel-order')
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
+
+    expect(cancelResponse.body).toHaveProperty('success', true);
+    expect(mockStripeClient.refunds.create).toHaveBeenCalled();
+  }, 30000);
+
+  // Cover lines 188-194: mapStripeStatusToOur - requires_confirmation, succeeded, canceled, default cases
+  // Input: HTTP request to create payment intent, mocked Stripe SDK returns different statuses
+  // Expected status code: 200
+  // Expected behavior: status maps correctly through mapStripeStatusToOur
+  // Expected output: payment intent with correct mapped status
+  test('should cover line 188 - mapStripeStatusToOur requires_confirmation', async () => {
+    // Mock Stripe SDK to return requires_confirmation status
+    mockStripeClient.paymentIntents.create.mockResolvedValue({
+      id: 'pi_test_requires_confirmation',
+      amount: 500000, // in cents
+      currency: 'cad',
+      status: 'requires_confirmation',
+      client_secret: 'pi_test_requires_confirmation_secret',
+    } as any);
+
+    const response = await request(app)
+      .post('/api/payment/create-intent')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        amount: 5000,
+        currency: 'CAD'
+      })
+      .expect(200);
+
+    expect(response.body).toHaveProperty('status', 'requires_confirmation');
+  });
+
+  test('should cover lines 189-190 - mapStripeStatusToOur succeeded', async () => {
+    // Mock Stripe SDK to return succeeded status
+    mockStripeClient.paymentIntents.create.mockResolvedValue({
+      id: 'pi_test_succeeded',
+      amount: 500000, // in cents
+      currency: 'cad',
+      status: 'succeeded',
+      client_secret: 'pi_test_succeeded_secret',
+    } as any);
+
+    const response = await request(app)
+      .post('/api/payment/create-intent')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        amount: 5000,
+        currency: 'CAD'
+      })
+      .expect(200);
+
+    expect(response.body).toHaveProperty('status', 'succeeded');
+  });
+
+  test('should cover lines 191-192 - mapStripeStatusToOur canceled', async () => {
+    // Mock Stripe SDK to return canceled status
+    mockStripeClient.paymentIntents.create.mockResolvedValue({
+      id: 'pi_test_canceled',
+      amount: 500000, // in cents
+      currency: 'cad',
+      status: 'canceled',
+      client_secret: 'pi_test_canceled_secret',
+    } as any);
+
+    const response = await request(app)
+      .post('/api/payment/create-intent')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        amount: 5000,
+        currency: 'CAD'
+      })
+      .expect(200);
+
+    expect(response.body).toHaveProperty('status', 'canceled');
+  });
+
+  test('should cover lines 193-194 - mapStripeStatusToOur default case', async () => {
+    // Mock Stripe SDK to return unknown status (triggers default case)
+    mockStripeClient.paymentIntents.create.mockResolvedValue({
+      id: 'pi_test_unknown',
+      amount: 500000, // in cents
+      currency: 'cad',
+      status: 'unknown_status',
+      client_secret: 'pi_test_unknown_secret',
+    } as any);
+
+    const response = await request(app)
+      .post('/api/payment/create-intent')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        amount: 5000,
+        currency: 'CAD'
+      })
+      .expect(200);
+
+    expect(response.body).toHaveProperty('status', 'failed'); // Default case
+  });
+
+  // Cover lines 205-212: mapStripeStatusToPaymentStatus - requires_payment_method, requires_confirmation, processing, canceled, default cases
+  // Input: HTTP request to process payment, mocked Stripe SDK returns different statuses
+  // Expected status code: 200
+  // Expected behavior: status maps correctly through mapStripeStatusToPaymentStatus
+  // Expected output: payment result with correct mapped status
+  test('should cover line 205 - mapStripeStatusToPaymentStatus requires_payment_method to PENDING', async () => {
+    // Mock Stripe SDK to return requires_payment_method status
+    mockStripeClient.paymentIntents.confirm.mockResolvedValue({
+      id: 'pi_test_requires_payment_method',
+      amount: 500000, // in cents
+      currency: 'cad',
+      status: 'requires_payment_method',
+    } as any);
+
+    const response = await request(app)
+      .post('/api/payment/process')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        paymentIntentId: 'pi_test_requires_payment_method',
+        paymentMethodId: 'pm_test'
+      })
+      .expect(200);
+
+    expect(response.body).toHaveProperty('status', PaymentStatus.PENDING);
+  });
+
+  test('should cover line 206 - mapStripeStatusToPaymentStatus requires_confirmation to PENDING', async () => {
+    // Mock Stripe SDK to return requires_confirmation status
+    mockStripeClient.paymentIntents.confirm.mockResolvedValue({
+      id: 'pi_test_requires_confirmation',
+      amount: 500000, // in cents
+      currency: 'cad',
+      status: 'requires_confirmation',
+    } as any);
+
+    const response = await request(app)
+      .post('/api/payment/process')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        paymentIntentId: 'pi_test_requires_confirmation',
+        paymentMethodId: 'pm_test'
+      })
+      .expect(200);
+
+    expect(response.body).toHaveProperty('status', PaymentStatus.PENDING);
+  });
+
+  test('should cover line 208 - mapStripeStatusToPaymentStatus processing to PENDING', async () => {
+    // Mock Stripe SDK to return processing status
+    mockStripeClient.paymentIntents.confirm.mockResolvedValue({
+      id: 'pi_test_processing',
+      amount: 500000, // in cents
+      currency: 'cad',
+      status: 'processing',
+    } as any);
+
+    const response = await request(app)
+      .post('/api/payment/process')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        paymentIntentId: 'pi_test_processing',
+        paymentMethodId: 'pm_test'
+      })
+      .expect(200);
+
+    expect(response.body).toHaveProperty('status', PaymentStatus.PENDING);
+  });
+
+  test('should cover lines 209-210 - mapStripeStatusToPaymentStatus canceled', async () => {
+    // Mock Stripe SDK to return canceled status
+    mockStripeClient.paymentIntents.confirm.mockResolvedValue({
+      id: 'pi_test_canceled_payment',
+      amount: 500000, // in cents
+      currency: 'cad',
+      status: 'canceled',
+    } as any);
+
+    const response = await request(app)
+      .post('/api/payment/process')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        paymentIntentId: 'pi_test_canceled_payment',
+        paymentMethodId: 'pm_test'
+      })
+      .expect(200);
+
+    expect(response.body).toHaveProperty('status', PaymentStatus.CANCELED);
+  });
+
+  test('should cover lines 211-212 - mapStripeStatusToPaymentStatus default case', async () => {
+    // Mock Stripe SDK to return unknown status (triggers default case)
+    mockStripeClient.paymentIntents.confirm.mockResolvedValue({
+      id: 'pi_test_unknown_payment_status',
+      amount: 500000, // in cents
+      currency: 'cad',
+      status: 'unknown_payment_status',
+    } as any);
+
+    const response = await request(app)
+      .post('/api/payment/process')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        paymentIntentId: 'pi_test_unknown_payment_status',
+        paymentMethodId: 'pm_test'
+      })
+      .expect(200);
+
+    expect(response.body).toHaveProperty('status', PaymentStatus.FAILED); // Default case
   });
 });
