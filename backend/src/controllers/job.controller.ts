@@ -10,9 +10,7 @@ import {
   JobResponse,
   JobStatus,
 } from '../types/job.type';
-import { IUser } from '../types/user.types';
 import logger from '../utils/logger.util';
-import { ObjectId } from 'mongoose';
 
 export class JobController {
   constructor(private jobService: JobService) {}

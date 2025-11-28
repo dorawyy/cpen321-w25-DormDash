@@ -88,7 +88,7 @@ export class OrderController {
   ) {
     try {
       const result = await this.orderService.getAllOrders(
-        (req as unknown as { user?: { _id: unknown } }).user?._id as unknown as ObjectId
+        (req as unknown as { user?: { _id: unknown } }).user?._id as ObjectId
       );
       res.status(200).json(result);
     } catch (error) {
@@ -103,7 +103,7 @@ export class OrderController {
     next: NextFunction
   ) {
     try {
-      const studentId = (req.user as IUser)._id as unknown as ObjectId;
+      const studentId = req.user?._id as unknown as ObjectId;
       const order = await this.orderService.getUserActiveOrder(studentId);
       if (!order) {
         res.status(404).json(null);
