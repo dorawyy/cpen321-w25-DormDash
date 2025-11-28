@@ -10,7 +10,9 @@ import {
   JobResponse,
   JobStatus,
 } from '../types/job.type';
+import { IUser } from '../types/user.types';
 import logger from '../utils/logger.util';
+import { ObjectId } from 'mongoose';
 
 export class JobController {
   constructor(private jobService: JobService) {}
@@ -61,7 +63,6 @@ export class JobController {
   ) {
     try {
       if (!req.user?._id) return;
-
       const result = await this.jobService.getMoverJobs(
         req.user._id.toString()
       );
@@ -78,7 +79,7 @@ export class JobController {
   ) {
     try {
       if (!req.user?._id) return;
-      
+
       const result = await this.jobService.getStudentJobs(
         req.user._id.toString()
       );

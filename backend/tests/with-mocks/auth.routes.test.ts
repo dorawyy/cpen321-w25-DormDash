@@ -534,6 +534,75 @@ describe('POST /api/auth/signup - Sign Up with Google (Mocked)', () => {
     expect(response.status).toBe(400);
   });
 
+  // Mocked behavior: AuthService.verifyGoogleToken resolves with valid data, userModel.user.create throws error
+  // Input: POST /api/auth/signup with mock ID token
+  // Expected status code: 500
+  // Expected behavior: handles database creation error during signup
+  // Expected output: 500 error response, create spy called
+  test('should handle database error when creating user via signup endpoint', async () => {
+    const { AuthService } = require('../../src/services/auth.service');
+    const serviceProto = AuthService.prototype;
+    const originalVerify = serviceProto.verifyGoogleToken;
+    
+    serviceProto.verifyGoogleToken = (jest.fn() as any).mockResolvedValue({
+      googleId: 'test-google-id-for-db-error',
+      email: 'dbtest@example.com',
+      name: 'DB Error Test User',
+    });
+
+    // Mock the create method to throw an error
+    const actualUserModel = (userModel as any).user;
+    const createSpy = jest.spyOn(actualUserModel, 'create').mockImplementation(() => {
+      throw new Error('Database creation error');
+    });
+
+    try {
+      const response = await request(app)
+        .post('/api/auth/signup')
+        .send({
+          idToken: 'mock-id-token-for-create-test'
+        });
+
+      // Verify the create function was called
+      expect(createSpy).toHaveBeenCalled();
+      // The response should be 500 with an error message
+      expect(response.status).toBe(500);
+    } finally {
+      createSpy.mockRestore();
+      serviceProto.verifyGoogleToken = originalVerify;
+    }
+  });
+
+  // Mocked behavior: AuthService.verifyGoogleToken resolves with invalid data (empty googleId, invalid email)
+  // Input: POST /api/auth/signup with mock ID token
+  // Expected status code: 500
+  // Expected behavior: handles validation error when creating user with invalid data
+  // Expected output: 500 error response
+  test('should handle validation error when creating user with invalid data via signup', async () => {
+    const { AuthService } = require('../../src/services/auth.service');
+    const serviceProto = AuthService.prototype;
+    const originalVerify = serviceProto.verifyGoogleToken;
+    
+    serviceProto.verifyGoogleToken = (jest.fn() as any).mockResolvedValue({
+      googleId: '', // Invalid: empty googleId
+      email: 'invalid-email', // Invalid: not a proper email
+      name: '',
+    });
+
+    try {
+      const response = await request(app)
+        .post('/api/auth/signup')
+        .send({
+          idToken: 'mock-id-token-invalid-data'
+        });
+
+      // Should return 500 status code
+      expect(response.status).toBe(500);
+    } finally {
+      serviceProto.verifyGoogleToken = originalVerify;
+    }
+  });
+
   // Mocked behavior: authService.signUpWithGoogle resolves with mock token and user
   // Input: request with valid-token
   // Expected status code: 201
