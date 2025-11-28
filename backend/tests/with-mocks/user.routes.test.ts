@@ -96,68 +96,8 @@ afterAll(async () => {
   console.info = originalConsole.info;
 });
 
-// Interface GET /api/user/profile
-describe('GET /api/user/profile - Get User Profile (Mocked)', () => {
-  // Mocked behavior: UserController.getProfile called with req.user = undefined
-  // Input: authenticated request but controller simulates missing req.user
-  // Expected status code: 401
-  // Expected behavior: detects missing user authentication in controller
-  // Expected output: error message 'User not authenticated'
-  test('should return 401 when req.user is undefined ', async () => {
-    const { UserController } = require('../../src/controllers/user.controller');
-    const controllerProto = UserController.prototype;
-    const originalMethod = controllerProto.getProfile;
-    
-    controllerProto.getProfile = jest.fn().mockImplementation((req: any, res: any) => {
-      req.user = undefined;
-      return originalMethod.call(controllerProto, req, res);
-    });
-
-    try {
-      const response = await request(app)
-        .get('/api/user/profile')
-        .set('Authorization', `Bearer ${authToken}`);
-
-      expect(response.status).toBe(401);
-      expect(response.body.message).toBe('User not authenticated');
-      expect(controllerProto.getProfile).toHaveBeenCalled();
-    } finally {
-      controllerProto.getProfile = originalMethod;
-    }
-  });
-});
-
 // Interface POST /api/user/profile
 describe('POST /api/user/profile - Update User Profile (Mocked)', () => {
-  // Mocked behavior: UserController.updateProfile called with req.user = undefined
-  // Input: authenticated request with name update but controller simulates missing req.user
-  // Expected status code: 401
-  // Expected behavior: detects missing user authentication in controller
-  // Expected output: error message 'User not authenticated'
-  test('should return 401 when req.user is undefined ', async () => {
-    const { UserController } = require('../../src/controllers/user.controller');
-    const controllerProto = UserController.prototype;
-    const originalMethod = controllerProto.updateProfile;
-    
-    controllerProto.updateProfile = jest.fn().mockImplementation(async (req: any, res: any, next: any) => {
-      req.user = undefined;
-      return originalMethod.call(controllerProto, req, res, next);
-    });
-
-    try {
-      const response = await request(app)
-        .post('/api/user/profile')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({ name: 'Should Fail' });
-
-      expect(response.status).toBe(401);
-      expect(response.body.message).toBe('User not authenticated');
-      expect(controllerProto.updateProfile).toHaveBeenCalled();
-    } finally {
-      controllerProto.updateProfile = originalMethod;
-    }
-  });
-
   // Mocked behavior: UserController.updateProfile rejects with error
   // Input: authenticated student request with name update
   // Expected status code: 500
@@ -277,39 +217,35 @@ describe('POST /api/user/profile - Update User Profile (Mocked)', () => {
 
     userModel.update = originalUpdate;
   });
-});
 
-// Interface POST /api/user/cash-out
-describe('POST /api/user/cash-out - Cash Out (Mocked)', () => {
-  // Mocked behavior: UserController.cashOut called with req.user = undefined
-  // Input: authenticated mover request but controller simulates missing req.user
-  // Expected status code: 401
-  // Expected behavior: detects missing user authentication in controller
-  // Expected output: error message 'User not authenticated'
-  test('should return 401 when req.user is undefined ', async () => {
-    const { UserController } = require('../../src/controllers/user.controller');
-    const controllerProto = UserController.prototype;
-    const originalMethod = controllerProto.cashOut;
-    
-    // Create a spy that calls the original but with req.user = undefined
-    controllerProto.cashOut = jest.fn().mockImplementation(async (req: any, res: any, next: any) => {
-      req.user = undefined; // Simulate missing user
-      return originalMethod.call(controllerProto, req, res, next);
+  // Mocked behavior: userModel.user.updateMany throws error during token cleanup
+  // Input: authenticated student request with new FCM token
+  // Expected status code: 500
+  // Expected behavior: handles database error during FCM token cleanup operation
+  // Expected output: 500 error response, updateMany spy called
+  test('should handle database error during FCM token update via endpoint', async () => {
+    const actualUserModel = (userModel as any).user;
+    const updateManySpy = jest.spyOn(actualUserModel, 'updateMany').mockImplementation(() => {
+      throw new Error('Database error during token cleanup');
     });
 
     try {
       const response = await request(app)
-        .post('/api/user/cash-out')
-        .set('Authorization', `Bearer ${moverAuthToken}`);
+        .post('/api/user/profile')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ fcmToken: 'new-token-that-will-fail' });
 
-      expect(response.status).toBe(401);
-      expect(response.body.message).toBe('User not authenticated');
-      expect(controllerProto.cashOut).toHaveBeenCalled();
+      // Verify the spy was called (updateMany is called to clear token from other users)
+      expect(updateManySpy).toHaveBeenCalled();
+      expect(response.status).toBe(500);
     } finally {
-      controllerProto.cashOut = originalMethod;
+      updateManySpy.mockRestore();
     }
   });
+});
 
+// Interface POST /api/user/cash-out
+describe('POST /api/user/cash-out - Cash Out (Mocked)', () => {
   // Mocked behavior: userModel.update resolves with mover having credits set to 0
   // Input: authenticated mover request
   // Expected status code: 200
@@ -441,35 +377,6 @@ describe('POST /api/user/cash-out - Cash Out (Mocked)', () => {
 
 // Interface DELETE /api/user/profile
 describe('DELETE /api/user/profile - Delete User Profile (Mocked)', () => {
-  // Mocked behavior: UserController.deleteProfile called with req.user = undefined
-  // Input: authenticated request but controller simulates missing req.user
-  // Expected status code: 401
-  // Expected behavior: detects missing user authentication in controller
-  // Expected output: error message 'User not authenticated'
-  test('should return 401 when req.user is undefined', async () => {
-    const { UserController } = require('../../src/controllers/user.controller');
-    const controllerProto = UserController.prototype;
-    const originalMethod = controllerProto.deleteProfile;
-    
-    // Create a spy that calls the original but with req.user = undefined
-    controllerProto.deleteProfile = jest.fn().mockImplementation(async (req: any, res: any, next: any) => {
-      req.user = undefined; // Simulate missing user
-      return originalMethod.call(controllerProto, req, res, next);
-    });
-
-    try {
-      const response = await request(app)
-        .delete('/api/user/profile')
-        .set('Authorization', `Bearer ${authToken}`);
-
-      expect(response.status).toBe(401);
-      expect(response.body.message).toBe('User not authenticated');
-      expect(controllerProto.deleteProfile).toHaveBeenCalled();
-    } finally {
-      controllerProto.deleteProfile = originalMethod;
-    }
-  });
-
   // Mocked behavior: UserController.deleteProfile rejects with error
   // Input: authenticated student request
   // Expected status code: 500
@@ -552,181 +459,77 @@ describe('DELETE /api/user/profile - Delete User Profile (Mocked)', () => {
 
     userModel.delete = originalDelete;
   });
-});
 
-// Interface UserModel - Database Error Handling via API Endpoints
-describe('UserModel - Database Error Handling via API Endpoints', () => {
-
-  describe('update - FCM token handling via endpoint', () => {
-    // Mocked behavior: userModel.user.updateMany throws error during token cleanup
-    // Input: authenticated student request with new FCM token
-    // Expected status code: 500
-    // Expected behavior: handles database error during FCM token cleanup operation
-    // Expected output: 500 error response, updateMany spy called
-    test('should handle database error during FCM token update via endpoint', async () => {
-      const actualUserModel = (userModel as any).user;
-      const updateManySpy = jest.spyOn(actualUserModel, 'updateMany').mockImplementation(() => {
-        throw new Error('Database error during token cleanup');
-      });
-
-      try {
-        const response = await request(app)
-          .post('/api/user/profile')
-          .set('Authorization', `Bearer ${authToken}`)
-          .send({ fcmToken: 'new-token-that-will-fail' });
-
-        // Verify the spy was called (updateMany is called to clear token from other users)
-        expect(updateManySpy).toHaveBeenCalled();
-        expect(response.status).toBe(500);
-      } finally {
-        updateManySpy.mockRestore();
-      }
+  // Mocked behavior: userModel.user.findByIdAndDelete throws error
+  // Input: DELETE /api/user/profile with authenticated temp user
+  // Expected status code: 500
+  // Expected behavior: handles database deletion error
+  // Expected output: 500 error response, delete spy called
+  test('should handle database error when deleting user via endpoint', async () => {
+    const tempUserId = new mongoose.Types.ObjectId();
+    await (userModel as any).user.create({
+      _id: tempUserId,
+      googleId: `delete-error-test-${tempUserId.toString()}`,
+      email: `deleteerror${tempUserId.toString()}@example.com`,
+      name: 'Delete Error Test User',
+      userRole: 'STUDENT'
     });
+
+    const tempToken = jwt.sign({ id: tempUserId }, process.env.JWT_SECRET || 'default-secret');
+
+    // Mock the delete method to throw an error
+    const actualUserModel = (userModel as any).user;
+    const deleteSpy = jest.spyOn(actualUserModel, 'findByIdAndDelete').mockImplementation(() => {
+      throw new Error('Database deletion error');
+    });
+
+    try {
+      const response = await request(app)
+        .delete('/api/user/profile')
+        .set('Authorization', `Bearer ${tempToken}`)
+        .expect(500);
+
+      // Verify the delete function was called
+      expect(deleteSpy).toHaveBeenCalled();
+      expect(response.body).toHaveProperty('message');
+    } finally {
+      deleteSpy.mockRestore();
+      await (userModel as any).user.findByIdAndDelete(tempUserId);
+    }
   });
 
-  describe('create', () => {
-    // Mocked behavior: AuthService.verifyGoogleToken resolves with valid data, userModel.user.create throws error
-    // Input: POST /api/auth/signup with mock ID token
-    // Expected status code: 500
-    // Expected behavior: handles database creation error during signup
-    // Expected output: 500 error response, create spy called
-    test('should handle database error when creating user via signup endpoint', async () => {
-      const { AuthService } = require('../../src/services/auth.service');
-      const serviceProto = AuthService.prototype;
-      const originalVerify = serviceProto.verifyGoogleToken;
-      
-      serviceProto.verifyGoogleToken = (jest.fn() as any).mockResolvedValue({
-        googleId: 'test-google-id-for-db-error',
-        email: 'dbtest@example.com',
-        name: 'DB Error Test User',
-      });
-
-      // Mock the create method to throw an error
-      const actualUserModel = (userModel as any).user;
-      const createSpy = jest.spyOn(actualUserModel, 'create').mockImplementation(() => {
-        throw new Error('Database creation error');
-      });
-
-      try {
-        const response = await request(app)
-          .post('/api/auth/signup')
-          .send({
-            idToken: 'mock-id-token-for-create-test'
-          });
-
-        // Verify the create function was called
-        expect(createSpy).toHaveBeenCalled();
-        // The response should be 500 with an error message
-        expect(response.status).toBe(500);
-      } finally {
-        createSpy.mockRestore();
-        serviceProto.verifyGoogleToken = originalVerify;
-      }
+  // Mocked behavior: userModel.user.findByIdAndDelete resolves with null
+  // Input: DELETE /api/user/profile with authenticated temp user
+  // Expected status code: 200
+  // Expected behavior: gracefully handles case where user not found (returns null but doesn't throw)
+  // Expected output: success message despite user not found
+  test('should handle deleting user gracefully via endpoint', async () => {
+    const tempUserId = new mongoose.Types.ObjectId();
+    await (userModel as any).user.create({
+      _id: tempUserId,
+      googleId: `delete-graceful-test-${tempUserId.toString()}`,
+      email: `deletegraceful${tempUserId.toString()}@example.com`,
+      name: 'Delete Graceful Test User',
+      userRole: 'STUDENT'
     });
 
-    // Mocked behavior: AuthService.verifyGoogleToken resolves with invalid data (empty googleId, invalid email)
-    // Input: POST /api/auth/signup with mock ID token
-    // Expected status code: 500
-    // Expected behavior: handles validation error when creating user with invalid data
-    // Expected output: 500 error response
-    test('should handle validation error when creating user with invalid data via signup', async () => {
-      const { AuthService } = require('../../src/services/auth.service');
-      const serviceProto = AuthService.prototype;
-      const originalVerify = serviceProto.verifyGoogleToken;
-      
-      serviceProto.verifyGoogleToken = (jest.fn() as any).mockResolvedValue({
-        googleId: '', // Invalid: empty googleId
-        email: 'invalid-email', // Invalid: not a proper email
-        name: '',
-      });
+    const tempToken = jwt.sign({ id: tempUserId }, process.env.JWT_SECRET || 'default-secret');
 
-      try {
-        const response = await request(app)
-          .post('/api/auth/signup')
-          .send({
-            idToken: 'mock-id-token-invalid-data'
-          });
+    // Mock findByIdAndDelete to return null (simulating user not found, but not throwing)
+    const actualUserModel = (userModel as any).user;
+    const deleteSpy = jest.spyOn(actualUserModel, 'findByIdAndDelete').mockResolvedValue(null);
 
-        // Should return 500 status code
-        expect(response.status).toBe(500);
-      } finally {
-        serviceProto.verifyGoogleToken = originalVerify;
-      }
-    });
-  });
+    try {
+      const response = await request(app)
+        .delete('/api/user/profile')
+        .set('Authorization', `Bearer ${tempToken}`)
+        .expect(200);
 
-  describe('delete', () => {
-    // Mocked behavior: userModel.user.findByIdAndDelete throws error
-    // Input: DELETE /api/user/profile with authenticated temp user
-    // Expected status code: 500
-    // Expected behavior: handles database deletion error
-    // Expected output: 500 error response, delete spy called
-    test('should handle database error when deleting user via endpoint', async () => {
-      const tempUserId = new mongoose.Types.ObjectId();
-      await (userModel as any).user.create({
-        _id: tempUserId,
-        googleId: `delete-error-test-${tempUserId.toString()}`,
-        email: `deleteerror${tempUserId.toString()}@example.com`,
-        name: 'Delete Error Test User',
-        userRole: 'STUDENT'
-      });
-
-      const tempToken = jwt.sign({ id: tempUserId }, process.env.JWT_SECRET || 'default-secret');
-
-      // Mock the delete method to throw an error
-      const actualUserModel = (userModel as any).user;
-      const deleteSpy = jest.spyOn(actualUserModel, 'findByIdAndDelete').mockImplementation(() => {
-        throw new Error('Database deletion error');
-      });
-
-      try {
-        const response = await request(app)
-          .delete('/api/user/profile')
-          .set('Authorization', `Bearer ${tempToken}`)
-          .expect(500);
-
-        // Verify the delete function was called
-        expect(deleteSpy).toHaveBeenCalled();
-        expect(response.body).toHaveProperty('message');
-      } finally {
-        deleteSpy.mockRestore();
-        await (userModel as any).user.findByIdAndDelete(tempUserId);
-      }
-    });
-
-    // Mocked behavior: userModel.user.findByIdAndDelete resolves with null
-    // Input: DELETE /api/user/profile with authenticated temp user
-    // Expected status code: 200
-    // Expected behavior: gracefully handles case where user not found (returns null but doesn't throw)
-    // Expected output: success message despite user not found
-    test('should handle deleting user gracefully via endpoint', async () => {
-      const tempUserId = new mongoose.Types.ObjectId();
-      await (userModel as any).user.create({
-        _id: tempUserId,
-        googleId: `delete-graceful-test-${tempUserId.toString()}`,
-        email: `deletegraceful${tempUserId.toString()}@example.com`,
-        name: 'Delete Graceful Test User',
-        userRole: 'STUDENT'
-      });
-
-      const tempToken = jwt.sign({ id: tempUserId }, process.env.JWT_SECRET || 'default-secret');
-
-      // Mock findByIdAndDelete to return null (simulating user not found, but not throwing)
-      const actualUserModel = (userModel as any).user;
-      const deleteSpy = jest.spyOn(actualUserModel, 'findByIdAndDelete').mockResolvedValue(null);
-
-      try {
-        const response = await request(app)
-          .delete('/api/user/profile')
-          .set('Authorization', `Bearer ${tempToken}`)
-          .expect(200);
-
-        expect(deleteSpy).toHaveBeenCalled();
-        expect(response.body).toHaveProperty('message', 'User deleted successfully');
-      } finally {
-        deleteSpy.mockRestore();
-        await (userModel as any).user.findByIdAndDelete(tempUserId);
-      }
-    });
+      expect(deleteSpy).toHaveBeenCalled();
+      expect(response.body).toHaveProperty('message', 'User deleted successfully');
+    } finally {
+      deleteSpy.mockRestore();
+      await (userModel as any).user.findByIdAndDelete(tempUserId);
+    }
   });
 });

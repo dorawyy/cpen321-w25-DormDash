@@ -57,16 +57,7 @@ export class OrderController {
     next: NextFunction
   ) {
     try {
-      // Validate that the user is authenticated
-      if (!req.user?._id) {
-        res.status(401).json({ 
-          success: false,
-          message: 'Authentication required. Please log in.',
-        } as CreateReturnJobResponse);
-        return;
-      }
-
-      const studentId = req.user._id as unknown as ObjectId;
+      const studentId = req.user!._id as unknown as ObjectId;
       
       const returnJobRequest = req.body as CreateReturnJobRequest;
       
