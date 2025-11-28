@@ -14,7 +14,12 @@ import org.junit.After
 
 
 /**
- * Base class for UI responsiveness tests.
+ * Base class for UI responsiveness/performance tests.
+ * Extends BaseTestSetup to inherit common test infrastructure.
+ * Uses TestAccountHelper for authentication with specific roles.
+ * 
+ * Subclasses must override getTestEmail(), getTestPassword(), and getRoleSelector()
+ * to provide role-specific authentication.
  */
 @HiltAndroidTest
 abstract class UIResponsivnessTestBase : BaseTestSetup() {
@@ -23,74 +28,85 @@ abstract class UIResponsivnessTestBase : BaseTestSetup() {
     private val launchTimeout = 5000L
     protected val timeout = 100L // 0.1 seconds timeout for elements to appear
 
-    companion object {
-        @Volatile
-        private var isSetupDone = false
-        private val setupLock = Any()
-    }
+    /**
+     * Return the test email for this role (student or mover).
+     */
+    protected abstract fun getTestEmail(): String
+
+    /**
+     * Return the test password for this role (student or mover).
+     */
+    protected abstract fun getTestPassword(): String
+
+    /**
+     * Return the role selector function for this role.
+     */
+    protected abstract fun getRoleSelector(): (SemanticsNodeInteractionCollection) -> Unit
 
     @Before
     override fun baseSetup() {
-        // Call parent setup first (initializes device, hilt injection)
         super.baseSetup()
         
-        if (isSetupDone) return
+        // Check if we're already signed in by looking for role-specific screens
+        val alreadySignedIn = isAlreadySignedIn()
         
-        synchronized(setupLock) {
-            if (isSetupDone) return
-            isSetupDone = true
-
-            // Wake and unlock device
-            if (!device.isScreenOn) device.wakeUp()
-            device.swipe(500, 1000, 500, 100, 10)
-            device.pressHome()
-
-            // Launch MainActivity via Intent
-            val context = InstrumentationRegistry.getInstrumentation().targetContext
-            val intent = Intent(context, MainActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(intent)
-
-            // Wait for the app to appear
-            device.wait(Until.hasObject(By.pkg(appPackage).depth(0)), launchTimeout)
-
-            composeTestRule.waitForIdle()
-
-            // Sign in with the first available account (for performance testing)
+        if (!alreadySignedIn) {
             signIn()
         }
     }
 
     /**
-     * Signs in with the first available Google account.
-     * For performance tests, we use a simplified sign-in that picks the first account.
+     * Check if already signed in by looking for main screen indicators.
+     */
+    private fun isAlreadySignedIn(): Boolean {
+        val completeProfileNodes = composeTestRule
+            .onAllNodesWithText("Complete Your Profile", useUnmergedTree = true)
+            .fetchSemanticsNodes()
+
+        if (completeProfileNodes.isNotEmpty()) {
+            // Skip profile completion
+            composeTestRule
+                .onNodeWithText("Skip", useUnmergedTree = true)
+                .performClick()
+            composeTestRule.waitForIdle()
+            return true
+        }
+
+        // Check for DormDash main screen
+        val mainScreenNodes = composeTestRule
+            .onAllNodesWithText("DormDash", useUnmergedTree = true)
+            .fetchSemanticsNodes()
+
+        return mainScreenNodes.isNotEmpty()
+    }
+
+    /**
+     * Signs in with the appropriate test account based on role.
      */
     private fun signIn() {
-        composeTestRule.onNodeWithText("Sign in with Google", useUnmergedTree = true)
-            .performClick()
+        // First ensure the account exists
+        setupTestAccount()
 
-        val accountPickerAppeared = device.wait(
-            Until.hasObject(By.pkg("com.google.android.gms")),
-            10_000
+        // Then sign in
+        TestAccountHelper.signIn(
+            composeTestRule = composeTestRule,
+            device = device,
+            email = getTestEmail(),
+            roleSelector = getRoleSelector()
         )
+    }
 
-        if (accountPickerAppeared) {
-            device.wait(Until.hasObject(By.clickable(true)), 3_000)
-            val firstClickable = device.findObject(By.clickable(true))
-            firstClickable?.click()
-        }
-
-        val mainScreenAppeared = device.wait(
-            Until.hasObject(By.text("DormDash")),
-            10_000
+    /**
+     * Sets up the test account for the appropriate role.
+     */
+    private fun setupTestAccount() {
+        TestAccountHelper.setupTestAccount(
+            composeTestRule = composeTestRule,
+            device = device,
+            email = getTestEmail(),
+            password = getTestPassword(),
+            roleSelector = getRoleSelector()
         )
-        if (!mainScreenAppeared) {
-            throw RuntimeException("Main screen did not appear after Google sign-in")
-        }
-
-        composeTestRule.waitForIdle()
     }
 
     @After
