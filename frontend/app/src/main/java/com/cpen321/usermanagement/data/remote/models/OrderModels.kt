@@ -1,4 +1,6 @@
-package com.cpen321.usermanagement.data.local.models
+package com.cpen321.usermanagement.data.remote.models
+
+import com.cpen321.usermanagement.data.local.models.BoxQuantity
 
 
 data class OrderRequest(

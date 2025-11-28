@@ -1,6 +1,5 @@
 package com.cpen321.usermanagement.ui.screens
 
-import Button
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -33,8 +32,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.cpen321.usermanagement.R
-import com.cpen321.usermanagement.ui.components.MessageSnackbar
-import com.cpen321.usermanagement.ui.components.MessageSnackbarState
+import com.cpen321.usermanagement.ui.components.common.MessageSnackbar
+import com.cpen321.usermanagement.ui.components.common.MessageSnackbarState
+import com.cpen321.usermanagement.ui.components.common.Button
 import com.cpen321.usermanagement.ui.viewmodels.AuthUiState
 import com.cpen321.usermanagement.ui.viewmodels.AuthViewModel
 import com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel

@@ -1,6 +1,6 @@
 package com.cpen321.usermanagement.data.local.models
 
-import com.cpen321.usermanagement.data.remote.dto.Address
+import com.cpen321.usermanagement.data.remote.models.Address
 import java.time.LocalDateTime
 
 data class Job(

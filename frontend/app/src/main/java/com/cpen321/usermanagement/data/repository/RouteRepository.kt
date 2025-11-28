@@ -2,7 +2,7 @@ package com.cpen321.usermanagement.data.repository
 
 import android.util.Log
 import com.cpen321.usermanagement.data.remote.api.RouteInterface
-import com.cpen321.usermanagement.data.remote.dto.SmartRouteData
+import com.cpen321.usermanagement.data.remote.models.SmartRouteData
 import javax.inject.Inject
 import javax.inject.Singleton
 

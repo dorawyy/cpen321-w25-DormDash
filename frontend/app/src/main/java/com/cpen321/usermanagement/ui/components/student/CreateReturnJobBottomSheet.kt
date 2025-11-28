@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.components
+package com.cpen321.usermanagement.ui.components.student
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -22,7 +22,7 @@ import com.cpen321.usermanagement.data.local.models.TestCard
 import com.cpen321.usermanagement.data.local.models.CustomerInfo
 import com.cpen321.usermanagement.data.local.models.PaymentAddress
 import com.cpen321.usermanagement.data.repository.PaymentRepository
-import com.cpen321.usermanagement.ui.components.DatePickerDialog
+import com.cpen321.usermanagement.ui.components.dialogs.DatePickerDialog
 import com.cpen321.usermanagement.utils.LocationUtils
 import com.cpen321.usermanagement.utils.TimeUtils
 import kotlinx.coroutines.launch
