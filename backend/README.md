@@ -26,7 +26,12 @@
     STRIPE_PUBLISHABLE_KEY=stripe_publishable_key
    ```
 
-4. **Firebase Setup:** Obtain `serviceAccountKey.json` from Firebase console and add it to the root directory
+4. **Firebase Setup:** Obtain `serviceAccountKey.json`
+- Go to the Firebase Console
+- Open Project Settings → Service Accounts
+- Click Generate New Private Key
+- Confirm and download the generated `serviceAccountKey.json` file
+- You can also refer to this [video](https://www.youtube.com/watch?v=1ABYkh5xb5M)
 
 3. **Start development server**: Start development server with ts-node with auto-reload
    ```
