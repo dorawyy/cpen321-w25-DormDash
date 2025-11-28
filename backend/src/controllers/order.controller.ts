@@ -122,7 +122,7 @@ export class OrderController {
     next: NextFunction
   ) {
     try {
-      const studentId = (req.user as IUser)._id as unknown as ObjectId;
+      const studentId = req.user?._id as unknown as ObjectId;
       const result = await this.orderService.cancelOrder(studentId);
       // Map service result to appropriate HTTP status code expected by tests/spec
       if (result.success) {
