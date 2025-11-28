@@ -1,7 +1,7 @@
 package com.cpen321.usermanagement.data.local.models
 
-import com.cpen321.usermanagement.data.local.models.Address
 import com.google.gson.annotations.SerializedName
+import com.cpen321.usermanagement.data.remote.models.Address
 
 enum class OrderStatus {
     PENDING,

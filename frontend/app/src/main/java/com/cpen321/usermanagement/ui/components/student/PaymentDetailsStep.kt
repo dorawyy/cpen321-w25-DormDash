@@ -18,6 +18,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.cpen321.usermanagement.data.local.models.*
+import com.cpen321.usermanagement.data.remote.models.OrderRequest
 
 // Step 4: Payment Details
 @Composable

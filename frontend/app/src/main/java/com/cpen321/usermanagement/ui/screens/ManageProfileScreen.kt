@@ -1,7 +1,5 @@
 package com.cpen321.usermanagement.ui.screens
 
-import Button
-import Icon
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -48,6 +46,8 @@ import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import com.cpen321.usermanagement.data.remote.models.User
 import com.cpen321.usermanagement.ui.components.common.MessageSnackbar
 import com.cpen321.usermanagement.ui.components.common.MessageSnackbarState
+import com.cpen321.usermanagement.ui.components.common.Icon
+import com.cpen321.usermanagement.ui.components.common.Button
 import com.cpen321.usermanagement.ui.viewmodels.ProfileUiState
 import com.cpen321.usermanagement.ui.viewmodels.ProfileViewModel
 import com.cpen321.usermanagement.ui.theme.LocalSpacing

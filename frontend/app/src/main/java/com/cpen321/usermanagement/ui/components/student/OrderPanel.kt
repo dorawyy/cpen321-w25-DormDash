@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.cpen321.usermanagement.data.local.models.OrderStatus
+import com.cpen321.usermanagement.ui.components.common.OrderMapView
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.ZoneId
