@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.components
+package com.cpen321.usermanagement.ui.components.student
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,6 +18,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.cpen321.usermanagement.data.local.models.*
+import com.cpen321.usermanagement.data.remote.models.OrderRequest
 
 // Step 4: Payment Details
 @Composable

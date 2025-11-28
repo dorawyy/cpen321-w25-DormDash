@@ -4,8 +4,8 @@ import com.cpen321.usermanagement.data.local.models.Job
 import com.cpen321.usermanagement.data.local.models.JobStatus
 import com.cpen321.usermanagement.data.local.models.JobType
 import com.cpen321.usermanagement.data.remote.api.JobInterface
-import com.cpen321.usermanagement.data.remote.dto.JobStatus as DtoJobStatus
-import com.cpen321.usermanagement.data.remote.dto.UpdateJobStatusRequest
+import com.cpen321.usermanagement.data.remote.models.JobStatus as DtoJobStatus
+import com.cpen321.usermanagement.data.remote.models.UpdateJobStatusRequest
 import com.cpen321.usermanagement.utils.Resource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow

@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.components
+package com.cpen321.usermanagement.ui.components.dialogs
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

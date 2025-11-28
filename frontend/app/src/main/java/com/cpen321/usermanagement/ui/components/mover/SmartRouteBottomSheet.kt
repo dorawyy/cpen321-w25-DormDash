@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.components
+package com.cpen321.usermanagement.ui.components.mover
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -30,8 +30,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.cpen321.usermanagement.data.remote.dto.JobInRoute
-import com.cpen321.usermanagement.data.remote.dto.RouteMetrics
+import com.cpen321.usermanagement.data.remote.models.JobInRoute
+import com.cpen321.usermanagement.data.remote.models.RouteMetrics
 import com.cpen321.usermanagement.ui.theme.LocalSpacing
 import com.cpen321.usermanagement.ui.theme.Spacing
 import com.cpen321.usermanagement.ui.viewmodels.SmartRouteUiState

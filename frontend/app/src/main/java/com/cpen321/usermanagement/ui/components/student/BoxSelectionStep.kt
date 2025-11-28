@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.components
+package com.cpen321.usermanagement.ui.components.student
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,7 +18,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.cpen321.usermanagement.business.DynamicPriceCalculator
 import com.cpen321.usermanagement.data.local.models.*
-import com.cpen321.usermanagement.ui.components.DatePickerDialog
+import com.cpen321.usermanagement.data.remote.models.OrderRequest
+import com.cpen321.usermanagement.ui.components.dialogs.DatePickerDialog
+import com.cpen321.usermanagement.ui.components.common.QuantityCounter
+import com.cpen321.usermanagement.ui.components.dialogs.TimePickerDialog
 import com.cpen321.usermanagement.utils.TimeUtils
 import java.text.SimpleDateFormat
 import java.util.*

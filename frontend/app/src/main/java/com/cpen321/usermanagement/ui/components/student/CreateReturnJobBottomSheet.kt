@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.components
+package com.cpen321.usermanagement.ui.components.student
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -14,15 +14,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.cpen321.usermanagement.data.local.models.Address
-import com.cpen321.usermanagement.data.local.models.CreateReturnJobRequest
+import com.cpen321.usermanagement.data.remote.models.Address
+import com.cpen321.usermanagement.data.remote.models.CreateReturnJobRequest
+import com.cpen321.usermanagement.ui.components.common.SelectedAddress
 import com.cpen321.usermanagement.data.local.models.Order
 import com.cpen321.usermanagement.data.local.models.TestPaymentMethods
 import com.cpen321.usermanagement.data.local.models.TestCard
 import com.cpen321.usermanagement.data.local.models.CustomerInfo
 import com.cpen321.usermanagement.data.local.models.PaymentAddress
 import com.cpen321.usermanagement.data.repository.PaymentRepository
-import com.cpen321.usermanagement.ui.components.DatePickerDialog
+import com.cpen321.usermanagement.ui.components.dialogs.DatePickerDialog
+import com.cpen321.usermanagement.ui.components.dialogs.TimePickerDialog
 import com.cpen321.usermanagement.utils.LocationUtils
 import com.cpen321.usermanagement.utils.TimeUtils
 import kotlinx.coroutines.launch

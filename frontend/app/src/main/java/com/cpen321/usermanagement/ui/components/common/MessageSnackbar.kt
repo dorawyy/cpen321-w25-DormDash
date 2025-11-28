@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.components
+package com.cpen321.usermanagement.ui.components.common
 
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost

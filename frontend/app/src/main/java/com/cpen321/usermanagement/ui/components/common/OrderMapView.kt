@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.components
+package com.cpen321.usermanagement.ui.components.common
 
 import android.content.Context
 import androidx.compose.foundation.layout.*

@@ -1,12 +1,10 @@
-package com.cpen321.usermanagement.data.remote.dto
+package com.cpen321.usermanagement.data.remote.models
 
 data class Address(
     val lat: Double,
     val lon: Double,
     val formattedAddress: String
 )
-
-
 
 data class JobDto(
     val id: String,

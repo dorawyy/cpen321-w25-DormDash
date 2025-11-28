@@ -1,4 +1,6 @@
-package com.cpen321.usermanagement.data.local.models
+package com.cpen321.usermanagement.data.remote.models
+
+import com.cpen321.usermanagement.data.local.models.BoxQuantity
 
 
 data class OrderRequest(
@@ -13,8 +15,8 @@ data class CreateOrderRequest(
     val studentId: String,
     val volume: Double,
     val totalPrice: Double,
-    val studentAddress: Address,
-    val warehouseAddress: Address,
+    val studentAddress: com.cpen321.usermanagement.data.local.models.Address,
+    val warehouseAddress: com.cpen321.usermanagement.data.local.models.Address,
     val pickupTime: String, // ISO string format
     val returnTime: String,  // ISO string format
     val paymentIntentId: String? = null // Stripe payment intent ID for refunds

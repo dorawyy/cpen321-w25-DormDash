@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.data.remote.dto
+package com.cpen321.usermanagement.data.remote.models
 
 data class UpdateProfileRequest(
     val name: String? = null,

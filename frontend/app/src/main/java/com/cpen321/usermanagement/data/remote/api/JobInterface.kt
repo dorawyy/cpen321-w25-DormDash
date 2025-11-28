@@ -1,9 +1,9 @@
 package com.cpen321.usermanagement.data.remote.api
 
-import com.cpen321.usermanagement.data.remote.dto.ApiResponse
-import com.cpen321.usermanagement.data.remote.dto.JobListResponse
-import com.cpen321.usermanagement.data.remote.dto.JobResponse
-import com.cpen321.usermanagement.data.remote.dto.UpdateJobStatusRequest
+import com.cpen321.usermanagement.data.remote.models.ApiResponse
+import com.cpen321.usermanagement.data.remote.models.JobListResponse
+import com.cpen321.usermanagement.data.remote.models.JobResponse
+import com.cpen321.usermanagement.data.remote.models.UpdateJobStatusRequest
 import retrofit2.Response
 import retrofit2.http.*
 

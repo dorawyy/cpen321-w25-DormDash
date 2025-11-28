@@ -1,4 +1,4 @@
-package com.cpen321.usermanagement.ui.components
+package com.cpen321.usermanagement.ui.components.common
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
