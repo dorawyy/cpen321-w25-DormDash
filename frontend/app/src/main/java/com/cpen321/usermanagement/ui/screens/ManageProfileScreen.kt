@@ -50,7 +50,6 @@ import coil.compose.AsyncImage
 import com.cpen321.usermanagement.R
 import com.cpen321.usermanagement.data.remote.api.RetrofitClient
 import com.cpen321.usermanagement.data.remote.dto.User
-import com.cpen321.usermanagement.ui.components.ImagePicker
 import com.cpen321.usermanagement.ui.components.MessageSnackbar
 import com.cpen321.usermanagement.ui.components.MessageSnackbarState
 import com.cpen321.usermanagement.ui.viewmodels.ProfileUiState
@@ -77,7 +76,6 @@ private data class ManageProfileScreenActions(
     val onBioChange: (String) -> Unit,
     val onEditPictureClick: () -> Unit,
     val onSaveClick: () -> Unit,
-    val onImagePickerDismiss: () -> Unit,
     val onImageSelected: (Uri) -> Unit,
     val onLoadingPhotoChange: (Boolean) -> Unit,
     val onSuccessMessageShown: () -> Unit,
@@ -122,7 +120,6 @@ fun ManageProfileScreen(
     val uiState by profileViewModel.uiState.collectAsState()
     val snackBarHostState = remember { SnackbarHostState() }
 
-    var showImagePickerDialog by remember { mutableStateOf(false) }
 
     // Form state
     var formState by remember {
@@ -159,7 +156,6 @@ fun ManageProfileScreen(
         onSaveClick = {
             profileViewModel.updateProfile(formState.name, formState.bio, formState.profilePicture ?: "")
         },
-        onImagePickerDismiss = { showImagePickerDialog = false },
         onImageSelected = { _ -> /* Profile picture upload removed */ },
         onLoadingPhotoChange = profileViewModel::setLoadingPhoto,
         onSuccessMessageShown = profileViewModel::clearSuccessMessage,
@@ -170,7 +166,6 @@ fun ManageProfileScreen(
         uiState = uiState,
         formState = formState,
         snackBarHostState = snackBarHostState,
-        showImagePickerDialog = showImagePickerDialog,
         actions = actions
     )
 }
@@ -181,7 +176,6 @@ private fun ManageProfileContent(
     uiState: ProfileUiState,
     formState: ProfileFormState,
     snackBarHostState: SnackbarHostState,
-    showImagePickerDialog: Boolean,
     actions: ManageProfileScreenActions,
     modifier: Modifier = Modifier
 ) {
@@ -213,13 +207,6 @@ private fun ManageProfileContent(
                 onSaveClick = actions.onSaveClick,
                 onLoadingPhotoChange = actions.onLoadingPhotoChange
             )
-        )
-    }
-
-    if (showImagePickerDialog) {
-        ImagePicker(
-            onDismiss = actions.onImagePickerDismiss,
-            onImageSelected = actions.onImageSelected
         )
     }
 }

@@ -18,7 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.cpen321.usermanagement.business.DynamicPriceCalculator
 import com.cpen321.usermanagement.data.local.models.*
-import com.cpen321.usermanagement.ui.components.shared.DatePickerDialog
+import com.cpen321.usermanagement.ui.components.DatePickerDialog
 import com.cpen321.usermanagement.utils.TimeUtils
 import java.text.SimpleDateFormat
 import java.util.*
