@@ -7,7 +7,7 @@ import com.cpen321.usermanagement.data.remote.dto.UpdateJobStatusRequest
 import retrofit2.Response
 import retrofit2.http.*
 
-interface JobApiService {
+interface JobInterface {
     @GET("jobs/available")
     suspend fun getAvailableJobs(): Response<ApiResponse<JobListResponse>>
     

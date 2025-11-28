@@ -1,7 +1,5 @@
 package com.cpen321.usermanagement.data.remote.dto
 
-import com.google.gson.annotations.SerializedName
-
 data class Address(
     val lat: Double,
     val lon: Double,

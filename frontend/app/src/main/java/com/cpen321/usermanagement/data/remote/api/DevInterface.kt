@@ -10,7 +10,7 @@ import retrofit2.http.POST
  * Provides endpoints for triggering backend development scripts.
  * Used for testing and development purposes only.
  */
-interface DevApiService {
+interface DevInterface {
 
     /**
      * Trigger seeding of 10 test jobs for Smart Route testing
