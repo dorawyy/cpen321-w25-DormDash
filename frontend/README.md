@@ -17,6 +17,13 @@
    - Create a new AVD (Android Virtual Device) by selecting Pixel 7 as the device and Android Tiramisu (API level 33) as the system image.
    - Alternatively, connect a physical Android device running Android 13 (API level 33).
 5. **Update Google Play Service on emulator**: For the emulator, ensure that Google Play Services are up to date. Click the 3 dots beside emulator -> google play services -> update
+4. **Firebase Setup:** Obtain `google-services.json` from Firebase console:
+- Go to Firebase Console
+- Add an Android app
+- Enter your app’s package name
+- Click Register App
+- Download the generated `google-services.json`
+- You can also refer to this [video](https://www.youtube.com/watch?v=w1EPb-Jl1_U)
 
 ## Build and Run
 

@@ -57,7 +57,6 @@ export class OrderController {
     next: NextFunction
   ) {
     try {
-      // Validate that the user is authenticated
       if (!req.user?._id) {
         res.status(401).json({ 
           success: false,
@@ -88,7 +87,7 @@ export class OrderController {
   ) {
     try {
       const result = await this.orderService.getAllOrders(
-        req.user?._id as unknown as ObjectId
+        (req as unknown as { user?: { _id: unknown } }).user?._id as ObjectId
       );
       res.status(200).json(result);
     } catch (error) {

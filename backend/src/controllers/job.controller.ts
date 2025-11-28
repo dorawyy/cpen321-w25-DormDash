@@ -61,7 +61,6 @@ export class JobController {
   ) {
     try {
       if (!req.user?._id) return;
-
       const result = await this.jobService.getMoverJobs(
         req.user._id.toString()
       );
@@ -78,7 +77,7 @@ export class JobController {
   ) {
     try {
       if (!req.user?._id) return;
-      
+
       const result = await this.jobService.getStudentJobs(
         req.user._id.toString()
       );
