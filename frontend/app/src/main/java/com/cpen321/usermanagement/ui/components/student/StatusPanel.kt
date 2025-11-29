@@ -101,13 +101,16 @@ private fun ActiveOrderStatusContent(
             modifier = modifier.verticalScroll(rememberScrollState()).imePadding().padding(24.dp)
         ) {
             OrderStatusHeader()
+            Spacer(modifier = Modifier.height(16.dp))
             
             OrderProgressIndicator(order.status)
+            Spacer(modifier = Modifier.height(16.dp))
             
             OrderStatusDetails(
                 order = order,
                 hasActiveReturnJob = hasActiveReturnJob
             )
+            Spacer(modifier = Modifier.height(16.dp))
             
             CalendarButtonSection(
                 order = order,
@@ -115,6 +118,7 @@ private fun ActiveOrderStatusContent(
                 returnJob = returnJob,
                 context = context
             )
+            Spacer(modifier = Modifier.height(16.dp))
             
             JobStatusCard(
                 order = order,
