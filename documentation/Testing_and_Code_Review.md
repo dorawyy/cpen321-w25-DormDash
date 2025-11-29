@@ -4,7 +4,8 @@
 
 | **Change Date** | **Modified Sections** | **Rationale** |
 |-----------------| --------------------- | ------------- |
-| _Nov 12_        |         All          | Initial document creation. |
+| _Nov 12_        |         All           | Initial document creation. |
+| Nov 28.         |    E2E test logs, instructions. | Fixing test logs to match after we fixed the tests to pass, making instructions more clear to run the tests |
 
 ---
 
@@ -208,6 +209,7 @@ Notification. Service: The branches that are not covered are defensive checks to
 ## 4. Front-end Test Specification
 **Instructions to run the tests**:
 - Clone the repository
+- Follow the Frontend README to set up the local.properties file properly
 - Create a test.properties file under DormDash/frontend/app/src/androidTest/resources
 - Add the following to the file, and fill in 2 test accounts (1 for student and 1 for mover):
   STUDENT_EMAIL=<the email for the student account>
@@ -492,6 +494,8 @@ Notification. Service: The branches that are not covered are defensive checks to
     ```
   
 - **Use Case: View Recommended Route**
+
+**Note:** ensure you change emulator location to Vancouver before running this
 
   **Expected Behaviors:**
 
